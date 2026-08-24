@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
+import { Gem3D } from "@/components/gem-visualizer/Gem3D";
 import { resolveGemColor, hueAtPercent, percentAtHue } from "@/components/gem-visualizer/color";
 import { estimateDimensionsMm } from "@/components/gem-visualizer/size";
 import { Label, Select } from "@/components/ui/Field";
@@ -89,7 +89,7 @@ export function GemConfiguratorClient({ minerals, cuts, clarityGrades, isAuthent
       <div>
         <div className="rounded-2xl border border-border-subtle bg-gradient-to-b from-ivory-soft to-ivory p-8">
           {cut && (
-            <GemVisualizer
+            <Gem3D
               cutSlug={cut.slug}
               hue={hue}
               darkness={darkness}
@@ -101,7 +101,7 @@ export function GemConfiguratorClient({ minerals, cuts, clarityGrades, isAuthent
           )}
         </div>
         <p className="mt-2 text-center text-xs text-charcoal/45">
-          Illustrative rendering. Actual dimensions vary by the mineral&apos;s density —{" "}
+          Drag to rotate. Illustrative rendering — actual dimensions vary by the mineral&apos;s density —{" "}
           {dimensions ? `approximately ${dimensions.lengthMm} x ${dimensions.widthMm} mm at ${caratWeight}ct.` : ""}
         </p>
       </div>

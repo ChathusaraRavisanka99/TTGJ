@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { CircleCheck, AlertTriangle } from "lucide-react";
 import { submitQuoteRequest } from "@/actions/quotes";
 import { Button } from "@/components/ui/Button";
@@ -23,12 +24,13 @@ export function QuoteRequestPanel({ isAuthenticated, gemstoneId, jewelryId, conf
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const pathname = usePathname();
 
   if (!isAuthenticated) {
     return (
       <div className="rounded-xl border border-border-subtle bg-ivory-soft p-5">
         <p className="text-sm text-charcoal/75">Sign in to request a quote on {productLabel}.</p>
-        <Link href={`/account/login?callbackUrl=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/")}`}>
+        <Link href={`/account/login?callbackUrl=${encodeURIComponent(pathname)}`}>
           <Button variant="primary" className="mt-3">Sign in to request a quote</Button>
         </Link>
       </div>

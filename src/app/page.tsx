@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { LinkButton } from "@/components/ui/Button";
 import { GemCard } from "@/components/catalog/GemCard";
-import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
+import { Gem3D } from "@/components/gem-visualizer/Gem3D";
 
 export default async function HomePage() {
   const featuredGems = await prisma.gemstone.findMany({
@@ -30,7 +30,7 @@ export default async function HomePage() {
           </div>
         </div>
         <div className="rounded-2xl border border-border-subtle bg-gradient-to-b from-ivory-soft to-ivory p-10">
-          <GemVisualizer
+          <Gem3D
             cutSlug="oval"
             hue={228}
             darkness={38}

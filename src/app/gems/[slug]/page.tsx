@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getGemstoneBySlug } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
-import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
+import { Gem3D } from "@/components/gem-visualizer/Gem3D";
 import { StockBadge } from "@/components/ui/Badge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
@@ -30,7 +30,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
       <div className="grid gap-12 lg:grid-cols-2">
         <div>
           <div className="rounded-2xl border border-border-subtle bg-gradient-to-b from-ivory-soft to-ivory p-8">
-            <GemVisualizer
+            <Gem3D
               cutSlug={gem.cut.slug}
               hue={gem.colorHue}
               darkness={gem.colorLightness}
@@ -41,7 +41,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
             />
           </div>
           <p className="mt-2 text-center text-xs text-charcoal/45">
-            Illustrative rendering based on this stone&apos;s recorded cut, colour, tone, and clarity — not a photograph.
+            Drag to rotate · illustrative rendering based on this stone&apos;s recorded cut, colour, tone, and clarity — not a photograph.
           </p>
 
           {gem.media.length > 0 && (

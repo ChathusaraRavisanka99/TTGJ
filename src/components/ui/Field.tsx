@@ -1,0 +1,30 @@
+import { type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type LabelHTMLAttributes } from "react";
+import { cn } from "@/lib/utils";
+
+const fieldBase =
+  "w-full rounded-md border border-border-subtle bg-surface px-3.5 py-2.5 text-sm text-charcoal placeholder:text-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors";
+
+export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
+  return <label className={cn("block text-xs font-medium tracking-wide text-charcoal/70 mb-1.5 uppercase", className)} {...props} />;
+}
+
+export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  return <input className={cn(fieldBase, className)} {...props} />;
+}
+
+export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className={cn(fieldBase, "min-h-28 resize-y", className)} {...props} />;
+}
+
+export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select className={cn(fieldBase, className)} {...props} />;
+}
+
+export function FieldHint({ children }: { children: React.ReactNode }) {
+  return <p className="mt-1.5 text-xs text-charcoal/55 leading-relaxed">{children}</p>;
+}
+
+export function FieldError({ children }: { children?: string }) {
+  if (!children) return null;
+  return <p className="mt-1.5 text-xs text-red-700">{children}</p>;
+}

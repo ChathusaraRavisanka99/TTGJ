@@ -1,0 +1,56 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { QuoteStatusBadge } from "@/components/ui/Badge";
+
+export const metadata: Metadata = { title: "My Sourcing Requests" };
+
+export default async function AccountSourcingPage() {
+  const session = await auth();
+  if (!session?.user) return null;
+
+  const requests = await prisma.sourcingRequest.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return (
+    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+      <p className="text-xs uppercase tracking-widest text-gold">Account</p>
+      <h1 className="mt-2 font-serif text-4xl text-charcoal">My Sourcing Requests</h1>
+
+      {requests.length === 0 ? (
+        <p className="mt-10 text-charcoal/60">
+          No sourcing requests yet. <Link href="/sourcing" className="underline">Submit one</Link> if you&apos;re after something specific.
+        </p>
+      ) : (
+        <div className="mt-8 space-y-4">
+          {requests.map((r) => (
+            <div key={r.id} className="rounded-xl border border-border-subtle bg-surface p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-serif text-lg text-charcoal">{r.mineralDescription}</p>
+                  <p className="mt-1 text-xs text-charcoal/50">Submitted {r.createdAt.toLocaleDateString()}</p>
+                </div>
+                <QuoteStatusBadge status={r.status} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-charcoal/65">
+                {r.approxSize && <span>Size: {r.approxSize}</span>}
+                {r.approxCut && <span>Cut: {r.approxCut}</span>}
+                {r.approxColor && <span>Colour: {r.approxColor}</span>}
+              </div>
+              {r.notes && <p className="mt-3 text-sm text-charcoal/70">&ldquo;{r.notes}&rdquo;</p>}
+              {r.adminNotes && (
+                <div className="mt-3 rounded-lg bg-ivory-soft p-3 text-sm text-charcoal/75">
+                  <p className="text-xs uppercase tracking-wide text-charcoal/45">From Ratnavue</p>
+                  <p className="mt-1">{r.adminNotes}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

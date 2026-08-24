@@ -1,0 +1,347 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Auth ----------
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          UserRole  @default(CUSTOMER)
+  phone         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  quoteRequests   QuoteRequest[]
+  sourcingRequest SourcingRequest[]
+}
+
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String? @db.Text
+  access_token             String? @db.Text
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String? @db.Text
+  session_state            String?
+  refresh_token_expires_in Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------- Master data ----------
+
+model Mineral {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  hueMin      Int
+  hueMax      Int
+  active      Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  gemstones Gemstone[]
+}
+
+enum CutCategory {
+  FACETED
+  CABOCHON
+}
+
+model Cut {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  slug      String      @unique
+  category  CutCategory
+  active    Boolean     @default(true)
+  sortOrder Int         @default(0)
+
+  gemstones Gemstone[]
+}
+
+model ClarityGrade {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String
+  sortOrder   Int     @default(0)
+  active      Boolean @default(true)
+
+  gemstones Gemstone[]
+}
+
+model Treatment {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  slug      String  @unique
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  gemstones Gemstone[]
+}
+
+model Origin {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  slug      String  @unique
+  isCeylon  Boolean @default(false)
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  gemstones Gemstone[]
+}
+
+// ---------- Catalog ----------
+
+enum StockStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+model Gemstone {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String? @db.Text
+
+  mineralId String
+  mineral   Mineral @relation(fields: [mineralId], references: [id])
+  variety   String?
+
+  cutId String
+  cut   Cut    @relation(fields: [cutId], references: [id])
+
+  caratWeight Float
+  lengthMm    Float?
+  widthMm     Float?
+  depthMm     Float?
+
+  // Configurator-compatible color spec (HSL)
+  colorHue        Int
+  colorSaturation Int @default(70)
+  colorLightness  Int @default(50)
+  colorLabel      String?
+
+  clarityGradeId String
+  clarityGrade   ClarityGrade @relation(fields: [clarityGradeId], references: [id])
+
+  treatmentId String
+  treatment   Treatment @relation(fields: [treatmentId], references: [id])
+
+  originId String
+  origin   Origin @relation(fields: [originId], references: [id])
+
+  symmetryNotes String?
+  polishNotes   String?
+
+  certLab          String?
+  certReportNumber String?
+  certFileUrl      String?
+
+  stockStatus StockStatus @default(AVAILABLE)
+  isPublished Boolean     @default(true)
+
+  media MediaAsset[]
+
+  quoteRequests       QuoteRequest[]
+  jewelryGemstoneLink JewelryGemstoneLink[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([mineralId])
+  @@index([cutId])
+  @@index([stockStatus])
+}
+
+enum PieceType {
+  RING
+  NECKLACE
+  EARRINGS
+  BRACELET
+  PENDANT
+  BROOCH
+  OTHER
+}
+
+enum MetalType {
+  GOLD
+  WHITE_GOLD
+  ROSE_GOLD
+  PLATINUM
+  SILVER
+}
+
+model JewelryPiece {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String? @db.Text
+
+  pieceType    PieceType
+  metalType    MetalType
+  metalPurity  String?
+  metalWeightG Float?
+  ringSize     String?
+  styleTags    String[]
+
+  stockStatus StockStatus @default(AVAILABLE)
+  isPublished Boolean     @default(true)
+
+  media     MediaAsset[]
+  gemstones JewelryGemstoneLink[]
+
+  quoteRequests QuoteRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pieceType])
+  @@index([stockStatus])
+}
+
+model JewelryGemstoneLink {
+  id             String        @id @default(cuid())
+  jewelryId      String
+  jewelry        JewelryPiece  @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
+  gemstoneId     String?
+  gemstone       Gemstone?     @relation(fields: [gemstoneId], references: [id])
+  freeformDesc   String?
+
+  @@index([jewelryId])
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model MediaAsset {
+  id        String    @id @default(cuid())
+  url       String
+  type      MediaType
+  altText   String?
+  isPrimary Boolean   @default(false)
+  sortOrder Int       @default(0)
+
+  gemstoneId String?
+  gemstone   Gemstone? @relation(fields: [gemstoneId], references: [id], onDelete: Cascade)
+
+  jewelryId String?
+  jewelry   JewelryPiece? @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([gemstoneId])
+  @@index([jewelryId])
+}
+
+// ---------- Quotes & sourcing ----------
+
+enum QuoteStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  QUOTED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum ProductType {
+  GEMSTONE
+  JEWELRY
+}
+
+model QuoteRequest {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  productType ProductType?
+  gemstoneId  String?
+  gemstone    Gemstone?    @relation(fields: [gemstoneId], references: [id])
+  jewelryId   String?
+  jewelry     JewelryPiece? @relation(fields: [jewelryId], references: [id])
+
+  // Present when the request originated from the standalone configurator
+  // rather than an existing catalog item.
+  configuredSpec Json?
+
+  quantity Int    @default(1)
+  note     String? @db.Text
+
+  noteFlaggedForPrice Boolean @default(false)
+  adminNotes          String? @db.Text
+
+  status QuoteStatus @default(SUBMITTED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model SourcingRequest {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  mineralDescription String
+  approxSize         String?
+  approxCut          String?
+  approxColor        String?
+  notes              String? @db.Text
+
+  noteFlaggedForPrice Boolean @default(false)
+  adminNotes          String? @db.Text
+
+  status QuoteStatus @default(SUBMITTED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}

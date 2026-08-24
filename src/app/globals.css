@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-ivory: #faf7f1;
+  --color-ivory-soft: #f3ede1;
+  --color-charcoal: #211d1a;
+  --color-charcoal-soft: #3a332d;
+  --color-gold: #b3915a;
+  --color-gold-soft: #d9c39a;
+  --color-sapphire: #1f3a5f;
+  --color-sapphire-soft: #345580;
+
+  --background: var(--color-ivory);
+  --foreground: var(--color-charcoal);
+  --surface: #ffffff;
+  --border-subtle: #e5ddce;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-surface: var(--surface);
+  --color-border-subtle: var(--border-subtle);
+  --color-ivory: var(--color-ivory);
+  --color-ivory-soft: var(--color-ivory-soft);
+  --color-charcoal: var(--color-charcoal);
+  --color-charcoal-soft: var(--color-charcoal-soft);
+  --color-gold: var(--color-gold);
+  --color-gold-soft: var(--color-gold-soft);
+  --color-sapphire: var(--color-sapphire);
+  --color-sapphire-soft: var(--color-sapphire-soft);
+  --font-serif: var(--font-cormorant);
+  --font-sans: var(--font-inter);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, .font-serif {
+  font-family: var(--font-serif), ui-serif, Georgia, serif;
+}
+
+::selection {
+  background: var(--color-gold-soft);
+  color: var(--color-charcoal);
 }

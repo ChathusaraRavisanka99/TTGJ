@@ -1,69 +1,104 @@
-import Image from "next/image";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { LinkButton } from "@/components/ui/Button";
+import { GemCard } from "@/components/catalog/GemCard";
+import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 
-export default function Home() {
+export default async function HomePage() {
+  const featuredGems = await prisma.gemstone.findMany({
+    where: { isPublished: true },
+    orderBy: { createdAt: "desc" },
+    take: 4,
+    include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true },
+  });
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <div>
+      <section className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-2 lg:items-center lg:py-24">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-gold">Ceylon Gemstones &amp; Fine Jewelry</p>
+          <h1 className="mt-3 font-serif text-5xl leading-tight text-charcoal sm:text-6xl">
+            Colour, cut, and provenance — designed by you.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-5 max-w-lg text-charcoal/70">
+            Explore ethically sourced Ceylon sapphires, rubies, and rare gems. Configure your own stone in real time,
+            then request a private quote from our gemologists.
           </p>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <LinkButton href="/configurator" variant="gold" size="lg">Design Your Gem</LinkButton>
+            <LinkButton href="/gems" variant="outline" size="lg">Shop Gemstones</LinkButton>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="rounded-2xl border border-border-subtle bg-gradient-to-b from-ivory-soft to-ivory p-10">
+          <GemVisualizer
+            cutSlug="oval"
+            hue={228}
+            darkness={38}
+            claritySlug="eye-clean"
+            caratWeight={3}
+            seedKey="home-hero"
+            className="mx-auto aspect-square w-full max-w-md"
+          />
         </div>
-      </main>
+      </section>
+
+      {featuredGems.length > 0 && (
+        <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8">
+          <div className="mb-8 flex items-end justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-gold">Recently Added</p>
+              <h2 className="mt-2 font-serif text-3xl text-charcoal">Featured Gemstones</h2>
+            </div>
+            <Link href="/gems" className="text-sm text-charcoal/70 underline hover:text-charcoal">
+              View all
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+            {featuredGems.map((gem) => (
+              <GemCard
+                key={gem.id}
+                slug={gem.slug}
+                name={gem.name}
+                mineralName={gem.mineral.name}
+                cutSlug={gem.cut.slug}
+                cutName={gem.cut.name}
+                caratWeight={gem.caratWeight}
+                colorHue={gem.colorHue}
+                colorLightness={gem.colorLightness}
+                claritySlug={gem.clarityGrade.slug}
+                clarityName={gem.clarityGrade.name}
+                treatmentName={gem.treatment.name}
+                isCeylon={gem.origin.isCeylon}
+                stockStatus={gem.stockStatus}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="border-t border-border-subtle bg-ivory-soft">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 md:grid-cols-2 md:items-center">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gold">Heritage</p>
+            <h2 className="mt-2 font-serif text-3xl text-charcoal">Two thousand years of Ceylon gems</h2>
+            <p className="mt-4 leading-relaxed text-charcoal/70">
+              Sri Lanka&apos;s gem gravels have produced some of history&apos;s most celebrated sapphires and rubies.
+              We work directly with miners and cutters in Ratnapura to bring that legacy to you — honestly graded
+              and clearly disclosed.
+            </p>
+            <LinkButton href="/about" variant="outline" className="mt-6">Read Our Story</LinkButton>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gold">Sourcing</p>
+            <h2 className="mt-2 font-serif text-3xl text-charcoal">Can&apos;t find the exact stone?</h2>
+            <p className="mt-4 leading-relaxed text-charcoal/70">
+              Tell us what you&apos;re looking for and our sourcing team will search Sri Lanka&apos;s gem markets on
+              your behalf.
+            </p>
+            <LinkButton href="/sourcing" variant="outline" className="mt-6">Submit a Sourcing Request</LinkButton>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -26,7 +26,7 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
         <h1 className="mt-2 font-serif text-4xl text-charcoal">Shop Jewelry</h1>
         <p className="mt-3 max-w-2xl text-charcoal/65">
           Rings, pendants, and earrings crafted around Ceylon gemstones. Request a quote for any piece, or ask us
-          to set a gem you've configured yourself.
+          to set a gem you&apos;ve configured yourself.
         </p>
       </div>
 

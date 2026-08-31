@@ -6,6 +6,7 @@ const VARIANTS = {
   primary: "bg-charcoal text-ivory hover:bg-charcoal-soft",
   gold: "bg-gold text-charcoal hover:bg-gold-soft",
   outline: "border border-charcoal/30 text-charcoal hover:border-charcoal bg-transparent",
+  "outline-light": "border border-ivory/40 text-ivory hover:border-ivory hover:bg-ivory/10 bg-transparent",
   ghost: "text-charcoal hover:bg-charcoal/5",
 };
 
@@ -19,7 +20,7 @@ type Variant = keyof typeof VARIANTS;
 type Size = keyof typeof SIZES;
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-full font-sans tracking-wide transition-colors duration-200 disabled:opacity-50 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 rounded-full font-sans tracking-wide transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none disabled:hover:translate-y-0";
 
 export function Button({
   variant = "primary",

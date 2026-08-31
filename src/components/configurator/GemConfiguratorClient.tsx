@@ -86,8 +86,8 @@ export function GemConfiguratorClient({ minerals, cuts, clarityGrades, isAuthent
 
   return (
     <div className="grid gap-12 lg:grid-cols-2">
-      <div>
-        <div className="rounded-2xl border border-border-subtle bg-gradient-to-b from-ivory-soft to-ivory p-8">
+      <div className="lg:sticky lg:top-28 lg:self-start">
+        <div className="overflow-hidden rounded-2xl bg-charcoal p-8 shadow-xl shadow-charcoal/10">
           {cut && (
             <Gem3D
               cutSlug={cut.slug}
@@ -96,7 +96,8 @@ export function GemConfiguratorClient({ minerals, cuts, clarityGrades, isAuthent
               claritySlug={clarity?.slug ?? "eye-clean"}
               caratWeight={caratWeight}
               seedKey="configurator"
-              className="aspect-square w-full"
+              backgroundColor="#211d1a"
+              className="!rounded-none aspect-square w-full"
             />
           )}
         </div>

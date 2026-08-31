@@ -19,6 +19,8 @@ export interface Gem3DProps {
   seedKey?: string;
   className?: string;
   autoRotate?: boolean;
+  /** Canvas backdrop — defaults to a near-black "velvet display" tone. */
+  backgroundColor?: string;
 }
 
 function GemMesh({ cutSlug, hue, darkness, claritySlug, caratWeight, seedKey }: Omit<Gem3DProps, "className" | "autoRotate">) {
@@ -62,11 +64,21 @@ function GemMesh({ cutSlug, hue, darkness, claritySlug, caratWeight, seedKey }: 
  * remains the catalog-grid thumbnail so pages don't spin up dozens of
  * simultaneous WebGL contexts.
  */
-export function Gem3D({ cutSlug, hue, darkness, claritySlug, caratWeight, seedKey, className, autoRotate = true }: Gem3DProps) {
+export function Gem3D({
+  cutSlug,
+  hue,
+  darkness,
+  claritySlug,
+  caratWeight,
+  seedKey,
+  className,
+  autoRotate = true,
+  backgroundColor = "#231f1a",
+}: Gem3DProps) {
   return (
     <div className={cn("overflow-hidden rounded-xl", className)}>
       <Canvas camera={{ position: [0, 0, 3.2], fov: 40 }} dpr={[1, 2]} gl={{ antialias: true }}>
-        <color attach="background" args={["#231f1a"]} />
+        <color attach="background" args={[backgroundColor]} />
         <ambientLight intensity={0.5} />
         <directionalLight position={[3, 4, 5]} intensity={1.4} />
         <directionalLight position={[-3, -2, -4]} intensity={0.5} />

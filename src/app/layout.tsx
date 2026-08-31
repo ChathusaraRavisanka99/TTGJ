@@ -4,6 +4,8 @@ import "./globals.css";
 import { auth } from "@/lib/auth";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { IntroLoader } from "@/components/layout/IntroLoader";
+import { MainWrapper } from "@/components/layout/MainWrapper";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -31,8 +33,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${cormorant.variable} ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-ivory text-charcoal">
+        <IntroLoader />
         <Navbar user={session?.user ?? null} />
-        <main className="flex-1">{children}</main>
+        <MainWrapper>{children}</MainWrapper>
         <Footer />
       </body>
     </html>

@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { StockBadge } from "@/components/ui/Badge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
+import { Reveal } from "@/components/layout/Reveal";
 
 const METAL_LABELS: Record<string, string> = {
   GOLD: "Gold",
@@ -31,9 +32,11 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
   return (
     <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
       <div className="grid gap-12 lg:grid-cols-2">
-        <MediaGallery media={piece.media} fallbackLabel={piece.name} />
+        <Reveal y={16}>
+          <MediaGallery media={piece.media} fallbackLabel={piece.name} />
+        </Reveal>
 
-        <div>
+        <Reveal delay={0.1} y={16}>
           <div className="flex items-center gap-3">
             <p className="text-xs uppercase tracking-widest text-gold">
               {piece.pieceType.charAt(0) + piece.pieceType.slice(1).toLowerCase()}
@@ -73,7 +76,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
           <div className="mt-8">
             <QuoteRequestPanel isAuthenticated={!!session?.user} jewelryId={piece.id} productLabel={piece.name} />
           </div>
-        </div>
+        </Reveal>
       </div>
     </div>
   );

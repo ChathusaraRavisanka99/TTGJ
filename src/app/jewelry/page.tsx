@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getJewelry } from "@/lib/catalog";
 import { JewelryCard } from "@/components/catalog/JewelryCard";
 import { JewelryFilterBar } from "@/components/catalog/JewelryFilterBar";
+import { RevealGroup, RevealItem } from "@/components/layout/Reveal";
 
 export const metadata: Metadata = { title: "Shop Jewelry" };
 
@@ -37,19 +38,20 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
       {pieces.length === 0 ? (
         <p className="py-20 text-center text-charcoal/50">No jewelry pieces match your filters yet.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+        <RevealGroup className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
           {pieces.map((piece) => (
-            <JewelryCard
-              key={piece.id}
-              slug={piece.slug}
-              name={piece.name}
-              pieceType={piece.pieceType}
-              metalType={piece.metalType}
-              stockStatus={piece.stockStatus}
-              primaryImageUrl={piece.media.find((m) => m.isPrimary)?.url ?? piece.media[0]?.url}
-            />
+            <RevealItem key={piece.id}>
+              <JewelryCard
+                slug={piece.slug}
+                name={piece.name}
+                pieceType={piece.pieceType}
+                metalType={piece.metalType}
+                stockStatus={piece.stockStatus}
+                primaryImageUrl={piece.media.find((m) => m.isPrimary)?.url ?? piece.media[0]?.url}
+              />
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       )}
     </div>
   );

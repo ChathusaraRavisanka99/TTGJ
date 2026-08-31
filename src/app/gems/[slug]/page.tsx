@@ -6,6 +6,7 @@ import { Gem3D } from "@/components/gem-visualizer/Gem3D";
 import { StockBadge } from "@/components/ui/Badge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
+import { Reveal } from "@/components/layout/Reveal";
 
 export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -28,8 +29,8 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
   return (
     <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
       <div className="grid gap-12 lg:grid-cols-2">
-        <div>
-          <div className="rounded-2xl border border-border-subtle bg-gradient-to-b from-ivory-soft to-ivory p-8">
+        <Reveal y={16}>
+          <div className="overflow-hidden rounded-2xl bg-charcoal p-8 shadow-xl shadow-charcoal/10">
             <Gem3D
               cutSlug={gem.cut.slug}
               hue={gem.colorHue}
@@ -37,7 +38,8 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
               claritySlug={gem.clarityGrade.slug}
               caratWeight={gem.caratWeight}
               seedKey={gem.slug}
-              className="aspect-square w-full"
+              backgroundColor="#211d1a"
+              className="!rounded-none aspect-square w-full"
             />
           </div>
           <p className="mt-2 text-center text-xs text-charcoal/45">
@@ -49,9 +51,9 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
               <MediaGallery media={gem.media} fallbackLabel={gem.name} />
             </div>
           )}
-        </div>
+        </Reveal>
 
-        <div>
+        <Reveal delay={0.1} y={16}>
           <div className="flex items-center gap-3">
             <p className="text-xs uppercase tracking-widest text-gold">{gem.mineral.name}</p>
             <StockBadge status={gem.stockStatus} />
@@ -86,7 +88,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
               productLabel={gem.name}
             />
           </div>
-        </div>
+        </Reveal>
       </div>
     </div>
   );

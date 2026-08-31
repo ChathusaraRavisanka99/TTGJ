@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getGemstones, getMasterData } from "@/lib/catalog";
 import { GemCard } from "@/components/catalog/GemCard";
 import { GemFilterBar } from "@/components/catalog/GemFilterBar";
+import { RevealGroup, RevealItem } from "@/components/layout/Reveal";
 
 export const metadata: Metadata = { title: "Shop Gemstones" };
 
@@ -49,26 +50,27 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
       {gems.length === 0 ? (
         <p className="py-20 text-center text-charcoal/50">No gemstones match your filters yet.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+        <RevealGroup className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
           {gems.map((gem) => (
-            <GemCard
-              key={gem.id}
-              slug={gem.slug}
-              name={gem.name}
-              mineralName={gem.mineral.name}
-              cutSlug={gem.cut.slug}
-              cutName={gem.cut.name}
-              caratWeight={gem.caratWeight}
-              colorHue={gem.colorHue}
-              colorLightness={gem.colorLightness}
-              claritySlug={gem.clarityGrade.slug}
-              clarityName={gem.clarityGrade.name}
-              treatmentName={gem.treatment.name}
-              isCeylon={gem.origin.isCeylon}
-              stockStatus={gem.stockStatus}
-            />
+            <RevealItem key={gem.id}>
+              <GemCard
+                slug={gem.slug}
+                name={gem.name}
+                mineralName={gem.mineral.name}
+                cutSlug={gem.cut.slug}
+                cutName={gem.cut.name}
+                caratWeight={gem.caratWeight}
+                colorHue={gem.colorHue}
+                colorLightness={gem.colorLightness}
+                claritySlug={gem.clarityGrade.slug}
+                clarityName={gem.clarityGrade.name}
+                treatmentName={gem.treatment.name}
+                isCeylon={gem.origin.isCeylon}
+                stockStatus={gem.stockStatus}
+              />
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       )}
     </div>
   );

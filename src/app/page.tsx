@@ -5,6 +5,16 @@ import { LinkButton } from "@/components/ui/Button";
 import { GemCard } from "@/components/catalog/GemCard";
 import { Marquee } from "@/components/layout/Marquee";
 import { Reveal, RevealGroup, RevealItem } from "@/components/layout/Reveal";
+import { HeroSlideshow } from "@/components/layout/HeroSlideshow";
+
+const HERO_SLIDES = [
+  { src: "/images/jewelry/sapphire-ring.jpg", alt: "Oval Ceylon blue sapphire ring in 18K gold" },
+  { src: "/images/gems/padparadscha-sapphire.jpg", alt: "Padparadscha sapphire, cushion cut" },
+  { src: "/images/gems/alexandrite.jpg", alt: "Colour-change alexandrite" },
+  { src: "/images/gems/cats-eye-chrysoberyl.jpg", alt: "Cat's eye chrysoberyl cabochon" },
+  { src: "/images/gems/ruby.jpg", alt: "Faceted ruby" },
+  { src: "/images/gems/blue-sapphire.jpg", alt: "Cornflower blue sapphire" },
+];
 
 const MINERAL_MARQUEE = [
   "Blue Sapphire",
@@ -29,13 +39,7 @@ export default async function HomePage() {
     <div>
       {/* ---------- Hero ---------- */}
       <section className="relative flex h-screen min-h-[720px] w-full items-center overflow-hidden bg-charcoal">
-        <Image
-          src="/images/jewelry/sapphire-ring.jpg"
-          alt="Oval Ceylon blue sapphire ring"
-          fill
-          priority
-          className="object-cover opacity-70"
-        />
+        <HeroSlideshow images={HERO_SLIDES} />
         <div
           className="pointer-events-none absolute inset-0"
           style={{

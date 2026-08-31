@@ -40,7 +40,7 @@ export default async function HomePage() {
   return (
     <div>
       {/* ---------- Hero ---------- */}
-      <section className="relative flex h-screen min-h-[720px] w-full items-center overflow-hidden bg-charcoal">
+      <section className="relative flex h-screen min-h-[720px] max-h-[920px] w-full items-center overflow-hidden bg-charcoal">
         <HeroSlideshow images={HERO_SLIDES} />
         <div
           className="pointer-events-none absolute inset-0"

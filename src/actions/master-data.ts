@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { slugify } from "@/lib/utils";
-import { mineralSchema, clarityGradeSchema, simpleMasterDataSchema } from "@/lib/validation/catalog";
+import { mineralSchema, clarityGradeSchema, simpleMasterDataSchema, certLabSchema } from "@/lib/validation/catalog";
 import type { ActionResult } from "./auth";
 
 function obj(formData: FormData) {
@@ -113,5 +113,45 @@ export async function toggleMineralActive(id: string, active: boolean): Promise<
   await requireAdmin();
   await prisma.mineral.update({ where: { id }, data: { active } });
   revalidatePath("/admin/master-data/minerals");
+  return { ok: true };
+}
+
+export async function createCertLab(formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = certLabSchema.safeParse(obj(formData));
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid certification lab." };
+  const d = parsed.data;
+  await prisma.certificationLab.create({
+    data: { name: d.name, slug: slugify(d.name), verifyUrlTemplate: d.verifyUrlTemplate || undefined, active: d.active },
+  });
+  revalidatePath("/admin/master-data/certification-labs");
+  return { ok: true };
+}
+
+export async function updateCertLab(id: string, formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = certLabSchema.safeParse(obj(formData));
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid certification lab." };
+  const d = parsed.data;
+  await prisma.certificationLab.update({
+    where: { id },
+    data: { name: d.name, verifyUrlTemplate: d.verifyUrlTemplate || null, active: d.active },
+  });
+  revalidatePath("/admin/master-data/certification-labs");
+  revalidatePath("/admin/gems");
+  return { ok: true };
+}
+
+export async function deleteCertLab(id: string): Promise<ActionResult> {
+  await requireAdmin();
+  await prisma.certificationLab.delete({ where: { id } });
+  revalidatePath("/admin/master-data/certification-labs");
+  return { ok: true };
+}
+
+export async function toggleCertLabActive(id: string, active: boolean): Promise<ActionResult> {
+  await requireAdmin();
+  await prisma.certificationLab.update({ where: { id }, data: { active } });
+  revalidatePath("/admin/master-data/certification-labs");
   return { ok: true };
 }

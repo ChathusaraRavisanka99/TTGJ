@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ShieldCheck, FileText, ExternalLink } from "lucide-react";
 import { getGemstoneBySlug } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
+import { buildCertVerifyUrl } from "@/lib/utils";
 import { StockBadge } from "@/components/ui/Badge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
@@ -24,6 +26,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
   if (!gem || !gem.isPublished) notFound();
 
   const dimensions = [gem.lengthMm, gem.widthMm, gem.depthMm].filter(Boolean).join(" x ");
+  const verifyUrl = buildCertVerifyUrl(gem.certLab?.verifyUrlTemplate, gem.certReportNumber);
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
@@ -56,9 +59,34 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
             {gem.variety && <Spec label="Variety" value={gem.variety} />}
             {gem.symmetryNotes && <Spec label="Symmetry / Polish" value={gem.symmetryNotes} />}
             {(gem.certLab || gem.certReportNumber) && (
-              <Spec label="Certification" value={[gem.certLab, gem.certReportNumber].filter(Boolean).join(" · ")} />
+              <Spec label="Certification" value={[gem.certLab?.name, gem.certReportNumber].filter(Boolean).join(" · ")} />
             )}
           </dl>
+
+          {(verifyUrl || gem.certFileUrl) && (
+            <div className="mt-6 flex flex-wrap gap-3">
+              {verifyUrl && (
+                <a
+                  href={verifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle px-4 py-2 text-xs font-medium text-charcoal/80 transition-colors hover:border-gold hover:text-charcoal"
+                >
+                  <ShieldCheck size={14} /> Verify Certificate <ExternalLink size={12} />
+                </a>
+              )}
+              {gem.certFileUrl && (
+                <a
+                  href={gem.certFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle px-4 py-2 text-xs font-medium text-charcoal/80 transition-colors hover:border-gold hover:text-charcoal"
+                >
+                  <FileText size={14} /> View Certificate
+                </a>
+              )}
+            </div>
+          )}
 
           <div className="mt-8">
             <QuoteRequestPanel

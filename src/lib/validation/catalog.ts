@@ -19,7 +19,7 @@ export const gemstoneSchema = z.object({
   originId: z.string().min(1, "Select an origin"),
   symmetryNotes: z.string().max(500).optional().or(z.literal("")),
   polishNotes: z.string().max(500).optional().or(z.literal("")),
-  certLab: z.string().max(100).optional().or(z.literal("")),
+  certLabId: z.string().optional().or(z.literal("")),
   certReportNumber: z.string().max(100).optional().or(z.literal("")),
   certFileUrl: z.string().max(500).optional().or(z.literal("")),
   stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
@@ -60,5 +60,21 @@ export const clarityGradeSchema = z.object({
 
 export const simpleMasterDataSchema = z.object({
   name: z.string().min(2).max(100),
+  active: z.coerce.boolean().default(true),
+});
+
+export const certLabSchema = z.object({
+  name: z.string().min(2).max(100),
+  // Must contain the literal token `{certId}` if present — checked so a
+  // template without it (which would silently produce a broken link for
+  // every gem) is rejected at save time instead of at render time.
+  verifyUrlTemplate: z
+    .string()
+    .max(500)
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || v.includes("{certId}"), {
+      message: "The verification URL must contain the {certId} placeholder.",
+    }),
   active: z.coerce.boolean().default(true),
 });

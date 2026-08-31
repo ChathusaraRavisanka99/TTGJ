@@ -1,10 +1,13 @@
 "use server";
 
+import { unlink } from "fs/promises";
+import path from "path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { slugify } from "@/lib/utils";
+import { saveCertificateFile, UPLOAD_DIR } from "@/lib/media";
 import { gemstoneSchema, jewelrySchema } from "@/lib/validation/catalog";
 import type { ActionResult } from "./auth";
 
@@ -53,7 +56,7 @@ export async function createGemstone(formData: FormData): Promise<ActionResult> 
       originId: data.originId,
       symmetryNotes: data.symmetryNotes || undefined,
       polishNotes: data.polishNotes || undefined,
-      certLab: data.certLab || undefined,
+      certLabId: data.certLabId || undefined,
       certReportNumber: data.certReportNumber || undefined,
       certFileUrl: data.certFileUrl || undefined,
       stockStatus: data.stockStatus,
@@ -93,7 +96,11 @@ export async function updateGemstone(id: string, formData: FormData): Promise<Ac
       originId: data.originId,
       symmetryNotes: data.symmetryNotes || undefined,
       polishNotes: data.polishNotes || undefined,
-      certLab: data.certLab || undefined,
+      // Unlike the other optional fields above, an empty selection here has
+      // to actually clear a previously-set lab (picking "None" after having
+      // picked a lab), so this uses `null` rather than `undefined` — Prisma
+      // treats `undefined` as "leave the existing value alone".
+      certLabId: data.certLabId || null,
       certReportNumber: data.certReportNumber || undefined,
       certFileUrl: data.certFileUrl || undefined,
       stockStatus: data.stockStatus,
@@ -109,6 +116,51 @@ export async function updateGemstone(id: string, formData: FormData): Promise<Ac
 export async function deleteGemstone(id: string): Promise<ActionResult> {
   await requireAdmin();
   await prisma.gemstone.delete({ where: { id } });
+  revalidatePath("/admin/gems");
+  return { ok: true };
+}
+
+export async function uploadCertificateFile(gemstoneId: string, formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) return { ok: false, error: "No file provided." };
+
+  const gem = await prisma.gemstone.findUnique({ where: { id: gemstoneId }, select: { certFileUrl: true } });
+  if (!gem) return { ok: false, error: "Gemstone not found." };
+
+  try {
+    const saved = await saveCertificateFile(file);
+    await prisma.gemstone.update({ where: { id: gemstoneId }, data: { certFileUrl: saved.url } });
+
+    // Replacing an existing attachment — clean up the old file on disk.
+    if (gem.certFileUrl) {
+      const oldFilename = gem.certFileUrl.split("/").pop();
+      if (oldFilename) await unlink(path.join(UPLOAD_DIR, oldFilename)).catch(() => {});
+    }
+
+    revalidatePath(`/admin/gems/${gemstoneId}`);
+    revalidatePath("/admin/gems");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Upload failed." };
+  }
+}
+
+export async function removeCertificateFile(gemstoneId: string): Promise<ActionResult> {
+  await requireAdmin();
+
+  const gem = await prisma.gemstone.findUnique({ where: { id: gemstoneId }, select: { certFileUrl: true } });
+  if (!gem) return { ok: false, error: "Gemstone not found." };
+
+  await prisma.gemstone.update({ where: { id: gemstoneId }, data: { certFileUrl: null } });
+
+  if (gem.certFileUrl) {
+    const filename = gem.certFileUrl.split("/").pop();
+    if (filename) await unlink(path.join(UPLOAD_DIR, filename)).catch(() => {});
+  }
+
+  revalidatePath(`/admin/gems/${gemstoneId}`);
   revalidatePath("/admin/gems");
   return { ok: true };
 }

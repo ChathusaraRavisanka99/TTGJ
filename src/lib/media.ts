@@ -44,4 +44,38 @@ export async function saveUploadedMedia(file: File): Promise<SavedMedia> {
   return { url: `/api/media/${filename}`, type: "VIDEO" };
 }
 
+const CERT_DOCUMENT_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
+
+// Certification files (lab report scans) are a single attachment on the
+// Gemstone itself, not a MediaAsset gallery entry — so this is deliberately
+// separate from saveUploadedMedia rather than shoehorning a PDF through the
+// IMAGE/VIDEO MediaType enum.
+export async function saveCertificateFile(file: File): Promise<{ url: string }> {
+  await mkdir(UPLOAD_DIR, { recursive: true });
+
+  if (!CERT_DOCUMENT_TYPES.has(file.type)) {
+    throw new Error("Unsupported file type. Please upload a PDF, JPEG, PNG, or WEBP certificate.");
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const id = randomUUID();
+
+  if (file.type === "application/pdf") {
+    const filename = `${id}.pdf`;
+    await writeFile(path.join(UPLOAD_DIR, filename), buffer);
+    return { url: `/api/media/${filename}` };
+  }
+
+  // Scanned/photographed certificates: optimize like any other image, but
+  // keep more headroom than product photos so fine print stays legible.
+  const filename = `${id}.webp`;
+  const optimized = await sharp(buffer)
+    .rotate()
+    .resize({ width: 2200, height: 2200, fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 90 })
+    .toBuffer();
+  await writeFile(path.join(UPLOAD_DIR, filename), optimized);
+  return { url: `/api/media/${filename}` };
+}
+
 export { UPLOAD_DIR };

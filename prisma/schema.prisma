@@ -135,6 +135,24 @@ model Origin {
   gemstones Gemstone[]
 }
 
+model CertificationLab {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  // Optional online report-verification URL. Contains the literal token
+  // `{certId}`, which the storefront substitutes with the gemstone's
+  // certReportNumber to build a "Verify Certificate" link — e.g.
+  // "https://www.gia.edu/report-check?reportno={certId}". Left blank for
+  // labs with no public lookup tool.
+  verifyUrlTemplate String?
+
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  gemstones Gemstone[]
+}
+
 // ---------- Catalog ----------
 
 enum StockStatus {
@@ -163,8 +181,8 @@ model Gemstone {
 
   // Configurator-compatible color spec (HSL)
   colorHue        Int
-  colorSaturation Int @default(70)
-  colorLightness  Int @default(50)
+  colorSaturation Int     @default(70)
+  colorLightness  Int     @default(50)
   colorLabel      String?
 
   clarityGradeId String
@@ -179,7 +197,8 @@ model Gemstone {
   symmetryNotes String?
   polishNotes   String?
 
-  certLab          String?
+  certLabId        String?
+  certLab          CertificationLab? @relation(fields: [certLabId], references: [id], onDelete: SetNull)
   certReportNumber String?
   certFileUrl      String?
 
@@ -246,12 +265,12 @@ model JewelryPiece {
 }
 
 model JewelryGemstoneLink {
-  id             String        @id @default(cuid())
-  jewelryId      String
-  jewelry        JewelryPiece  @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
-  gemstoneId     String?
-  gemstone       Gemstone?     @relation(fields: [gemstoneId], references: [id])
-  freeformDesc   String?
+  id           String       @id @default(cuid())
+  jewelryId    String
+  jewelry      JewelryPiece @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
+  gemstoneId   String?
+  gemstone     Gemstone?    @relation(fields: [gemstoneId], references: [id])
+  freeformDesc String?
 
   @@index([jewelryId])
 }
@@ -304,7 +323,7 @@ model QuoteRequest {
 
   productType ProductType?
   gemstoneId  String?
-  gemstone    Gemstone?    @relation(fields: [gemstoneId], references: [id])
+  gemstone    Gemstone?     @relation(fields: [gemstoneId], references: [id])
   jewelryId   String?
   jewelry     JewelryPiece? @relation(fields: [jewelryId], references: [id])
 
@@ -312,7 +331,7 @@ model QuoteRequest {
   // rather than an existing catalog item.
   configuredSpec Json?
 
-  quantity Int    @default(1)
+  quantity Int     @default(1)
   note     String? @db.Text
 
   noteFlaggedForPrice Boolean @default(false)

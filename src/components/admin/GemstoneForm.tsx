@@ -23,6 +23,7 @@ interface GemstoneFormProps {
   clarityGrades: Option[];
   treatments: Option[];
   origins: Option[];
+  certificationLabs: Option[];
   initial?: {
     id: string;
     name: string;
@@ -43,7 +44,7 @@ interface GemstoneFormProps {
     originId: string;
     symmetryNotes: string | null;
     polishNotes: string | null;
-    certLab: string | null;
+    certLabId: string | null;
     certReportNumber: string | null;
     certFileUrl: string | null;
     stockStatus: string;
@@ -51,7 +52,7 @@ interface GemstoneFormProps {
   };
 }
 
-export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origins, initial }: GemstoneFormProps) {
+export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origins, certificationLabs, initial }: GemstoneFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -244,12 +245,22 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
             <Input id="polishNotes" name="polishNotes" defaultValue={initial?.polishNotes ?? ""} />
           </div>
           <div>
-            <Label htmlFor="certLab">Certification Lab</Label>
-            <Input id="certLab" name="certLab" defaultValue={initial?.certLab ?? ""} placeholder="E.g. GIA, GRS, AIGS" />
+            <Label htmlFor="certLabId">Certification Lab</Label>
+            <Select id="certLabId" name="certLabId" defaultValue={initial?.certLabId ?? ""}>
+              <option value="">None</option>
+              {certificationLabs.map((lab) => <option key={lab.id} value={lab.id}>{lab.name}</option>)}
+            </Select>
+            <p className="mt-1 text-xs text-charcoal/45">
+              Manage the list (and each lab&apos;s verification URL) under Master Data → Certification Labs.
+            </p>
           </div>
           <div>
             <Label htmlFor="certReportNumber">Certificate Report #</Label>
             <Input id="certReportNumber" name="certReportNumber" defaultValue={initial?.certReportNumber ?? ""} />
+            <p className="mt-1 text-xs text-charcoal/45">
+              If the selected lab has a verification URL configured, this number is substituted into it to build a
+              &ldquo;Verify Certificate&rdquo; link on the public gem page.
+            </p>
           </div>
         </section>
 

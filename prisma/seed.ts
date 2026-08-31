@@ -6,6 +6,7 @@ import {
   CLARITY_GRADES,
   TREATMENTS,
   ORIGINS,
+  CERTIFICATION_LABS,
 } from "../src/lib/gem-constants";
 
 const prisma = new PrismaClient();
@@ -56,6 +57,14 @@ async function main() {
     await prisma.origin.upsert({ where: { slug: o.slug }, update: { name: o.name, isCeylon: o.isCeylon }, create: o });
   }
 
+  for (const [i, lab] of CERTIFICATION_LABS.entries()) {
+    await prisma.certificationLab.upsert({
+      where: { slug: lab.slug },
+      update: { name: lab.name, verifyUrlTemplate: lab.verifyUrlTemplate, sortOrder: i },
+      create: { name: lab.name, slug: lab.slug, verifyUrlTemplate: lab.verifyUrlTemplate, sortOrder: i },
+    });
+  }
+
   console.log("Seeding accounts...");
 
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@ratnavue.com";
@@ -91,6 +100,7 @@ async function main() {
   const clarityBySlug = Object.fromEntries((await prisma.clarityGrade.findMany()).map((c) => [c.slug, c]));
   const treatmentBySlug = Object.fromEntries((await prisma.treatment.findMany()).map((t) => [t.slug, t]));
   const originBySlug = Object.fromEntries((await prisma.origin.findMany()).map((o) => [o.slug, o]));
+  const labBySlug = Object.fromEntries((await prisma.certificationLab.findMany()).map((l) => [l.slug, l]));
 
   const demoGems = [
     {
@@ -107,6 +117,10 @@ async function main() {
       origin: "ceylon",
       colorLabel: "Royal Blue",
       image: "/images/gems/blue-sapphire.jpg",
+      // Demo-only placeholder report number, wired up to show off the
+      // "Verify Certificate" link on the gem detail page.
+      certLab: "gia",
+      certReportNumber: "2225845812",
     },
     {
       name: "Padparadscha Sapphire, Cushion",
@@ -122,6 +136,8 @@ async function main() {
       origin: "ceylon",
       colorLabel: "Sunset Pink-Orange",
       image: "/images/gems/padparadscha-sapphire.jpg",
+      certLab: undefined as string | undefined,
+      certReportNumber: undefined as string | undefined,
     },
     {
       name: "Pigeon's Blood Ruby",
@@ -137,6 +153,8 @@ async function main() {
       origin: "other-origin",
       colorLabel: "Pigeon's Blood Red",
       image: "/images/gems/ruby.jpg",
+      certLab: undefined as string | undefined,
+      certReportNumber: undefined as string | undefined,
     },
     {
       name: "Ceylon Cat's Eye Chrysoberyl",
@@ -152,6 +170,8 @@ async function main() {
       origin: "ceylon",
       colorLabel: "Honey Gold",
       image: "/images/gems/cats-eye-chrysoberyl.jpg",
+      certLab: undefined as string | undefined,
+      certReportNumber: undefined as string | undefined,
     },
     {
       name: "Colour-Change Alexandrite",
@@ -167,6 +187,8 @@ async function main() {
       origin: "ceylon",
       colorLabel: "Forest Green (Daylight)",
       image: "/images/gems/alexandrite.jpg",
+      certLab: undefined as string | undefined,
+      certReportNumber: undefined as string | undefined,
     },
     {
       name: "Vivid Pink Spinel",
@@ -182,6 +204,8 @@ async function main() {
       origin: "ceylon",
       colorLabel: "Hot Pink",
       image: undefined as string | undefined,
+      certLab: undefined as string | undefined,
+      certReportNumber: undefined as string | undefined,
     },
   ];
 
@@ -201,6 +225,8 @@ async function main() {
       clarityGradeId: clarityBySlug[g.clarity].id,
       treatmentId: treatmentBySlug[g.treatment].id,
       originId: originBySlug[g.origin].id,
+      certLabId: g.certLab ? labBySlug[g.certLab]?.id : undefined,
+      certReportNumber: g.certReportNumber,
       stockStatus: "AVAILABLE" as const,
       isPublished: true,
     };

@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import { auth } from "@/lib/auth";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { IntroLoader } from "@/components/layout/IntroLoader";
+import { SiteChrome } from "@/components/layout/SiteChrome";
 import { MainWrapper } from "@/components/layout/MainWrapper";
 
 const cormorant = Cormorant_Garamond({
@@ -33,10 +31,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${cormorant.variable} ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-ivory text-charcoal">
-        <IntroLoader />
-        <Navbar user={session?.user ?? null} />
-        <MainWrapper>{children}</MainWrapper>
-        <Footer />
+        <SiteChrome user={session?.user ?? null}>
+          <MainWrapper>{children}</MainWrapper>
+        </SiteChrome>
       </body>
     </html>
   );

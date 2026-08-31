@@ -208,6 +208,19 @@ export const ORIGINS = [
   { name: "Other Origin", slug: "other-origin", isCeylon: false },
 ];
 
+// Seed data for known gemological labs. `verifyUrlTemplate` is only
+// pre-filled for GIA, whose report-check URL scheme is well documented and
+// stable (https://www.gia.edu/report-check). The rest are seeded blank —
+// admins fill in each lab's actual lookup URL themselves via
+// /admin/master-data/certification-labs (or add labs not listed here).
+export const CERTIFICATION_LABS = [
+  { name: "GIA", slug: "gia", verifyUrlTemplate: "https://www.gia.edu/report-check?reportno={certId}" },
+  { name: "GRS", slug: "grs", verifyUrlTemplate: null as string | null },
+  { name: "AIGS", slug: "aigs", verifyUrlTemplate: null as string | null },
+  { name: "Gübelin", slug: "gubelin", verifyUrlTemplate: null as string | null },
+  { name: "IGI", slug: "igi", verifyUrlTemplate: null as string | null },
+];
+
 export const PIECE_TYPES = ["RING", "NECKLACE", "EARRINGS", "BRACELET", "PENDANT", "BROOCH", "OTHER"] as const;
 
 export const METAL_TYPES = [

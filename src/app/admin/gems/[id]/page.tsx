@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getMasterData } from "@/lib/catalog";
 import { GemstoneForm } from "@/components/admin/GemstoneForm";
 import { MediaManager } from "@/components/admin/MediaManager";
+import { CertificateManager } from "@/components/admin/CertificateManager";
 
 export default async function EditGemstonePage({ params }: PageProps<"/admin/gems/[id]">) {
   const { id } = await params;
@@ -24,6 +25,7 @@ export default async function EditGemstonePage({ params }: PageProps<"/admin/gem
           clarityGrades={masterData.clarityGrades}
           treatments={masterData.treatments}
           origins={masterData.origins}
+          certificationLabs={masterData.certificationLabs}
           initial={gem}
         />
       </div>
@@ -32,6 +34,16 @@ export default async function EditGemstonePage({ params }: PageProps<"/admin/gem
         <p className="font-serif text-xl text-charcoal">Media</p>
         <div className="mt-4">
           <MediaManager media={gem.media} gemstoneId={gem.id} />
+        </div>
+      </div>
+
+      <div className="mt-10 border-t border-border-subtle pt-8">
+        <p className="font-serif text-xl text-charcoal">Certificate File</p>
+        <p className="mt-1 text-sm text-charcoal/60">
+          Attach a scan or photo of the lab report itself, separate from the online verification link above.
+        </p>
+        <div className="mt-4">
+          <CertificateManager gemstoneId={gem.id} certFileUrl={gem.certFileUrl} />
         </div>
       </div>
     </div>

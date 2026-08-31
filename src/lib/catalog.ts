@@ -64,6 +64,7 @@ export async function getGemstoneBySlug(slug: string) {
       clarityGrade: true,
       treatment: true,
       origin: true,
+      certLab: true,
       media: { orderBy: { sortOrder: "asc" } },
     },
   });
@@ -113,12 +114,13 @@ export async function getJewelryBySlug(slug: string) {
 }
 
 export async function getMasterData() {
-  const [minerals, cuts, clarityGrades, treatments, origins] = await Promise.all([
+  const [minerals, cuts, clarityGrades, treatments, origins, certificationLabs] = await Promise.all([
     prisma.mineral.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.cut.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.clarityGrade.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.treatment.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.origin.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.certificationLab.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
   ]);
-  return { minerals, cuts, clarityGrades, treatments, origins };
+  return { minerals, cuts, clarityGrades, treatments, origins, certificationLabs };
 }

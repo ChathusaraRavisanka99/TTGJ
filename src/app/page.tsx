@@ -8,6 +8,8 @@ import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 import { Marquee } from "@/components/layout/Marquee";
 import { Reveal, RevealGroup, RevealItem } from "@/components/layout/Reveal";
 import { HeroSlideshow } from "@/components/layout/HeroSlideshow";
+import { HeroScrollCue } from "@/components/layout/HeroScrollCue";
+import { SectionArrow } from "@/components/layout/SectionArrow";
 
 const MINERAL_MARQUEE = [
   { label: "Blue Sapphire", color: "#3a5f9e" },
@@ -73,11 +75,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="absolute inset-x-0 bottom-8 flex flex-col items-center gap-3 text-ivory/50">
-          <span className="text-[10px] uppercase tracking-[0.35em]">Scroll</span>
-          <div className="h-9 w-px bg-ivory/30" />
-          <div className="animate-scroll-cue h-1.5 w-1.5 rounded-full bg-gold" />
-        </div>
+        <HeroScrollCue target="featured" />
       </section>
 
       {/* ---------- Marquee ---------- */}
@@ -87,7 +85,7 @@ export default async function HomePage() {
 
       {/* ---------- Featured ---------- */}
       {featuredGems.length > 0 && (
-        <section className="mx-auto flex min-h-dvh w-full max-w-[120rem] snap-start flex-col justify-center px-5 py-24 sm:px-8 sm:py-32 lg:px-12 xl:px-16">
+        <section id="featured" className="relative mx-auto flex min-h-dvh w-full max-w-[120rem] snap-start flex-col justify-center px-5 py-24 sm:px-8 sm:py-32 lg:px-12 xl:px-16">
           <Reveal className="mb-14 flex items-end justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-gold">Recently Added</p>
@@ -121,11 +119,12 @@ export default async function HomePage() {
               </RevealItem>
             ))}
           </RevealGroup>
+          <SectionArrow target="editorial" tone="dark" />
         </section>
       )}
 
       {/* ---------- Editorial statement ---------- */}
-      <section className="flex min-h-dvh items-center border-y border-border-subtle bg-charcoal py-28 snap-start sm:py-36">
+      <section id="editorial" className="relative flex min-h-dvh items-center border-y border-border-subtle bg-charcoal py-28 snap-start sm:py-36">
         <Reveal className="mx-auto max-w-4xl px-5 text-center sm:px-8">
           <p className="font-serif text-3xl leading-snug text-ivory sm:text-5xl">
             &ldquo;{content.editorialQuote} <span className="text-gold-soft">{content.editorialQuoteHighlight}</span>&rdquo;
@@ -133,61 +132,60 @@ export default async function HomePage() {
           <div className="mx-auto mt-8 h-px w-16 bg-gold" />
           <p className="mt-6 text-xs uppercase tracking-[0.3em] text-ivory/45">{content.editorialAttribution}</p>
         </Reveal>
+        <SectionArrow target="heritage-sourcing" tone="light" />
       </section>
 
       {/* ---------- Heritage / Sourcing ---------- */}
-      {/* Same treatment as the hero: full-bleed photo, dark-to-transparent
-          scrim from the left, copy overlaid straight on the image — just
-          static banners rather than a slideshow. Side by side at lg+ (one
-          grid row, so both banners stay the same height); stacked below
-          that. Deliberately NOT forced to min-h-dvh/snap: even stacked,
-          the pair runs well past one viewport, and snapping the section's
-          top to the viewport top used to cut the second banner off
-          mid-image. */}
-      <section className="bg-ivory-soft py-24 sm:py-32">
-        <div className="mx-auto grid max-w-[120rem] gap-8 px-5 sm:gap-10 sm:px-8 lg:grid-cols-2 lg:px-12 xl:px-16">
-          <Reveal>
-            <div className="relative flex h-[28rem] w-full items-center overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10 sm:h-[32rem] lg:h-[30rem]">
-              <Image src={content.heritageImage} alt={content.heritageHeading} fill className="object-cover" />
-              <div
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(90deg, rgba(33,29,26,0.92) 0%, rgba(33,29,26,0.75) 32%, rgba(33,29,26,0.35) 60%, transparent 100%)",
-                }}
-              />
-              <div className="relative max-w-md px-8 sm:px-12 lg:px-14">
-                <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.heritageKicker}</p>
-                <h2 className="mt-3 font-serif text-3xl text-ivory sm:text-4xl">{content.heritageHeading}</h2>
-                <p className="mt-4 leading-relaxed text-ivory/70">{content.heritageBody}</p>
-                <LinkButton href="/about" variant="outline-light" className="mt-6">Read Our Story</LinkButton>
-              </div>
-            </div>
-          </Reveal>
+      {/* Edge-to-edge split — no gap, no rounded corners, no card shadow —
+          and text anchored at the bottom with an upward dark-to-clear
+          scrim, rather than the earlier rounded-card / left-anchored
+          treatment. Side by side at lg+, flush-stacked below that.
+          Deliberately NOT forced to min-h-dvh/snap: even stacked, the
+          pair runs well past one viewport, and snapping the section's top
+          to the viewport top used to cut the second banner off mid-image. */}
+      <section id="heritage-sourcing" className="relative lg:grid lg:grid-cols-2">
+        <Reveal className="relative h-[26rem] w-full overflow-hidden bg-charcoal sm:h-[32rem] lg:h-[40rem]">
+          <Image src={content.heritageImage} alt={content.heritageHeading} fill className="object-cover" />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "linear-gradient(0deg, rgba(20,17,14,0.92) 10%, rgba(20,17,14,0.15) 65%, transparent 100%)" }}
+          />
+          <div className="relative flex h-full flex-col justify-end px-8 pb-12 sm:px-12 lg:px-14">
+            <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.heritageKicker}</p>
+            <h2 className="mt-3 max-w-md font-serif text-3xl text-ivory sm:text-4xl">{content.heritageHeading}</h2>
+            <p className="mt-4 max-w-md leading-relaxed text-ivory/70">{content.heritageBody}</p>
+            <Link
+              href="/about"
+              className="mt-6 inline-flex w-fit items-center text-xs font-bold uppercase tracking-wide text-gold-soft transition-colors hover:text-ivory"
+            >
+              Read Our Story →
+            </Link>
+          </div>
+        </Reveal>
 
-          <Reveal delay={0.1}>
-            <div className="relative flex h-[28rem] w-full items-center overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10 sm:h-[32rem] lg:h-[30rem]">
-              <Image src={content.sourcingImage} alt={content.sourcingHeading} fill className="object-cover" />
-              <div
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(90deg, rgba(33,29,26,0.92) 0%, rgba(33,29,26,0.75) 32%, rgba(33,29,26,0.35) 60%, transparent 100%)",
-                }}
-              />
-              <div className="relative max-w-md px-8 sm:px-12 lg:px-14">
-                <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.sourcingKicker}</p>
-                <h2 className="mt-3 font-serif text-3xl text-ivory sm:text-4xl">{content.sourcingHeading}</h2>
-                <p className="mt-4 leading-relaxed text-ivory/70">{content.sourcingBody}</p>
-                <LinkButton href="/sourcing" variant="outline-light" className="mt-6">Submit a Sourcing Request</LinkButton>
-              </div>
-            </div>
-          </Reveal>
-        </div>
+        <Reveal delay={0.1} className="relative h-[26rem] w-full overflow-hidden bg-charcoal sm:h-[32rem] lg:h-[40rem]">
+          <Image src={content.sourcingImage} alt={content.sourcingHeading} fill className="object-cover" />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "linear-gradient(0deg, rgba(20,17,14,0.92) 10%, rgba(20,17,14,0.15) 65%, transparent 100%)" }}
+          />
+          <div className="relative flex h-full flex-col justify-end px-8 pb-12 sm:px-12 lg:px-14">
+            <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.sourcingKicker}</p>
+            <h2 className="mt-3 max-w-md font-serif text-3xl text-ivory sm:text-4xl">{content.sourcingHeading}</h2>
+            <p className="mt-4 max-w-md leading-relaxed text-ivory/70">{content.sourcingBody}</p>
+            <Link
+              href="/sourcing"
+              className="mt-6 inline-flex w-fit items-center text-xs font-bold uppercase tracking-wide text-gold-soft transition-colors hover:text-ivory"
+            >
+              Submit a Sourcing Request →
+            </Link>
+          </div>
+        </Reveal>
+        <SectionArrow target="closing-cta" tone="light" />
       </section>
 
       {/* ---------- Closing CTA ---------- */}
-      <section className="relative flex min-h-dvh items-center overflow-hidden bg-charcoal py-28 snap-start sm:py-36">
+      <section id="closing-cta" className="relative flex min-h-dvh items-center overflow-hidden bg-charcoal py-28 snap-start sm:py-36">
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{ background: "radial-gradient(50% 60% at 50% 100%, rgba(179,145,90,0.18), transparent 70%)" }}

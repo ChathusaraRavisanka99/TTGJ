@@ -103,9 +103,9 @@ export const DEFAULT_ABOUT_CONTENT: AboutContent = {
     "The island's gem-bearing gravels, known locally as illam, have produced sapphires and rubies coveted by royal courts from Rome to the Mughal empire. That legacy is still being pulled from the earth today, stone by stone, largely by hand.",
   introBody2:
     "Ratnavue is built around that heritage: every gemstone is meant to be honestly graded and clearly disclosed, cut to standards that respect its natural character rather than force it into a trend.",
-  breakImage: "/images/heritage/ratnapura-sapphire-twin-crystal.jpg",
+  breakImage: "/images/hero/01-loose-ruby-crystals.jpg",
   breakCaptionKicker: "Rough to reveal",
-  breakCaptionBody: "A raw sapphire crystal, as it comes out of the earth — every facet still to be discovered by the cutter's hand.",
+  breakCaptionBody: "Raw ruby crystals, as they come out of the earth — every facet still to be discovered by the cutter's hand.",
   quote: "The stone should always come",
   quoteHighlight: "first.",
   principle1Title: "Honest grading",

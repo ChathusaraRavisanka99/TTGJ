@@ -18,7 +18,14 @@ export default async function AboutPage() {
   return (
     <div>
       {/* ---------- Page hero ---------- */}
-      <section className="relative flex h-[26rem] w-full items-end overflow-hidden bg-charcoal sm:h-[30rem] lg:h-[34rem]">
+      {/* `h-dvh`, not a fixed rem height: tracks the real visible viewport
+          on mobile (see the homepage hero for the fuller iOS/Android
+          rationale), and object-cover on the image below crops to whatever
+          that resolved box ends up being — the "optimal crop for the box"
+          part is just what object-cover already does once the box itself
+          is sized correctly. Capped at lg+ so it doesn't balloon on tall
+          desktop monitors. */}
+      <section className="relative flex h-dvh min-h-[520px] w-full items-end overflow-hidden bg-charcoal lg:max-h-[840px]">
         <Image src={content.heroImage} alt={content.heroHeading} fill priority className="object-cover" />
         <div
           className="pointer-events-none absolute inset-0"
@@ -37,19 +44,20 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ---------- Intro: sticky label + wide column, not a centered block ---------- */}
+      {/* ---------- Intro ---------- */}
+      {/* One flush-left column, not an indented label+text split — the
+          earlier asymmetric grid put this section's text at a different
+          left edge than the image break and principles sections below it,
+          which broke the page's vertical rhythm as you scrolled. Every
+          section now starts at the same edge. */}
       <section className="mx-auto max-w-[120rem] px-5 py-20 sm:px-8 sm:py-28 lg:px-12 xl:px-16">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_2.2fr] lg:gap-20">
-          <Reveal className="lg:sticky lg:top-28 lg:self-start">
-            <p className="text-xs uppercase tracking-[0.3em] text-gold">{content.introLabel}</p>
-            <div className="mt-4 h-px w-12 bg-gold" />
-          </Reveal>
-          <Reveal delay={0.05} className="max-w-2xl">
-            <p className="font-serif text-2xl leading-relaxed text-charcoal sm:text-3xl">{content.introLead}</p>
-            <p className="mt-6 leading-relaxed text-charcoal/70">{content.introBody1}</p>
-            <p className="mt-6 leading-relaxed text-charcoal/70">{content.introBody2}</p>
-          </Reveal>
-        </div>
+        <Reveal className="max-w-3xl">
+          <p className="text-xs uppercase tracking-[0.3em] text-gold">{content.introLabel}</p>
+          <div className="mt-4 h-px w-12 bg-gold" />
+          <p className="mt-8 font-serif text-2xl leading-relaxed text-charcoal sm:text-3xl">{content.introLead}</p>
+          <p className="mt-6 leading-relaxed text-charcoal/70">{content.introBody1}</p>
+          <p className="mt-6 leading-relaxed text-charcoal/70">{content.introBody2}</p>
+        </Reveal>
       </section>
 
       {/* ---------- Asymmetric image break ---------- */}

@@ -23,9 +23,11 @@ export default async function AboutPage() {
           rationale), and object-cover on the image below crops to whatever
           that resolved box ends up being — the "optimal crop for the box"
           part is just what object-cover already does once the box itself
-          is sized correctly. Capped at lg+ so it doesn't balloon on tall
-          desktop monitors. */}
-      <section className="relative flex h-dvh min-h-[520px] w-full items-end overflow-hidden bg-charcoal lg:max-h-[840px]">
+          is sized correctly. The lg:max-h cap only exists for genuinely
+          oversized desktop monitors — 1100px is well above ordinary laptop/
+          desktop viewport heights (~900-1100px), which a lower cap here was
+          clipping short, leaving bare background visible below the hero. */}
+      <section className="relative flex h-dvh min-h-[520px] w-full items-end overflow-hidden bg-charcoal lg:max-h-[1100px]">
         <Image src={content.heroImage} alt={content.heroHeading} fill priority className="object-cover" />
         <div
           className="pointer-events-none absolute inset-0"

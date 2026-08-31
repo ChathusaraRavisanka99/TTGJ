@@ -53,12 +53,12 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
   heroHeadingHighlight: "designed by you.",
   heroSubtext:
     "Explore ethically sourced Ceylon sapphires, rubies, and rare gems. Configure your own stone in real time, then request a private quote from our gemologists.",
-  heritageImage: "/images/heritage/ratnapura-sapphire-twin-crystal.jpg",
+  heritageImage: "/images/heritage/blue-crystal-macro.jpg",
   heritageKicker: "Heritage",
   heritageHeading: "Two thousand years of Ceylon gems",
   heritageBody:
     "Sri Lanka's gem gravels have produced some of history's most celebrated sapphires and rubies for over two millennia. Ratnavue is built around that legacy — every gem is honestly graded, and treatment status is always disclosed.",
-  sourcingImage: "/images/heritage/sri-lanka-gem-trays.jpg",
+  sourcingImage: "/images/heritage/gemologist-sorting-emeralds.jpg",
   sourcingKicker: "Sourcing",
   sourcingHeading: "Can't find the exact stone?",
   sourcingBody: "Tell us what you're looking for and our sourcing team will search Sri Lanka's gem markets on your behalf.",

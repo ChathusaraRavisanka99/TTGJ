@@ -42,12 +42,13 @@ export default async function HomePage() {
         the viewport actually visible on load — so a `100vh` hero either
         shows a sliver of the next section under the address bar, or looks
         short once the chrome collapses. `dvh` tracks the real, current
-        viewport instead. The `920px` cap only kicks in at `lg`+ (desktop) —
-        it exists purely to stop the hero ballooning on ultra-tall desktop
-        monitors, and was clipping the hero short on tablets like iPad Mini
-        (portrait ~1024px tall) before it was scoped.
+        viewport instead. The `lg:max-h` cap only kicks in at `lg`+ (desktop)
+        and only for genuinely oversized monitors — it exists purely to stop
+        the hero ballooning on ultra-tall displays, not to clip it on
+        ordinary ~900-1100px desktop viewport heights, which a lower cap
+        here was doing.
       */}
-      <section className="relative flex h-dvh min-h-[720px] w-full snap-start items-center overflow-hidden bg-charcoal lg:max-h-[920px]">
+      <section id="hero" className="relative flex h-dvh min-h-[720px] w-full snap-start items-center overflow-hidden bg-charcoal lg:max-h-[1100px]">
         <HeroSlideshow images={content.heroSlides} />
         <div
           className="pointer-events-none absolute inset-0"
@@ -119,7 +120,8 @@ export default async function HomePage() {
               </RevealItem>
             ))}
           </RevealGroup>
-          <SectionArrow target="editorial" tone="dark" />
+          <SectionArrow target="hero" direction="up" tone="dark" />
+          <SectionArrow target="editorial" direction="down" tone="dark" />
         </section>
       )}
 
@@ -132,19 +134,24 @@ export default async function HomePage() {
           <div className="mx-auto mt-8 h-px w-16 bg-gold" />
           <p className="mt-6 text-xs uppercase tracking-[0.3em] text-ivory/45">{content.editorialAttribution}</p>
         </Reveal>
-        <SectionArrow target="heritage-sourcing" tone="light" />
+        <SectionArrow target="featured" direction="up" tone="light" />
+        <SectionArrow target="heritage-sourcing" direction="down" tone="light" />
       </section>
 
       {/* ---------- Heritage / Sourcing ---------- */}
       {/* Edge-to-edge split — no gap, no rounded corners, no card shadow —
           and text anchored at the bottom with an upward dark-to-clear
           scrim, rather than the earlier rounded-card / left-anchored
-          treatment. Side by side at lg+, flush-stacked below that.
-          Deliberately NOT forced to min-h-dvh/snap: even stacked, the
-          pair runs well past one viewport, and snapping the section's top
-          to the viewport top used to cut the second banner off mid-image. */}
-      <section id="heritage-sourcing" className="relative lg:grid lg:grid-cols-2">
-        <Reveal className="relative h-[26rem] w-full overflow-hidden bg-charcoal sm:h-[32rem] lg:h-[40rem]">
+          treatment. Side by side at lg+ (one row, so both panels share the
+          same full-viewport height); stacked below that. Each panel is
+          h-dvh (not a fixed rem height) and the section itself carries
+          snap-start — it used to be shorter than the viewport with no snap
+          point of its own, which was exactly why the scroll-down arrow
+          into this section didn't land cleanly: CSS scroll-snap kept
+          pulling the programmatic scroll past a section it didn't
+          recognize as a stop. */}
+      <section id="heritage-sourcing" className="relative snap-start lg:grid lg:grid-cols-2">
+        <Reveal className="relative h-dvh min-h-[520px] w-full overflow-hidden bg-charcoal lg:max-h-[1100px]">
           <Image src={content.heritageImage} alt={content.heritageHeading} fill className="object-cover" />
           <div
             className="pointer-events-none absolute inset-0"
@@ -163,7 +170,7 @@ export default async function HomePage() {
           </div>
         </Reveal>
 
-        <Reveal delay={0.1} className="relative h-[26rem] w-full overflow-hidden bg-charcoal sm:h-[32rem] lg:h-[40rem]">
+        <Reveal delay={0.1} className="relative h-dvh min-h-[520px] w-full overflow-hidden bg-charcoal lg:max-h-[1100px]">
           <Image src={content.sourcingImage} alt={content.sourcingHeading} fill className="object-cover" />
           <div
             className="pointer-events-none absolute inset-0"
@@ -181,7 +188,8 @@ export default async function HomePage() {
             </Link>
           </div>
         </Reveal>
-        <SectionArrow target="closing-cta" tone="light" />
+        <SectionArrow target="editorial" direction="up" tone="light" />
+        <SectionArrow target="closing-cta" direction="down" tone="light" />
       </section>
 
       {/* ---------- Closing CTA ---------- */}
@@ -190,6 +198,7 @@ export default async function HomePage() {
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{ background: "radial-gradient(50% 60% at 50% 100%, rgba(179,145,90,0.18), transparent 70%)" }}
         />
+        <SectionArrow target="heritage-sourcing" direction="up" tone="light" />
         <div className="relative mx-auto grid max-w-4xl items-center gap-10 px-5 text-center sm:px-8 lg:grid-cols-[1fr_auto] lg:gap-16 lg:text-left">
           <Reveal className="order-2 lg:order-1">
             <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.closingKicker}</p>

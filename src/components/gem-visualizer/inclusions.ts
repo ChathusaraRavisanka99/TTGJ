@@ -33,34 +33,6 @@ export interface InclusionSpeck {
   opacity: number;
 }
 
-export interface InclusionSpeck3D {
-  x: number;
-  y: number;
-  z: number;
-  r: number;
-  opacity: number;
-}
-
-/** Same deterministic density profile as generateInclusions, scaled for a unit-radius 3D gem mesh. */
-export function generateInclusions3D(seedKey: string, claritySlug: string): InclusionSpeck3D[] {
-  const profile = CLARITY_DENSITY[claritySlug] ?? CLARITY_DENSITY["eye-clean"];
-  const rand = mulberry32(hashSeed(seedKey + claritySlug + "-3d"));
-  const specks: InclusionSpeck3D[] = [];
-  for (let i = 0; i < profile.count; i++) {
-    const theta = rand() * Math.PI * 2;
-    const phi = Math.acos(2 * rand() - 1);
-    const dist = 0.15 + rand() * 0.45;
-    specks.push({
-      x: dist * Math.sin(phi) * Math.cos(theta),
-      y: dist * Math.sin(phi) * Math.sin(theta),
-      z: dist * Math.cos(phi) * 0.5,
-      r: 0.015 + rand() * (profile.maxRadius / 60),
-      opacity: Math.min(0.85, profile.maxOpacity * 6 * (0.5 + rand() * 0.5)),
-    });
-  }
-  return specks;
-}
-
 export function generateInclusions(seedKey: string, claritySlug: string, cx: number, cy: number, radius: number): InclusionSpeck[] {
   const profile = CLARITY_DENSITY[claritySlug] ?? CLARITY_DENSITY["eye-clean"];
   const rand = mulberry32(hashSeed(seedKey + claritySlug));

@@ -1,8 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { LinkButton } from "@/components/ui/Button";
 import { GemCard } from "@/components/catalog/GemCard";
-import { Gem3D } from "@/components/gem-visualizer/Gem3D";
 import { Marquee } from "@/components/layout/Marquee";
 import { Reveal, RevealGroup, RevealItem } from "@/components/layout/Reveal";
 
@@ -22,23 +22,30 @@ export default async function HomePage() {
     where: { isPublished: true },
     orderBy: { createdAt: "desc" },
     take: 4,
-    include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true },
+    include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true, media: true },
   });
 
   return (
     <div>
       {/* ---------- Hero ---------- */}
       <section className="relative flex h-screen min-h-[720px] w-full items-center overflow-hidden bg-charcoal">
+        <Image
+          src="/images/jewelry/sapphire-ring.jpg"
+          alt="Oval Ceylon blue sapphire ring"
+          fill
+          priority
+          className="object-cover opacity-70"
+        />
         <div
-          className="pointer-events-none absolute inset-0 opacity-70"
+          className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(60% 50% at 78% 45%, rgba(179,145,90,0.16), transparent 70%), radial-gradient(40% 40% at 15% 80%, rgba(31,58,95,0.25), transparent 70%)",
+              "linear-gradient(90deg, rgba(33,29,26,0.97) 0%, rgba(33,29,26,0.88) 32%, rgba(33,29,26,0.55) 58%, rgba(33,29,26,0.25) 100%)",
           }}
         />
 
-        <div className="relative mx-auto grid w-full max-w-7xl gap-10 px-5 pt-16 sm:px-8 lg:grid-cols-2 lg:items-center lg:gap-4">
-          <div>
+        <div className="relative mx-auto w-full max-w-7xl px-5 pt-16 sm:px-8">
+          <div className="max-w-xl">
             <p className="text-xs uppercase tracking-[0.35em] text-gold-soft">Ceylon Gemstones &amp; Fine Jewelry</p>
             <h1 className="mt-5 font-serif text-6xl leading-[1.05] text-ivory sm:text-7xl lg:text-[5.5rem]">
               Colour, cut, and
@@ -55,20 +62,6 @@ export default async function HomePage() {
               <LinkButton href="/configurator" variant="gold" size="lg">Design Your Gem</LinkButton>
               <LinkButton href="/gems" variant="outline-light" size="lg">Shop Gemstones</LinkButton>
             </div>
-          </div>
-
-          <div className="relative lg:h-[560px]">
-            <Gem3D
-              cutSlug="oval"
-              hue={228}
-              darkness={38}
-              claritySlug="eye-clean"
-              caratWeight={3}
-              seedKey="home-hero"
-              autoRotate
-              backgroundColor="#211d1a"
-              className="!rounded-none mx-auto aspect-square w-full max-w-lg lg:h-full lg:max-w-none"
-            />
           </div>
         </div>
 
@@ -113,6 +106,7 @@ export default async function HomePage() {
                   treatmentName={gem.treatment.name}
                   isCeylon={gem.origin.isCeylon}
                   stockStatus={gem.stockStatus}
+                  primaryImageUrl={gem.media.find((m) => m.isPrimary)?.url ?? gem.media[0]?.url}
                 />
               </RevealItem>
             ))}
@@ -136,13 +130,20 @@ export default async function HomePage() {
       <section className="bg-ivory-soft">
         <div className="mx-auto grid max-w-7xl gap-16 px-5 py-24 sm:px-8 sm:py-32 md:grid-cols-2">
           <Reveal>
-            <div className="mb-6 aspect-[4/3] rounded-2xl bg-gradient-to-br from-sapphire via-sapphire-soft to-charcoal" />
+            <div className="relative mb-6 aspect-[4/3] overflow-hidden rounded-2xl bg-charcoal">
+              <Image
+                src="/images/heritage/ratnapura-gem-mine.jpg"
+                alt="Raw sapphire crystal from Sri Lanka's gem-bearing gravels"
+                fill
+                className="object-cover"
+              />
+            </div>
             <p className="text-xs uppercase tracking-[0.3em] text-gold">Heritage</p>
             <h2 className="mt-3 font-serif text-3xl text-charcoal sm:text-4xl">Two thousand years of Ceylon gems</h2>
             <p className="mt-4 leading-relaxed text-charcoal/70">
-              Sri Lanka&apos;s gem gravels have produced some of history&apos;s most celebrated sapphires and rubies.
-              We work directly with miners and cutters in Ratnapura to bring that legacy to you — honestly graded
-              and clearly disclosed.
+              Sri Lanka&apos;s gem gravels have produced some of history&apos;s most celebrated sapphires and rubies
+              for over two millennia. Ratnavue is built around that legacy — every gem is honestly graded, and
+              treatment status is always disclosed.
             </p>
             <LinkButton href="/about" variant="outline" className="mt-6">Read Our Story</LinkButton>
           </Reveal>

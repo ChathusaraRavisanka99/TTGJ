@@ -28,6 +28,11 @@ export function IntroLoader() {
       /* non-fatal */
     }
 
+    // Deliberately setting state directly in this mount effect: "idle" is the
+    // only SSR-safe initial value (sessionStorage doesn't exist on the
+    // server), so whether to show the intro can only be decided client-side,
+    // after hydration, right here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPhase("visible");
     // No cleanup here on purpose: this component is mounted once for the
     // app's lifetime, and returning a clearTimeout cleanup makes this timer
@@ -93,7 +98,7 @@ export function IntroLoader() {
               transition={{ duration: 0.8, delay: 1.3 }}
               className="mt-5 text-[10px] uppercase tracking-[0.35em] text-ivory/50"
             >
-              Est. Ratnapura, Sri Lanka
+              Ceylon Sapphires &amp; Rubies
             </motion.p>
           </motion.div>
         </motion.div>

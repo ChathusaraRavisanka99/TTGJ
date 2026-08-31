@@ -31,8 +31,8 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
         <p className="text-xs uppercase tracking-widest text-gold">Loose Gemstones</p>
         <h1 className="mt-2 font-serif text-4xl text-charcoal">Shop Ceylon Gemstones</h1>
         <p className="mt-3 max-w-2xl text-charcoal/65">
-          Every stone shown here is rendered from its true specification — cut, colour, tone, and clarity — not a stock photo.
-          Browse freely; request a quote when something catches your eye.
+          Each stone is listed with its full specification — cut, colour, tone, and clarity. Browse freely; request
+          a quote when something catches your eye.
         </p>
       </div>
 
@@ -67,6 +67,7 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
                 treatmentName={gem.treatment.name}
                 isCeylon={gem.origin.isCeylon}
                 stockStatus={gem.stockStatus}
+                primaryImageUrl={gem.media.find((m) => m.isPrimary)?.url ?? gem.media[0]?.url}
               />
             </RevealItem>
           ))}

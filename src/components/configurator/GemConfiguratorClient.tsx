@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Gem3D } from "@/components/gem-visualizer/Gem3D";
+import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 import { resolveGemColor, hueAtPercent, percentAtHue } from "@/components/gem-visualizer/color";
 import { estimateDimensionsMm } from "@/components/gem-visualizer/size";
 import { Label, Select } from "@/components/ui/Field";
@@ -87,22 +87,21 @@ export function GemConfiguratorClient({ minerals, cuts, clarityGrades, isAuthent
   return (
     <div className="grid gap-12 lg:grid-cols-2">
       <div className="lg:sticky lg:top-28 lg:self-start">
-        <div className="overflow-hidden rounded-2xl bg-charcoal p-8 shadow-xl shadow-charcoal/10">
+        <div className="overflow-hidden rounded-2xl bg-gradient-to-b from-ivory-soft to-ivory p-8">
           {cut && (
-            <Gem3D
+            <GemVisualizer
               cutSlug={cut.slug}
               hue={hue}
               darkness={darkness}
               claritySlug={clarity?.slug ?? "eye-clean"}
               caratWeight={caratWeight}
               seedKey="configurator"
-              backgroundColor="#211d1a"
-              className="!rounded-none aspect-square w-full"
+              className="aspect-square w-full"
             />
           )}
         </div>
         <p className="mt-2 text-center text-xs text-charcoal/45">
-          Drag to rotate. Illustrative rendering — actual dimensions vary by the mineral&apos;s density —{" "}
+          Illustrative preview — actual dimensions vary by the mineral&apos;s density —{" "}
           {dimensions ? `approximately ${dimensions.lengthMm} x ${dimensions.widthMm} mm at ${caratWeight}ct.` : ""}
         </p>
       </div>

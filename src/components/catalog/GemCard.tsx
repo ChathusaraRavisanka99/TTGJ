@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 import { StockBadge } from "@/components/ui/Badge";
 
@@ -16,6 +17,8 @@ interface GemCardProps {
   treatmentName: string;
   isCeylon: boolean;
   stockStatus: string;
+  /** Real product photo, when one has been uploaded. Falls back to the illustrative SVG preview. */
+  primaryImageUrl?: string;
 }
 
 export function GemCard(props: GemCardProps) {
@@ -24,16 +27,27 @@ export function GemCard(props: GemCardProps) {
       href={`/gems/${props.slug}`}
       className="group block overflow-hidden rounded-xl border border-border-subtle bg-surface transition-shadow hover:shadow-lg hover:shadow-charcoal/5"
     >
-      <div className="relative flex aspect-square items-center justify-center bg-gradient-to-b from-ivory-soft to-ivory p-6">
-        <GemVisualizer
-          cutSlug={props.cutSlug}
-          hue={props.colorHue}
-          darkness={props.colorLightness}
-          claritySlug={props.claritySlug}
-          caratWeight={props.caratWeight}
-          seedKey={props.slug}
-          className="h-full w-full transition-transform duration-300 group-hover:scale-105"
-        />
+      <div className="relative aspect-square overflow-hidden bg-ivory-soft">
+        {props.primaryImageUrl ? (
+          <Image
+            src={props.primaryImageUrl}
+            alt={props.name}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-ivory-soft to-ivory p-6">
+            <GemVisualizer
+              cutSlug={props.cutSlug}
+              hue={props.colorHue}
+              darkness={props.colorLightness}
+              claritySlug={props.claritySlug}
+              caratWeight={props.caratWeight}
+              seedKey={props.slug}
+              className="h-full w-full transition-transform duration-300 group-hover:scale-105"
+            />
+          </div>
+        )}
         <div className="absolute right-3 top-3">
           <StockBadge status={props.stockStatus} />
         </div>

@@ -97,7 +97,7 @@ async function main() {
       name: "Ceylon Royal Blue Sapphire",
       mineral: "blue-sapphire",
       variety: "Blue Sapphire",
-      cut: "oval",
+      cut: "pear",
       carat: 2.35,
       hue: 232,
       sat: 78,
@@ -106,6 +106,7 @@ async function main() {
       treatment: "unheated",
       origin: "ceylon",
       colorLabel: "Royal Blue",
+      image: "/images/gems/blue-sapphire.jpg",
     },
     {
       name: "Padparadscha Sapphire, Cushion",
@@ -120,6 +121,7 @@ async function main() {
       treatment: "heated",
       origin: "ceylon",
       colorLabel: "Sunset Pink-Orange",
+      image: "/images/gems/padparadscha-sapphire.jpg",
     },
     {
       name: "Pigeon's Blood Ruby",
@@ -134,6 +136,7 @@ async function main() {
       treatment: "unheated",
       origin: "other-origin",
       colorLabel: "Pigeon's Blood Red",
+      image: "/images/gems/ruby.jpg",
     },
     {
       name: "Ceylon Cat's Eye Chrysoberyl",
@@ -148,12 +151,13 @@ async function main() {
       treatment: "unheated",
       origin: "ceylon",
       colorLabel: "Honey Gold",
+      image: "/images/gems/cats-eye-chrysoberyl.jpg",
     },
     {
       name: "Colour-Change Alexandrite",
       mineral: "alexandrite",
       variety: "Alexandrite",
-      cut: "emerald-cut",
+      cut: "cushion",
       carat: 0.95,
       hue: 130,
       sat: 45,
@@ -162,6 +166,7 @@ async function main() {
       treatment: "unheated",
       origin: "ceylon",
       colorLabel: "Forest Green (Daylight)",
+      image: "/images/gems/alexandrite.jpg",
     },
     {
       name: "Vivid Pink Spinel",
@@ -176,45 +181,56 @@ async function main() {
       treatment: "unheated",
       origin: "ceylon",
       colorLabel: "Hot Pink",
+      image: undefined as string | undefined,
     },
   ];
 
   for (const g of demoGems) {
     const slug = slugify(g.name);
-    await prisma.gemstone.upsert({
+    const fields = {
+      name: g.name,
+      description: `A fine ${g.variety.toLowerCase()} from our Ceylon-focused collection, cut as a ${g.cut.replace("-", " ")}.`,
+      mineralId: mineralBySlug[g.mineral].id,
+      variety: g.variety,
+      cutId: cutBySlug[g.cut].id,
+      caratWeight: g.carat,
+      colorHue: g.hue,
+      colorSaturation: g.sat,
+      colorLightness: g.light,
+      colorLabel: g.colorLabel,
+      clarityGradeId: clarityBySlug[g.clarity].id,
+      treatmentId: treatmentBySlug[g.treatment].id,
+      originId: originBySlug[g.origin].id,
+      stockStatus: "AVAILABLE" as const,
+      isPublished: true,
+    };
+    const gemstone = await prisma.gemstone.upsert({
       where: { slug },
-      update: {},
-      create: {
-        slug,
-        name: g.name,
-        description: `A fine ${g.variety.toLowerCase()} from our Ceylon-focused collection, cut as a ${g.cut.replace("-", " ")}.`,
-        mineralId: mineralBySlug[g.mineral].id,
-        variety: g.variety,
-        cutId: cutBySlug[g.cut].id,
-        caratWeight: g.carat,
-        colorHue: g.hue,
-        colorSaturation: g.sat,
-        colorLightness: g.light,
-        colorLabel: g.colorLabel,
-        clarityGradeId: clarityBySlug[g.clarity].id,
-        treatmentId: treatmentBySlug[g.treatment].id,
-        originId: originBySlug[g.origin].id,
-        stockStatus: "AVAILABLE",
-        isPublished: true,
-      },
+      update: fields,
+      create: { slug, ...fields },
     });
+
+    if (g.image) {
+      const existing = await prisma.mediaAsset.findFirst({ where: { gemstoneId: gemstone.id } });
+      if (!existing) {
+        await prisma.mediaAsset.create({
+          data: { gemstoneId: gemstone.id, url: g.image, type: "IMAGE", isPrimary: true, sortOrder: 0, altText: g.name },
+        });
+      }
+    }
   }
 
   const demoJewelry = [
     {
-      name: "Sapphire Halo Engagement Ring",
+      name: "Ceylon Sapphire Trilogy Ring",
       pieceType: "RING" as const,
-      metalType: "PLATINUM" as const,
-      metalPurity: "950",
+      metalType: "GOLD" as const,
+      metalPurity: "18K",
       metalWeightG: 5.2,
       ringSize: "Resizable",
       styleTags: ["Bridal", "Statement"],
-      description: "A hand-fabricated platinum halo setting designed to showcase a Ceylon sapphire centrepiece.",
+      description: "An oval Ceylon blue sapphire flanked by kite-cut diamonds in an 18K gold trilogy setting.",
+      image: "/images/jewelry/sapphire-ring.jpg" as string | undefined,
     },
     {
       name: "18K Gold Ruby Pendant",
@@ -224,6 +240,8 @@ async function main() {
       metalWeightG: 3.1,
       styleTags: ["Everyday"],
       description: "A minimalist 18K gold bezel pendant, designed to let a ruby's colour speak for itself.",
+      image: undefined as string | undefined,
+      ringSize: undefined as string | undefined,
     },
     {
       name: "Moonstone Drop Earrings",
@@ -233,28 +251,39 @@ async function main() {
       metalWeightG: 4.4,
       styleTags: ["Everyday", "Bridal"],
       description: "Rose gold drop earrings featuring blue-sheen Ceylon moonstones.",
+      image: undefined as string | undefined,
+      ringSize: undefined as string | undefined,
     },
   ];
 
   for (const j of demoJewelry) {
     const slug = slugify(j.name);
-    await prisma.jewelryPiece.upsert({
+    const fields = {
+      name: j.name,
+      description: j.description,
+      pieceType: j.pieceType,
+      metalType: j.metalType,
+      metalPurity: j.metalPurity,
+      metalWeightG: j.metalWeightG,
+      ringSize: j.ringSize,
+      styleTags: j.styleTags,
+      stockStatus: "AVAILABLE" as const,
+      isPublished: true,
+    };
+    const piece = await prisma.jewelryPiece.upsert({
       where: { slug },
-      update: {},
-      create: {
-        slug,
-        name: j.name,
-        description: j.description,
-        pieceType: j.pieceType,
-        metalType: j.metalType,
-        metalPurity: j.metalPurity,
-        metalWeightG: j.metalWeightG,
-        ringSize: j.ringSize,
-        styleTags: j.styleTags,
-        stockStatus: "AVAILABLE",
-        isPublished: true,
-      },
+      update: fields,
+      create: { slug, ...fields },
     });
+
+    if (j.image) {
+      const existing = await prisma.mediaAsset.findFirst({ where: { jewelryId: piece.id } });
+      if (!existing) {
+        await prisma.mediaAsset.create({
+          data: { jewelryId: piece.id, url: j.image, type: "IMAGE", isPrimary: true, sortOrder: 0, altText: j.name },
+        });
+      }
+    }
   }
 
   console.log("Seed complete.");

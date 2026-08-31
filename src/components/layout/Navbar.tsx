@@ -17,18 +17,18 @@ const NAV_LINKS = [
 export function Navbar({ user }: { user: { name?: string | null; email?: string | null } | null }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
   const isHome = pathname === "/";
+  // `pathname` is stable across the server/client render (Next.js resolves
+  // it before hydration), so this initial value never mismatches — only the
+  // home page's actual scroll position is genuinely client-only.
+  const [scrolled, setScrolled] = useState(!isHome);
+
   const transparent = isHome && !scrolled && !open;
 
   useEffect(() => {
-    if (!isHome) {
-      setScrolled(true);
-      return;
-    }
-    setScrolled(window.scrollY > window.innerHeight * 0.7);
+    if (!isHome) return;
     const onScroll = () => setScrolled(window.scrollY > window.innerHeight * 0.7);
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [isHome]);

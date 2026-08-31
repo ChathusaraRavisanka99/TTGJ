@@ -21,7 +21,7 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
   const pieces = await getJewelry(filters);
 
   return (
-    <div className="mx-auto max-w-[90rem] px-5 py-12 sm:px-8 lg:px-12">
+    <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
       <div className="mb-10">
         <p className="text-xs uppercase tracking-widest text-gold">Fine Jewelry</p>
         <h1 className="mt-2 font-serif text-4xl text-charcoal">Shop Jewelry</h1>

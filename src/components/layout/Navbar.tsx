@@ -50,7 +50,7 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
       transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
       className={cn("fixed top-0 z-50 w-full backdrop-blur-sm", transparent && "backdrop-blur-0")}
     >
-      <div className="mx-auto flex max-w-[90rem] items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
+      <div className="mx-auto flex max-w-[120rem] items-center justify-between px-5 py-5 sm:px-8 lg:px-12 xl:px-16">
         <Link
           href="/"
           className={cn(
@@ -102,11 +102,11 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
       {open && (
         <nav className="flex flex-col gap-1 border-t border-border-subtle bg-ivory px-5 py-4 md:hidden">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="py-2 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
+            <Link key={link.href} href={link.href} className="py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
               {link.label}
             </Link>
           ))}
-          <Link href={user ? "/account" : "/account/login"} className="py-2 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
+          <Link href={user ? "/account" : "/account/login"} className="py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
             {user ? "My Account" : "Sign in"}
           </Link>
         </nav>

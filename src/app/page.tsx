@@ -144,25 +144,34 @@ export default async function HomePage() {
       </section>
 
       {/* ---------- Heritage / Sourcing ---------- */}
-      {/* Two full-width horizontal rows (image + copy side by side, order
-          flipped on the second row for rhythm) stacked one above the other,
-          rather than two vertical stacks side by side. Still one snap
-          section — Heritage and Sourcing stay together as a single page
-          break, they just no longer share a column split. */}
-      <section className="min-h-dvh snap-start bg-ivory-soft py-24 sm:py-32">
+      {/* Two full-width editorial rows (image + copy side by side, order
+          flipped on the second row), joined by a soft gradient rule rather
+          than a hard divider. Deliberately NOT forced to min-h-dvh/snap —
+          with two content rows this section runs taller than one screen,
+          and snapping its top to the viewport top just cut the second row
+          off mid-image. Heritage and Sourcing still read as one continuous
+          block, just an unhurried one rather than a forced single "page". */}
+      <section className="bg-ivory-soft py-24 sm:py-32">
         <div className="mx-auto max-w-[120rem] px-5 sm:px-8 lg:px-12 xl:px-16">
-          <Reveal className="grid items-center gap-10 border-b border-border-subtle pb-16 md:grid-cols-2 md:gap-16">
-            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-charcoal md:order-2">
+          <Reveal className="mx-auto mb-16 max-w-2xl text-center sm:mb-20">
+            <p className="text-xs uppercase tracking-[0.35em] text-gold">Provenance</p>
+            <h2 className="mt-3 font-serif text-4xl text-charcoal sm:text-5xl">Heritage &amp; Sourcing</h2>
+          </Reveal>
+
+          <Reveal className="grid items-center gap-10 md:grid-cols-2 md:gap-16 lg:gap-20">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10 md:order-2">
               <Image
-                src="/images/heritage/ratnapura-gem-mine.jpg"
-                alt="Raw sapphire crystal from Sri Lanka's gem-bearing gravels"
+                src="/images/heritage/ratnapura-sapphire-twin-crystal.jpg"
+                alt="Raw sapphire twin crystal specimen from Ratnapura, Sri Lanka"
                 fill
                 className="object-cover"
               />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-charcoal/25 via-transparent to-transparent" />
             </div>
             <div className="md:order-1">
-              <p className="text-xs uppercase tracking-[0.3em] text-gold">Heritage</p>
-              <h2 className="mt-3 font-serif text-3xl text-charcoal sm:text-4xl">Two thousand years of Ceylon gems</h2>
+              <span className="font-serif text-6xl text-gold/20 sm:text-7xl">01</span>
+              <p className="mt-2 text-xs uppercase tracking-[0.3em] text-gold">Heritage</p>
+              <h3 className="mt-2 font-serif text-3xl text-charcoal sm:text-4xl">Two thousand years of Ceylon gems</h3>
               <p className="mt-4 max-w-md leading-relaxed text-charcoal/70">
                 Sri Lanka&apos;s gem gravels have produced some of history&apos;s most celebrated sapphires and rubies
                 for over two millennia. Ratnavue is built around that legacy — every gem is honestly graded, and
@@ -171,17 +180,29 @@ export default async function HomePage() {
               <LinkButton href="/about" variant="outline" className="mt-6">Read Our Story</LinkButton>
             </div>
           </Reveal>
-          <Reveal delay={0.1} className="mt-16 grid items-center gap-10 md:grid-cols-2 md:gap-16">
+
+          <div className="my-16 h-px w-full bg-gradient-to-r from-transparent via-border-subtle to-transparent sm:my-20" />
+
+          <Reveal delay={0.1} className="grid items-center gap-10 md:grid-cols-2 md:gap-16 lg:gap-20">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gold">Sourcing</p>
-              <h2 className="mt-3 font-serif text-3xl text-charcoal sm:text-4xl">Can&apos;t find the exact stone?</h2>
+              <span className="font-serif text-6xl text-gold/20 sm:text-7xl">02</span>
+              <p className="mt-2 text-xs uppercase tracking-[0.3em] text-gold">Sourcing</p>
+              <h3 className="mt-2 font-serif text-3xl text-charcoal sm:text-4xl">Can&apos;t find the exact stone?</h3>
               <p className="mt-4 max-w-md leading-relaxed text-charcoal/70">
                 Tell us what you&apos;re looking for and our sourcing team will search Sri Lanka&apos;s gem markets on
                 your behalf.
               </p>
               <LinkButton href="/sourcing" variant="outline" className="mt-6">Submit a Sourcing Request</LinkButton>
             </div>
-            <div className="aspect-[16/10] rounded-2xl bg-gradient-to-br from-gold via-gold-soft to-ivory-soft" />
+            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10">
+              <Image
+                src="/images/heritage/sri-lanka-gem-trays.jpg"
+                alt="Trays of loose faceted gemstones at a gem trading table in Sri Lanka"
+                fill
+                className="object-cover"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-charcoal/25 via-transparent to-transparent" />
+            </div>
           </Reveal>
         </div>
       </section>

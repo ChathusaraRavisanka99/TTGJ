@@ -29,7 +29,8 @@ Sourced from Wikimedia Commons under open (attribution-required) licenses.
 
 | File | Subject | Author | License | Source |
 |---|---|---|---|---|
-| `heritage/ratnapura-gem-mine.jpg` | Raw sapphire crystal specimen, Ratnapura area, Sri Lanka | James St. John | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Sapphire_(gem_gravel_mine,_Ratnapura_area,_Sri_Lanka)_1_(34857678855).jpg) |
+| `heritage/ratnapura-sapphire-twin-crystal.jpg` | Raw sapphire twin crystal specimen, Ratnapura, Sri Lanka | Lech Darski | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Korund_(szafir),_bli%C5%BAniaki_-_Ratnapura,_Sri_Lanka..jpg) |
+| `heritage/sri-lanka-gem-trays.jpg` | Trays of loose faceted gemstones at a gem trading table, Kandy, Sri Lanka | Ji-Elle | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Sri_Lanka-Pr%C3%A9sentation_de_pierres_pr%C3%A9cieuses.jpg) |
 | `gems/blue-sapphire.jpg` | Cornflower blue Yogo sapphire, pear cut | PumpkinSky | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Cornflower_blue_Yogo_sapphire.jpg) |
 | `gems/padparadscha-sapphire.jpg` | Padparadscha sapphire, cushion cut, 2.28ct | Wiener Edelstein Zentrum | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Sapphire_padparaja_cushion_2.28cts.jpg) |
 | `gems/ruby.jpg` | Faceted oval ruby, 1.41ct | Bkell | Public Domain | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Cut_Ruby.jpg) |

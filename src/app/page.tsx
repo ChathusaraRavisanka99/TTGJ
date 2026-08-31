@@ -144,13 +144,15 @@ export default async function HomePage() {
       </section>
 
       {/* ---------- Heritage / Sourcing ---------- */}
-      {/* One snap section, one screen — Heritage and Sourcing stay side by
-          side as a single unit rather than becoming two separate
-          full-height page breaks. */}
-      <section className="flex min-h-dvh items-center bg-ivory-soft snap-start">
-        <div className="mx-auto grid max-w-[120rem] gap-16 px-5 py-24 sm:px-8 sm:py-32 md:grid-cols-2 lg:px-12 xl:px-16">
-          <Reveal>
-            <div className="relative mb-6 aspect-[4/3] overflow-hidden rounded-2xl bg-charcoal">
+      {/* Two full-width horizontal rows (image + copy side by side, order
+          flipped on the second row for rhythm) stacked one above the other,
+          rather than two vertical stacks side by side. Still one snap
+          section — Heritage and Sourcing stay together as a single page
+          break, they just no longer share a column split. */}
+      <section className="min-h-dvh snap-start bg-ivory-soft py-24 sm:py-32">
+        <div className="mx-auto max-w-[120rem] px-5 sm:px-8 lg:px-12 xl:px-16">
+          <Reveal className="grid items-center gap-10 border-b border-border-subtle pb-16 md:grid-cols-2 md:gap-16">
+            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-charcoal md:order-2">
               <Image
                 src="/images/heritage/ratnapura-gem-mine.jpg"
                 alt="Raw sapphire crystal from Sri Lanka's gem-bearing gravels"
@@ -158,24 +160,28 @@ export default async function HomePage() {
                 className="object-cover"
               />
             </div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gold">Heritage</p>
-            <h2 className="mt-3 font-serif text-3xl text-charcoal sm:text-4xl">Two thousand years of Ceylon gems</h2>
-            <p className="mt-4 leading-relaxed text-charcoal/70">
-              Sri Lanka&apos;s gem gravels have produced some of history&apos;s most celebrated sapphires and rubies
-              for over two millennia. Ratnavue is built around that legacy — every gem is honestly graded, and
-              treatment status is always disclosed.
-            </p>
-            <LinkButton href="/about" variant="outline" className="mt-6">Read Our Story</LinkButton>
+            <div className="md:order-1">
+              <p className="text-xs uppercase tracking-[0.3em] text-gold">Heritage</p>
+              <h2 className="mt-3 font-serif text-3xl text-charcoal sm:text-4xl">Two thousand years of Ceylon gems</h2>
+              <p className="mt-4 max-w-md leading-relaxed text-charcoal/70">
+                Sri Lanka&apos;s gem gravels have produced some of history&apos;s most celebrated sapphires and rubies
+                for over two millennia. Ratnavue is built around that legacy — every gem is honestly graded, and
+                treatment status is always disclosed.
+              </p>
+              <LinkButton href="/about" variant="outline" className="mt-6">Read Our Story</LinkButton>
+            </div>
           </Reveal>
-          <Reveal delay={0.1}>
-            <div className="mb-6 aspect-[4/3] rounded-2xl bg-gradient-to-br from-gold via-gold-soft to-ivory-soft" />
-            <p className="text-xs uppercase tracking-[0.3em] text-gold">Sourcing</p>
-            <h2 className="mt-3 font-serif text-3xl text-charcoal sm:text-4xl">Can&apos;t find the exact stone?</h2>
-            <p className="mt-4 leading-relaxed text-charcoal/70">
-              Tell us what you&apos;re looking for and our sourcing team will search Sri Lanka&apos;s gem markets on
-              your behalf.
-            </p>
-            <LinkButton href="/sourcing" variant="outline" className="mt-6">Submit a Sourcing Request</LinkButton>
+          <Reveal delay={0.1} className="mt-16 grid items-center gap-10 md:grid-cols-2 md:gap-16">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gold">Sourcing</p>
+              <h2 className="mt-3 font-serif text-3xl text-charcoal sm:text-4xl">Can&apos;t find the exact stone?</h2>
+              <p className="mt-4 max-w-md leading-relaxed text-charcoal/70">
+                Tell us what you&apos;re looking for and our sourcing team will search Sri Lanka&apos;s gem markets on
+                your behalf.
+              </p>
+              <LinkButton href="/sourcing" variant="outline" className="mt-6">Submit a Sourcing Request</LinkButton>
+            </div>
+            <div className="aspect-[16/10] rounded-2xl bg-gradient-to-br from-gold via-gold-soft to-ivory-soft" />
           </Reveal>
         </div>
       </section>

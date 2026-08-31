@@ -21,7 +21,7 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
   const pieces = await getJewelry(filters);
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
+    <div className="mx-auto max-w-[90rem] px-5 py-12 sm:px-8 lg:px-12">
       <div className="mb-10">
         <p className="text-xs uppercase tracking-widest text-gold">Fine Jewelry</p>
         <h1 className="mt-2 font-serif text-4xl text-charcoal">Shop Jewelry</h1>
@@ -38,7 +38,7 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
       {pieces.length === 0 ? (
         <p className="py-20 text-center text-charcoal/50">No jewelry pieces match your filters yet.</p>
       ) : (
-        <RevealGroup className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+        <RevealGroup className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {pieces.map((piece) => (
             <RevealItem key={piece.id}>
               <JewelryCard

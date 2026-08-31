@@ -26,7 +26,7 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
   const [gems, masterData] = await Promise.all([getGemstones(filters), getMasterData()]);
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
+    <div className="mx-auto max-w-[90rem] px-5 py-12 sm:px-8 lg:px-12">
       <div className="mb-10">
         <p className="text-xs uppercase tracking-widest text-gold">Loose Gemstones</p>
         <h1 className="mt-2 font-serif text-4xl text-charcoal">Shop Ceylon Gemstones</h1>
@@ -50,7 +50,7 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
       {gems.length === 0 ? (
         <p className="py-20 text-center text-charcoal/50">No gemstones match your filters yet.</p>
       ) : (
-        <RevealGroup className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+        <RevealGroup className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {gems.map((gem) => (
             <RevealItem key={gem.id}>
               <GemCard

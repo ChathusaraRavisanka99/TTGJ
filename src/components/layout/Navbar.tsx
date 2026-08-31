@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { motion } from "motion/react";
 import { Menu, X, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,12 @@ const NAV_LINKS = [
   { href: "/sourcing", label: "Sourcing" },
   { href: "/about", label: "Our Story" },
 ];
+
+// Solidify almost as soon as the page moves — the hero's own headline sits
+// well within the first ~150px, so a threshold based on viewport height
+// (e.g. "70% scrolled") leaves a wide window where that text scrolls up
+// underneath the still-transparent nav and visibly collides with it.
+const SOLID_THRESHOLD_PX = 24;
 
 export function Navbar({ user }: { user: { name?: string | null; email?: string | null } | null }) {
   const pathname = usePathname();
@@ -27,24 +34,27 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
 
   useEffect(() => {
     if (!isHome) return;
-    const onScroll = () => setScrolled(window.scrollY > window.innerHeight * 0.7);
+    const onScroll = () => setScrolled(window.scrollY > SOLID_THRESHOLD_PX);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [isHome]);
 
   return (
-    <header
-      className={cn(
-        "fixed top-0 z-50 w-full transition-colors duration-500",
-        transparent ? "border-b border-transparent bg-transparent" : "border-b border-border-subtle bg-ivory/90 backdrop-blur-sm"
-      )}
+    <motion.header
+      initial={false}
+      animate={{
+        backgroundColor: transparent ? "rgba(33,29,26,0)" : "rgba(250,247,241,0.92)",
+        boxShadow: transparent ? "0 1px 0 rgba(255,255,255,0)" : "0 1px 0 rgba(33,29,26,0.08)",
+      }}
+      transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
+      className={cn("fixed top-0 z-50 w-full backdrop-blur-sm", transparent && "backdrop-blur-0")}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
+      <div className="mx-auto flex max-w-[90rem] items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
         <Link
           href="/"
           className={cn(
-            "font-serif text-2xl tracking-wide transition-colors duration-500",
+            "font-serif text-2xl tracking-wide transition-colors duration-300",
             transparent ? "text-ivory" : "text-charcoal"
           )}
         >
@@ -57,7 +67,7 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
               key={link.href}
               href={link.href}
               className={cn(
-                "relative text-sm tracking-wide transition-colors duration-500 after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full",
+                "relative text-sm tracking-wide transition-colors duration-300 after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full",
                 transparent ? "text-ivory/85 hover:text-ivory" : "text-charcoal/75 hover:text-charcoal",
                 pathname.startsWith(link.href) && (transparent ? "text-ivory after:w-full" : "text-charcoal font-medium after:w-full")
               )}
@@ -71,7 +81,7 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
           <Link
             href={user ? "/account" : "/account/login"}
             className={cn(
-              "flex items-center gap-2 text-sm transition-colors duration-500",
+              "flex items-center gap-2 text-sm transition-colors duration-300",
               transparent ? "text-ivory/85 hover:text-ivory" : "text-charcoal/80 hover:text-charcoal"
             )}
           >
@@ -81,7 +91,7 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
         </div>
 
         <button
-          className={cn("md:hidden transition-colors duration-500", transparent ? "text-ivory" : "text-charcoal")}
+          className={cn("md:hidden transition-colors duration-300", transparent ? "text-ivory" : "text-charcoal")}
           onClick={() => setOpen((v) => !v)}
           aria-label="Toggle menu"
         >
@@ -101,6 +111,6 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
           </Link>
         </nav>
       )}
-    </header>
+    </motion.header>
   );
 }

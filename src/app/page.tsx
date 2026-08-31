@@ -50,7 +50,7 @@ export default async function HomePage() {
           }}
         />
 
-        <div className="relative mx-auto w-full max-w-7xl px-5 pt-16 sm:px-8">
+        <div className="relative mx-auto w-full max-w-[90rem] px-5 pt-16 sm:px-8 lg:px-12">
           <div className="max-w-xl">
             <p className="text-xs uppercase tracking-[0.35em] text-gold-soft">Ceylon Gemstones &amp; Fine Jewelry</p>
             <h1 className="mt-5 font-serif text-6xl leading-[1.05] text-ivory sm:text-7xl lg:text-[5.5rem]">
@@ -85,7 +85,7 @@ export default async function HomePage() {
 
       {/* ---------- Featured ---------- */}
       {featuredGems.length > 0 && (
-        <section className="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+        <section className="mx-auto max-w-[90rem] px-5 py-24 sm:px-8 sm:py-32 lg:px-12">
           <Reveal className="mb-14 flex items-end justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-gold">Recently Added</p>
@@ -134,7 +134,7 @@ export default async function HomePage() {
 
       {/* ---------- Heritage / Sourcing ---------- */}
       <section className="bg-ivory-soft">
-        <div className="mx-auto grid max-w-7xl gap-16 px-5 py-24 sm:px-8 sm:py-32 md:grid-cols-2">
+        <div className="mx-auto grid max-w-[90rem] gap-16 px-5 py-24 sm:px-8 sm:py-32 md:grid-cols-2 lg:px-12">
           <Reveal>
             <div className="relative mb-6 aspect-[4/3] overflow-hidden rounded-2xl bg-charcoal">
               <Image

@@ -20,3 +20,16 @@ export function buildCertVerifyUrl(template: string | null | undefined, certId: 
   if (!template || !certId) return null;
   return template.replace("{certId}", encodeURIComponent(certId));
 }
+
+const priceFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+});
+
+// Formats a price for display, e.g. 1240.5 -> "$1,241". Whether to call this
+// at all is the caller's job — it's gated by each item's own `showPrice`
+// flag, since price display is opt-in per item, not a site-wide switch.
+export function formatPrice(price: number): string {
+  return priceFormatter.format(price);
+}

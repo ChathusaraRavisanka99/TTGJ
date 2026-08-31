@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ShieldCheck, FileText, ExternalLink } from "lucide-react";
 import { getGemstoneBySlug } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
-import { buildCertVerifyUrl } from "@/lib/utils";
+import { buildCertVerifyUrl, formatPrice } from "@/lib/utils";
 import { StockBadge } from "@/components/ui/Badge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
@@ -46,6 +46,9 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
             )}
           </div>
           <h1 className="mt-2 font-serif text-4xl text-charcoal">{gem.name}</h1>
+          {gem.showPrice && gem.price != null && (
+            <p className="mt-2 font-serif text-2xl text-gold">{formatPrice(gem.price)}</p>
+          )}
           {gem.description && <p className="mt-4 leading-relaxed text-charcoal/70">{gem.description}</p>}
 
           <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border-subtle py-6">

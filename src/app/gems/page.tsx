@@ -68,6 +68,8 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
                 isCeylon={gem.origin.isCeylon}
                 stockStatus={gem.stockStatus}
                 primaryImageUrl={gem.media.find((m) => m.isPrimary)?.url ?? gem.media[0]?.url}
+                price={gem.price}
+                showPrice={gem.showPrice}
               />
             </RevealItem>
           ))}

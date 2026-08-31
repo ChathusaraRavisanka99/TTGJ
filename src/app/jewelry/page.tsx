@@ -48,6 +48,8 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
                 metalType={piece.metalType}
                 stockStatus={piece.stockStatus}
                 primaryImageUrl={piece.media.find((m) => m.isPrimary)?.url ?? piece.media[0]?.url}
+                price={piece.price}
+                showPrice={piece.showPrice}
               />
             </RevealItem>
           ))}

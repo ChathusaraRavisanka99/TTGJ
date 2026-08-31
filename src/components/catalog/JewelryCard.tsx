@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Gem } from "lucide-react";
 import { StockBadge } from "@/components/ui/Badge";
+import { formatPrice } from "@/lib/utils";
 
 interface JewelryCardProps {
   slug: string;
@@ -10,6 +11,9 @@ interface JewelryCardProps {
   metalType: string;
   stockStatus: string;
   primaryImageUrl?: string;
+  /** Only rendered when the admin has opted this item into public pricing. */
+  price?: number | null;
+  showPrice?: boolean;
 }
 
 const METAL_LABELS: Record<string, string> = {
@@ -48,6 +52,9 @@ export function JewelryCard(props: JewelryCardProps) {
         <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/50">
           {props.pieceType.charAt(0) + props.pieceType.slice(1).toLowerCase()} · {METAL_LABELS[props.metalType]}
         </p>
+        {props.showPrice && props.price != null && (
+          <p className="mt-2 font-serif text-base text-charcoal">{formatPrice(props.price)}</p>
+        )}
       </div>
     </Link>
   );

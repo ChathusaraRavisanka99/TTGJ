@@ -23,6 +23,11 @@ const MASTER_DATA = [
   { href: "/admin/master-data/certification-labs", label: "Certification Labs" },
 ];
 
+const PAGE_CONTENT = [
+  { href: "/admin/content/home", label: "Home Page" },
+  { href: "/admin/content/about", label: "About Page" },
+];
+
 export function AdminSidebar() {
   const pathname = usePathname();
 
@@ -52,6 +57,22 @@ export function AdminSidebar() {
       <p className="mt-8 px-3 text-xs uppercase tracking-wide text-ivory/40">Master Data</p>
       <div className="mt-2 space-y-1">
         {MASTER_DATA.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "block rounded-md px-3 py-2 text-sm transition-colors hover:bg-white/10 hover:text-ivory",
+              isActive(item.href) && "bg-white/10 text-ivory"
+            )}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
+
+      <p className="mt-8 px-3 text-xs uppercase tracking-wide text-ivory/40">Page Content</p>
+      <div className="mt-2 space-y-1">
+        {PAGE_CONTENT.map((item) => (
           <Link
             key={item.href}
             href={item.href}

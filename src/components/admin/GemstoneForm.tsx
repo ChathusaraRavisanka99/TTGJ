@@ -47,6 +47,8 @@ interface GemstoneFormProps {
     certLabId: string | null;
     certReportNumber: string | null;
     certFileUrl: string | null;
+    price: number | null;
+    showPrice: boolean;
     stockStatus: string;
     isPublished: boolean;
   };
@@ -262,6 +264,22 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
               &ldquo;Verify Certificate&rdquo; link on the public gem page.
             </p>
           </div>
+        </section>
+
+        <section className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="price">Price (USD)</Label>
+            <Input id="price" name="price" type="number" step="0.01" min="0" defaultValue={initial?.price ?? ""} placeholder="E.g. 4200" />
+            <p className="mt-1 text-xs text-charcoal/45">
+              Used as the quoting reference either way. Only shown to customers if &ldquo;Show price publicly&rdquo;
+              is checked.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 self-end pb-2.5 text-sm text-charcoal/75">
+            <input type="hidden" name="showPrice" value="false" />
+            <input type="checkbox" name="showPrice" value="true" defaultChecked={initial?.showPrice ?? false} className="accent-gold" />
+            Show price publicly (otherwise this item stays quote-only)
+          </label>
         </section>
 
         <label className="flex items-center gap-2 text-sm text-charcoal/75">

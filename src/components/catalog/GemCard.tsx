@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 import { StockBadge } from "@/components/ui/Badge";
+import { formatPrice } from "@/lib/utils";
 
 interface GemCardProps {
   slug: string;
@@ -19,6 +20,9 @@ interface GemCardProps {
   stockStatus: string;
   /** Real product photo, when one has been uploaded. Falls back to the illustrative SVG preview. */
   primaryImageUrl?: string;
+  /** Only rendered when the admin has opted this item into public pricing. */
+  price?: number | null;
+  showPrice?: boolean;
 }
 
 export function GemCard(props: GemCardProps) {
@@ -67,6 +71,9 @@ export function GemCard(props: GemCardProps) {
           <span>{props.clarityName}</span>
           <span>{props.treatmentName}</span>
         </div>
+        {props.showPrice && props.price != null && (
+          <p className="mt-2 font-serif text-base text-charcoal">{formatPrice(props.price)}</p>
+        )}
       </div>
     </Link>
   );

@@ -202,6 +202,13 @@ model Gemstone {
   certReportNumber String?
   certFileUrl      String?
 
+  // Price is opt-in per item: admins set it and separately choose whether
+  // it's shown publicly, or kept as an internal reference for quoting.
+  // Defaults keep every existing/new item exactly as before (quote-only,
+  // no price shown) until an admin explicitly turns showPrice on.
+  price     Float?
+  showPrice Boolean @default(false)
+
   stockStatus StockStatus @default(AVAILABLE)
   isPublished Boolean     @default(true)
 
@@ -248,6 +255,9 @@ model JewelryPiece {
   metalWeightG Float?
   ringSize     String?
   styleTags    String[]
+
+  price     Float?
+  showPrice Boolean @default(false)
 
   stockStatus StockStatus @default(AVAILABLE)
   isPublished Boolean     @default(true)
@@ -298,6 +308,21 @@ model MediaAsset {
 
   @@index([gemstoneId])
   @@index([jewelryId])
+}
+
+// ---------- Site content (admin-editable marketing copy) ----------
+
+// One row per editable page ("home", "about", ...). `data` is a loosely-typed
+// JSON blob whose shape is owned by the corresponding TS type in
+// src/lib/page-content.ts — deliberately not a rigid column-per-field model,
+// since marketing copy/images change shape more often than catalog data.
+// Missing keys fall back to that page's DEFAULT_*_CONTENT constant, so old
+// rows stay valid after new fields are added in code.
+model PageContent {
+  id        String   @id @default(cuid())
+  page      String   @unique
+  data      Json
+  updatedAt DateTime @updatedAt
 }
 
 // ---------- Quotes & sourcing ----------

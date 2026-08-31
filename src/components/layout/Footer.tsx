@@ -30,8 +30,8 @@ export function Footer() {
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-charcoal/50">A note on pricing</p>
             <p className="mt-3 text-sm leading-relaxed text-charcoal/65">
-              Every piece is individually quoted by our gemologists. Browse freely, then request a quote —
-              no prices are listed on the site.
+              Every piece is individually assessed by our gemologists. Where a price is shown, it&apos;s listed
+              directly — otherwise, browse freely and request a quote.
             </p>
           </div>
         </div>

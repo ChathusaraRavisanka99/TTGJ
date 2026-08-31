@@ -22,6 +22,8 @@ export const gemstoneSchema = z.object({
   certLabId: z.string().optional().or(z.literal("")),
   certReportNumber: z.string().max(100).optional().or(z.literal("")),
   certFileUrl: z.string().max(500).optional().or(z.literal("")),
+  price: z.coerce.number().min(0).max(10_000_000).optional(),
+  showPrice: z.coerce.boolean().default(false),
   stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
   isPublished: z.coerce.boolean().default(true),
 });
@@ -37,6 +39,8 @@ export const jewelrySchema = z.object({
   metalWeightG: z.coerce.number().min(0).max(2000).optional(),
   ringSize: z.string().max(20).optional().or(z.literal("")),
   styleTags: z.string().max(300).optional().or(z.literal("")), // comma-separated in the form
+  price: z.coerce.number().min(0).max(10_000_000).optional(),
+  showPrice: z.coerce.boolean().default(false),
   stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
   isPublished: z.coerce.boolean().default(true),
 });

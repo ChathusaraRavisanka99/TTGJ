@@ -1,22 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
+import { getPageContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";
 import { LinkButton } from "@/components/ui/Button";
 import { GemCard } from "@/components/catalog/GemCard";
 import { Marquee } from "@/components/layout/Marquee";
 import { Reveal, RevealGroup, RevealItem } from "@/components/layout/Reveal";
 import { HeroSlideshow } from "@/components/layout/HeroSlideshow";
-
-// Purpose-shot hero/banner photography (1905x855, full-bleed ready) —
-// see public/images/ATTRIBUTION.md for sources and licensing.
-const HERO_SLIDES = [
-  { src: "/images/hero/03-sapphire-diamond-ring.jpg", alt: "Oval blue sapphire ring with diamond halo" },
-  { src: "/images/hero/01-loose-ruby-crystals.jpg", alt: "Raw ruby crystals on a dark surface" },
-  { src: "/images/hero/05-diamond-emerald-necklace.jpg", alt: "Diamond necklace with emerald floral pendant" },
-  { src: "/images/hero/02-raw-emerald-crystal.jpg", alt: "Raw emerald crystal, macro shot" },
-  { src: "/images/hero/04-gemstone-ring-on-hand.jpg", alt: "Pear-cut blue gemstone ring worn on hand" },
-  { src: "/images/hero/06-loose-diamonds-arrangement.jpg", alt: "Loose round-cut diamonds arranged in a cluster" },
-];
 
 const MINERAL_MARQUEE = [
   "Blue Sapphire",
@@ -30,12 +20,15 @@ const MINERAL_MARQUEE = [
 ];
 
 export default async function HomePage() {
-  const featuredGems = await prisma.gemstone.findMany({
-    where: { isPublished: true },
-    orderBy: { createdAt: "desc" },
-    take: 4,
-    include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true, media: true },
-  });
+  const [featuredGems, content] = await Promise.all([
+    prisma.gemstone.findMany({
+      where: { isPublished: true },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true, media: true },
+    }),
+    getPageContent("home", DEFAULT_HOME_CONTENT),
+  ]);
 
   return (
     <div>
@@ -52,7 +45,7 @@ export default async function HomePage() {
         (portrait ~1024px tall) before it was scoped.
       */}
       <section className="relative flex h-dvh min-h-[720px] w-full snap-start items-center overflow-hidden bg-charcoal lg:max-h-[920px]">
-        <HeroSlideshow images={HERO_SLIDES} />
+        <HeroSlideshow images={content.heroSlides} />
         <div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -63,18 +56,15 @@ export default async function HomePage() {
 
         <div className="relative mx-auto w-full max-w-[120rem] px-5 pt-16 sm:px-8 lg:px-12 xl:px-16">
           <div className="max-w-xl">
-            <p className="text-xs uppercase tracking-[0.35em] text-gold-soft">Ceylon Gemstones &amp; Fine Jewelry</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-gold-soft">{content.heroKicker}</p>
             <h1 className="mt-5 font-serif text-5xl leading-[1.05] text-ivory sm:text-6xl md:text-7xl lg:text-[5.5rem]">
-              Colour, cut, and
+              {content.heroHeadingLine1}
               <br />
-              provenance —
+              {content.heroHeadingLine2}
               <br />
-              <span className="text-gold-soft">designed by you.</span>
+              <span className="text-gold-soft">{content.heroHeadingHighlight}</span>
             </h1>
-            <p className="mt-7 max-w-md text-ivory/60">
-              Explore ethically sourced Ceylon sapphires, rubies, and rare gems. Configure your own stone in real
-              time, then request a private quote from our gemologists.
-            </p>
+            <p className="mt-7 max-w-md text-ivory/60">{content.heroSubtext}</p>
             <div className="mt-10 flex flex-wrap gap-4">
               <LinkButton href="/configurator" variant="gold" size="lg">Design Your Gem</LinkButton>
               <LinkButton href="/gems" variant="outline-light" size="lg">Shop Gemstones</LinkButton>
@@ -124,6 +114,8 @@ export default async function HomePage() {
                   isCeylon={gem.origin.isCeylon}
                   stockStatus={gem.stockStatus}
                   primaryImageUrl={gem.media.find((m) => m.isPrimary)?.url ?? gem.media[0]?.url}
+                  price={gem.price}
+                  showPrice={gem.showPrice}
                 />
               </RevealItem>
             ))}
@@ -135,11 +127,10 @@ export default async function HomePage() {
       <section className="flex min-h-dvh items-center border-y border-border-subtle bg-charcoal py-28 snap-start sm:py-36">
         <Reveal className="mx-auto max-w-4xl px-5 text-center sm:px-8">
           <p className="font-serif text-3xl leading-snug text-ivory sm:text-5xl">
-            &ldquo;Every stone carries two thousand years of Ceylon&apos;s gem-bearing earth — we simply
-            <span className="text-gold-soft"> reveal what was already there.</span>&rdquo;
+            &ldquo;{content.editorialQuote} <span className="text-gold-soft">{content.editorialQuoteHighlight}</span>&rdquo;
           </p>
           <div className="mx-auto mt-8 h-px w-16 bg-gold" />
-          <p className="mt-6 text-xs uppercase tracking-[0.3em] text-ivory/45">Ratnavue Gemological House</p>
+          <p className="mt-6 text-xs uppercase tracking-[0.3em] text-ivory/45">{content.editorialAttribution}</p>
         </Reveal>
       </section>
 
@@ -154,12 +145,7 @@ export default async function HomePage() {
         <div className="mx-auto max-w-[120rem] space-y-8 px-5 sm:space-y-10 sm:px-8 lg:px-12 xl:px-16">
           <Reveal>
             <div className="relative flex h-[28rem] w-full items-center overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10 sm:h-[32rem] lg:h-[36rem]">
-              <Image
-                src="/images/heritage/ratnapura-sapphire-twin-crystal.jpg"
-                alt="Raw sapphire twin crystal specimen from Ratnapura, Sri Lanka"
-                fill
-                className="object-cover"
-              />
+              <Image src={content.heritageImage} alt={content.heritageHeading} fill className="object-cover" />
               <div
                 className="pointer-events-none absolute inset-0"
                 style={{
@@ -168,13 +154,9 @@ export default async function HomePage() {
                 }}
               />
               <div className="relative max-w-md px-8 sm:px-12 lg:px-14">
-                <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">Heritage</p>
-                <h2 className="mt-3 font-serif text-3xl text-ivory sm:text-4xl">Two thousand years of Ceylon gems</h2>
-                <p className="mt-4 leading-relaxed text-ivory/70">
-                  Sri Lanka&apos;s gem gravels have produced some of history&apos;s most celebrated sapphires and
-                  rubies for over two millennia. Ratnavue is built around that legacy — every gem is honestly
-                  graded, and treatment status is always disclosed.
-                </p>
+                <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.heritageKicker}</p>
+                <h2 className="mt-3 font-serif text-3xl text-ivory sm:text-4xl">{content.heritageHeading}</h2>
+                <p className="mt-4 leading-relaxed text-ivory/70">{content.heritageBody}</p>
                 <LinkButton href="/about" variant="outline-light" className="mt-6">Read Our Story</LinkButton>
               </div>
             </div>
@@ -182,12 +164,7 @@ export default async function HomePage() {
 
           <Reveal delay={0.1}>
             <div className="relative flex h-[28rem] w-full items-center overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10 sm:h-[32rem] lg:h-[36rem]">
-              <Image
-                src="/images/heritage/sri-lanka-gem-trays.jpg"
-                alt="Trays of loose faceted gemstones at a gem trading table in Sri Lanka"
-                fill
-                className="object-cover"
-              />
+              <Image src={content.sourcingImage} alt={content.sourcingHeading} fill className="object-cover" />
               <div
                 className="pointer-events-none absolute inset-0"
                 style={{
@@ -196,12 +173,9 @@ export default async function HomePage() {
                 }}
               />
               <div className="relative max-w-md px-8 sm:px-12 lg:px-14">
-                <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">Sourcing</p>
-                <h2 className="mt-3 font-serif text-3xl text-ivory sm:text-4xl">Can&apos;t find the exact stone?</h2>
-                <p className="mt-4 leading-relaxed text-ivory/70">
-                  Tell us what you&apos;re looking for and our sourcing team will search Sri Lanka&apos;s gem markets
-                  on your behalf.
-                </p>
+                <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.sourcingKicker}</p>
+                <h2 className="mt-3 font-serif text-3xl text-ivory sm:text-4xl">{content.sourcingHeading}</h2>
+                <p className="mt-4 leading-relaxed text-ivory/70">{content.sourcingBody}</p>
                 <LinkButton href="/sourcing" variant="outline-light" className="mt-6">Submit a Sourcing Request</LinkButton>
               </div>
             </div>
@@ -216,11 +190,9 @@ export default async function HomePage() {
           style={{ background: "radial-gradient(50% 60% at 50% 100%, rgba(179,145,90,0.18), transparent 70%)" }}
         />
         <Reveal className="relative mx-auto max-w-2xl px-5 sm:px-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">Design Your Gem</p>
-          <h2 className="mt-4 font-serif text-4xl text-ivory sm:text-5xl">Begin with a colour in mind.</h2>
-          <p className="mt-5 text-ivory/60">
-            Mineral, cut, size, tone, and clarity — configured live, quoted privately.
-          </p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.closingKicker}</p>
+          <h2 className="mt-4 font-serif text-4xl text-ivory sm:text-5xl">{content.closingHeading}</h2>
+          <p className="mt-5 text-ivory/60">{content.closingBody}</p>
           <div className="mt-9">
             <LinkButton href="/configurator" variant="gold" size="lg">Open the Configurator</LinkButton>
           </div>

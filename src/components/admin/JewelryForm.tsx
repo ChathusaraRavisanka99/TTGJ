@@ -18,6 +18,8 @@ interface JewelryFormProps {
     metalWeightG: number | null;
     ringSize: string | null;
     styleTags: string[];
+    price: number | null;
+    showPrice: boolean;
     stockStatus: string;
     isPublished: boolean;
   };
@@ -97,6 +99,19 @@ export function JewelryForm({ initial }: JewelryFormProps) {
             <option value="SOLD">Sold</option>
           </Select>
         </div>
+        <div>
+          <Label htmlFor="price">Price (USD)</Label>
+          <Input id="price" name="price" type="number" step="0.01" min="0" defaultValue={initial?.price ?? ""} placeholder="E.g. 6800" />
+          <p className="mt-1 text-xs text-charcoal/45">
+            Used as the quoting reference either way. Only shown to customers if &ldquo;Show price publicly&rdquo; is
+            checked.
+          </p>
+        </div>
+        <label className="flex items-center gap-2 self-end pb-2.5 text-sm text-charcoal/75">
+          <input type="hidden" name="showPrice" value="false" />
+          <input type="checkbox" name="showPrice" value="true" defaultChecked={initial?.showPrice ?? false} className="accent-gold" />
+          Show price publicly (otherwise this piece stays quote-only)
+        </label>
       </section>
 
       <label className="flex items-center gap-2 text-sm text-charcoal/75">

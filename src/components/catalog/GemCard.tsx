@@ -71,8 +71,12 @@ export function GemCard(props: GemCardProps) {
           <span>{props.clarityName}</span>
           <span>{props.treatmentName}</span>
         </div>
-        {props.showPrice && props.price != null && (
+        {props.showPrice && props.price != null ? (
           <p className="mt-2 font-serif text-base text-charcoal">{formatPrice(props.price)}</p>
+        ) : (
+          <p className="mt-3 text-xs font-medium text-gold transition-colors group-hover:text-charcoal">
+            Request a Quote →
+          </p>
         )}
       </div>
     </Link>

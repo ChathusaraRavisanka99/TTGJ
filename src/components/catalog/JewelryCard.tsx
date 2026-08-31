@@ -52,8 +52,12 @@ export function JewelryCard(props: JewelryCardProps) {
         <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/50">
           {props.pieceType.charAt(0) + props.pieceType.slice(1).toLowerCase()} · {METAL_LABELS[props.metalType]}
         </p>
-        {props.showPrice && props.price != null && (
+        {props.showPrice && props.price != null ? (
           <p className="mt-2 font-serif text-base text-charcoal">{formatPrice(props.price)}</p>
+        ) : (
+          <p className="mt-3 text-xs font-medium text-gold transition-colors group-hover:text-charcoal">
+            Request a Quote →
+          </p>
         )}
       </div>
     </Link>

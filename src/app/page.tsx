@@ -4,19 +4,20 @@ import { prisma } from "@/lib/prisma";
 import { getPageContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";
 import { LinkButton } from "@/components/ui/Button";
 import { GemCard } from "@/components/catalog/GemCard";
+import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 import { Marquee } from "@/components/layout/Marquee";
 import { Reveal, RevealGroup, RevealItem } from "@/components/layout/Reveal";
 import { HeroSlideshow } from "@/components/layout/HeroSlideshow";
 
 const MINERAL_MARQUEE = [
-  "Blue Sapphire",
-  "Padparadscha",
-  "Ruby",
-  "Alexandrite",
-  "Cat's Eye Chrysoberyl",
-  "Spinel",
-  "Moonstone",
-  "Zircon",
+  { label: "Blue Sapphire", color: "#3a5f9e" },
+  { label: "Padparadscha", color: "#e08a5c" },
+  { label: "Ruby", color: "#a4283f" },
+  { label: "Alexandrite", color: "#4a7c5d" },
+  { label: "Cat's Eye Chrysoberyl", color: "#b8934a" },
+  { label: "Spinel", color: "#c05a82" },
+  { label: "Moonstone", color: "#9fb8cc" },
+  { label: "Zircon", color: "#5a9bc4" },
 ];
 
 export default async function HomePage() {
@@ -137,14 +138,16 @@ export default async function HomePage() {
       {/* ---------- Heritage / Sourcing ---------- */}
       {/* Same treatment as the hero: full-bleed photo, dark-to-transparent
           scrim from the left, copy overlaid straight on the image — just
-          static banners rather than a slideshow. Deliberately NOT forced to
-          min-h-dvh/snap: two of these stacked run well past one viewport,
-          and snapping the section's top to the viewport top used to cut the
-          second banner off mid-image. */}
+          static banners rather than a slideshow. Side by side at lg+ (one
+          grid row, so both banners stay the same height); stacked below
+          that. Deliberately NOT forced to min-h-dvh/snap: even stacked,
+          the pair runs well past one viewport, and snapping the section's
+          top to the viewport top used to cut the second banner off
+          mid-image. */}
       <section className="bg-ivory-soft py-24 sm:py-32">
-        <div className="mx-auto max-w-[120rem] space-y-8 px-5 sm:space-y-10 sm:px-8 lg:px-12 xl:px-16">
+        <div className="mx-auto grid max-w-[120rem] gap-8 px-5 sm:gap-10 sm:px-8 lg:grid-cols-2 lg:px-12 xl:px-16">
           <Reveal>
-            <div className="relative flex h-[28rem] w-full items-center overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10 sm:h-[32rem] lg:h-[36rem]">
+            <div className="relative flex h-[28rem] w-full items-center overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10 sm:h-[32rem] lg:h-[30rem]">
               <Image src={content.heritageImage} alt={content.heritageHeading} fill className="object-cover" />
               <div
                 className="pointer-events-none absolute inset-0"
@@ -163,7 +166,7 @@ export default async function HomePage() {
           </Reveal>
 
           <Reveal delay={0.1}>
-            <div className="relative flex h-[28rem] w-full items-center overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10 sm:h-[32rem] lg:h-[36rem]">
+            <div className="relative flex h-[28rem] w-full items-center overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10 sm:h-[32rem] lg:h-[30rem]">
               <Image src={content.sourcingImage} alt={content.sourcingHeading} fill className="object-cover" />
               <div
                 className="pointer-events-none absolute inset-0"
@@ -184,19 +187,36 @@ export default async function HomePage() {
       </section>
 
       {/* ---------- Closing CTA ---------- */}
-      <section className="relative flex min-h-dvh items-center overflow-hidden bg-charcoal py-28 text-center snap-start sm:py-36">
+      <section className="relative flex min-h-dvh items-center overflow-hidden bg-charcoal py-28 snap-start sm:py-36">
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{ background: "radial-gradient(50% 60% at 50% 100%, rgba(179,145,90,0.18), transparent 70%)" }}
         />
-        <Reveal className="relative mx-auto max-w-2xl px-5 sm:px-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.closingKicker}</p>
-          <h2 className="mt-4 font-serif text-4xl text-ivory sm:text-5xl">{content.closingHeading}</h2>
-          <p className="mt-5 text-ivory/60">{content.closingBody}</p>
-          <div className="mt-9">
-            <LinkButton href="/configurator" variant="gold" size="lg">Open the Configurator</LinkButton>
-          </div>
-        </Reveal>
+        <div className="relative mx-auto grid max-w-4xl items-center gap-10 px-5 text-center sm:px-8 lg:grid-cols-[1fr_auto] lg:gap-16 lg:text-left">
+          <Reveal className="order-2 lg:order-1">
+            <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.closingKicker}</p>
+            <h2 className="mt-4 font-serif text-4xl text-ivory sm:text-5xl">{content.closingHeading}</h2>
+            <p className="mt-5 text-ivory/60">{content.closingBody}</p>
+            <div className="mt-9">
+              <LinkButton href="/configurator" variant="gold" size="lg">Open the Configurator</LinkButton>
+            </div>
+          </Reveal>
+          {/* A small showcase of the visualizer itself — the same procedural
+              renderer used across the catalog and configurator, now with
+              real per-facet shading (see gem-visualizer commit) rather than
+              the flat "flower" look it used to have. */}
+          <Reveal delay={0.1} className="order-1 mx-auto w-44 sm:w-56 lg:order-2 lg:w-64">
+            <GemVisualizer
+              cutSlug="round-brilliant"
+              hue={221}
+              darkness={42}
+              claritySlug="loupe-clean"
+              caratWeight={2.5}
+              seedKey="closing-cta-showcase"
+              className="w-full drop-shadow-[0_20px_40px_rgba(0,0,0,0.35)]"
+            />
+          </Reveal>
+        </div>
       </section>
     </div>
   );

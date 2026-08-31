@@ -30,11 +30,48 @@ export interface CutRenderData {
 
 const CENTER: Point = [150, 150];
 
-function radialFacetLines(points: Point[], center: Point, sampleEvery = 1): CutRenderData["facetLines"] {
-  const lines: CutRenderData["facetLines"] = [];
+type Lines = CutRenderData["facetLines"];
+
+function line(a: Point, b: Point): Lines[number] {
+  return { x1: a[0], y1: a[1], x2: b[0], y2: b[1] };
+}
+
+/** Facets radiating from a single point (dead centre) to the outline — correct for cuts that genuinely converge there, like rose cut. */
+function radialFacetLines(points: Point[], center: Point, sampleEvery = 1): Lines {
+  const lines: Lines = [];
   for (let i = 0; i < points.length; i += sampleEvery) {
-    const [x, y] = points[i];
-    lines.push({ x1: center[0], y1: center[1], x2: x, y2: y });
+    lines.push(line(center, points[i]));
+  }
+  return lines;
+}
+
+/**
+ * "Main" crown facets connecting the table edge to the girdle — the large
+ * kite/bezel facets that dominate a brilliant-style cut. `outline` and
+ * `table` must be angularly aligned (same length, table[i] is outline[i]
+ * scaled toward the centre), which is true for every shape built via
+ * `scaleToward`.
+ */
+function mainFacetLines(outline: Point[], table: Point[], sampleEvery = 1): Lines {
+  const lines: Lines = [];
+  for (let i = 0; i < outline.length; i += sampleEvery) {
+    lines.push(line(table[i], outline[i]));
+  }
+  return lines;
+}
+
+/**
+ * Small "star" facets interleaved between the main facets — from the table
+ * edge out to a mid-ring, at angular positions offset from the main facets.
+ * This is what gives round/oval brilliants their characteristic two-tier
+ * zigzag crown pattern instead of a plain wagon-wheel of identical spokes.
+ */
+function starFacetLines(outline: Point[], table: Point[], sampleEvery: number, offset: number, midRingFactor = 0.72): Lines {
+  const n = outline.length;
+  const mid = scaleToward(outline, centroid(outline), midRingFactor);
+  const lines: Lines = [];
+  for (let i = offset; i < n; i += sampleEvery) {
+    lines.push(line(table[i], mid[i]));
   }
   return lines;
 }
@@ -51,7 +88,10 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         style: "radial-table",
         ellipse: { rx: baseR, ry: baseR },
         outlinePath: toPath(pts),
-        facetLines: radialFacetLines(pts, CENTER, 4),
+        // 8 main (bezel) facets + 8 interleaved star facets — a simplified
+        // but recognisable version of a real round brilliant's two-tier
+        // crown (8 main + 8 star + 16 upper-girdle in reality).
+        facetLines: [...mainFacetLines(pts, table, 8), ...starFacetLines(pts, table, 8, 4)],
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: baseR,
@@ -66,7 +106,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         style: "radial-table",
         ellipse: { rx, ry },
         outlinePath: toPath(pts),
-        facetLines: radialFacetLines(pts, CENTER, 4),
+        facetLines: [...mainFacetLines(pts, table, 8), ...starFacetLines(pts, table, 8, 4)],
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: Math.max(rx, ry),
@@ -78,7 +118,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
       return {
         style: "radial-table",
         outlinePath: toPath(pts),
-        facetLines: radialFacetLines(pts, CENTER, 4),
+        facetLines: mainFacetLines(pts, table, 4),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: baseR * 1.05,
@@ -101,7 +141,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
     }
     case "princess": {
       const halfS = baseR * 0.82;
-      const pts: Point[] = [
+      const corners: Point[] = [
         [cx - halfS, cy - halfS],
         [cx + halfS, cy - halfS],
         [cx + halfS, cy + halfS],
@@ -113,11 +153,15 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         [cx, cy + halfS],
         [cx - halfS, cy],
       ];
-      const table = scaleToward(pts, CENTER, 0.4);
+      const table = scaleToward(corners, CENTER, 0.4);
+      const midInner = scaleToward(midpoints, CENTER, 0.55);
       return {
         style: "radial-table",
-        outlinePath: toPath(pts),
-        facetLines: radialFacetLines([...pts, ...midpoints], CENTER),
+        outlinePath: toPath(corners),
+        // The corner-to-corner X is a genuine, defining feature of a
+        // princess cut's top-down look; the shorter edge-midpoint
+        // (chevron) facets sit nearer the girdle, not the centre.
+        facetLines: [...radialFacetLines(corners, CENTER), ...mainFacetLines(midpoints, midInner)],
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: halfS * Math.SQRT2,
@@ -127,13 +171,13 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
       const rx = baseR * 1.5;
       const ry = baseR * 1.9;
       const pts = pearPoints(cx, cy, rx, ry, 72);
-      const table = scaleToward(pts, [cx, cy + ry * 0.18], 0.4);
+      const table = scaleToward(pts, CENTER, 0.42);
       return {
         style: "radial-table",
         outlinePath: toPath(pts),
-        facetLines: radialFacetLines(pts, [cx, cy + ry * 0.12], 6),
+        facetLines: mainFacetLines(pts, table, 5),
         tablePath: toPath(table),
-        center: [cx, cy + ry * 0.12],
+        center: CENTER,
         boundingRadius: Math.max(rx, ry),
       };
     }
@@ -145,7 +189,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
       return {
         style: "radial-table",
         outlinePath: toPath(pts),
-        facetLines: radialFacetLines(pts, CENTER, 6),
+        facetLines: mainFacetLines(pts, table, 5),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: Math.max(rx, ry),
@@ -159,7 +203,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
       return {
         style: "radial-table",
         outlinePath: toPath(pts),
-        facetLines: radialFacetLines(pts, CENTER),
+        facetLines: mainFacetLines(pts, table),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: Math.max(halfW, halfH),
@@ -182,23 +226,24 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
     case "heart": {
       const r = baseR * 1.15;
       const pts = heartPoints(cx, cy - r * 0.12, r, r, 80);
-      const table = scaleToward(pts, [cx, cy], 0.38);
+      const heartCenter = centroid(pts);
+      const table = scaleToward(pts, heartCenter, 0.4);
       return {
         style: "radial-table",
         outlinePath: toPath(pts),
-        facetLines: radialFacetLines(pts, [cx, cy], 6),
+        facetLines: mainFacetLines(pts, table, 5),
         tablePath: toPath(table),
-        center: [cx, cy],
+        center: heartCenter,
         boundingRadius: r,
       };
     }
     case "trillion": {
       const pts = trillionPoints(cx, cy, baseR * 1.1, baseR * 1.1, 0.14, 72);
-      const table = scaleToward(pts, CENTER, 0.38);
+      const table = scaleToward(pts, CENTER, 0.4);
       return {
         style: "radial-table",
         outlinePath: toPath(pts),
-        facetLines: radialFacetLines(pts, CENTER, 6),
+        facetLines: mainFacetLines(pts, table, 6),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: baseR * 1.1,
@@ -232,12 +277,16 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
       };
     }
     case "rose-cut": {
+      // Rose cuts genuinely have no table — their facets converge toward a
+      // point near the crown's apex, so radiating from the centre (unlike
+      // every other faceted cut above) is the accurate choice here. A
+      // classic "full Dutch rose" has 24 facets.
       const pts = ellipsePoints(cx, cy, baseR, baseR, 96);
       return {
         style: "rose",
         ellipse: { rx: baseR, ry: baseR },
         outlinePath: toPath(pts),
-        facetLines: radialFacetLines(pts, CENTER, 3),
+        facetLines: radialFacetLines(pts, CENTER, 4),
         center: CENTER,
         boundingRadius: baseR,
       };
@@ -295,12 +344,13 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
     }
     default: {
       const pts = ellipsePoints(cx, cy, baseR, baseR, 64);
+      const table = scaleToward(pts, CENTER, 0.42);
       return {
         style: "radial-table",
         ellipse: { rx: baseR, ry: baseR },
         outlinePath: toPath(pts),
-        facetLines: radialFacetLines(pts, CENTER, 4),
-        tablePath: toPath(scaleToward(pts, CENTER, 0.42)),
+        facetLines: mainFacetLines(pts, table, 4),
+        tablePath: toPath(table),
         center: CENTER,
         boundingRadius: baseR,
       };

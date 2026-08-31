@@ -7,15 +7,15 @@ import { Marquee } from "@/components/layout/Marquee";
 import { Reveal, RevealGroup, RevealItem } from "@/components/layout/Reveal";
 import { HeroSlideshow } from "@/components/layout/HeroSlideshow";
 
-// Only the highest-resolution photos go in the full-bleed hero — anything
-// under ~800px looks visibly soft stretched across the viewport. The lower-
-// resolution shots (padparadscha, ruby) still work fine at card/detail size,
-// so they stay in the catalog via prisma/seed.ts without appearing here.
+// Purpose-shot hero/banner photography (1905x855, full-bleed ready) —
+// see public/images/ATTRIBUTION.md for sources and licensing.
 const HERO_SLIDES = [
-  { src: "/images/jewelry/sapphire-ring.jpg", alt: "Oval Ceylon blue sapphire ring in 18K gold" },
-  { src: "/images/gems/blue-sapphire.jpg", alt: "Cornflower blue sapphire" },
-  { src: "/images/gems/alexandrite.jpg", alt: "Alexandrite under daylight and incandescent light" },
-  { src: "/images/heritage/ratnapura-gem-mine.jpg", alt: "A raw sapphire crystal from Sri Lanka's gem-bearing gravels" },
+  { src: "/images/hero/03-sapphire-diamond-ring.jpg", alt: "Oval blue sapphire ring with diamond halo" },
+  { src: "/images/hero/01-loose-ruby-crystals.jpg", alt: "Raw ruby crystals on a dark surface" },
+  { src: "/images/hero/05-diamond-emerald-necklace.jpg", alt: "Diamond necklace with emerald floral pendant" },
+  { src: "/images/hero/02-raw-emerald-crystal.jpg", alt: "Raw emerald crystal, macro shot" },
+  { src: "/images/hero/04-gemstone-ring-on-hand.jpg", alt: "Pear-cut blue gemstone ring worn on hand" },
+  { src: "/images/hero/06-loose-diamonds-arrangement.jpg", alt: "Loose round-cut diamonds arranged in a cluster" },
 ];
 
 const MINERAL_MARQUEE = [

@@ -6,6 +6,17 @@ import { generateInclusions } from "./inclusions";
 import { caratToRenderScale } from "./size";
 import { renderCut } from "./render";
 
+// `Math.cos`/`Math.sin`/`Math.acos`/`Math.atan2` aren't required by spec to be
+// bit-identical across JS engines — Node's V8 (server render) and the
+// browser's V8 (hydration) can disagree in the last one or two bits for
+// these transcendental functions. Left as raw floats, that shows up as a
+// hydration mismatch on any numeric SVG attribute fed by cut geometry that
+// uses them (round-trips through `toPath()` already avoid this via
+// `toFixed`, but line/ellipse/circle attributes rendered directly don't).
+// Rounding every such value to the same fixed precision on both passes
+// guarantees identical output regardless of engine-level trig variance.
+const r = (n: number) => Math.round(n * 100) / 100;
+
 export interface GemVisualizerProps {
   cutSlug: string;
   hue: number;
@@ -70,7 +81,7 @@ export function GemVisualizer({
 
       <g filter={`url(#${shadowFilterId})`}>
         {cut.ellipse ? (
-          <ellipse cx={cut.center[0]} cy={cut.center[1]} rx={cut.ellipse.rx} ry={cut.ellipse.ry} fill={`url(#${gradientId})`} />
+          <ellipse cx={r(cut.center[0])} cy={r(cut.center[1])} rx={r(cut.ellipse.rx)} ry={r(cut.ellipse.ry)} fill={`url(#${gradientId})`} />
         ) : (
           <path d={cut.outlinePath} fill={`url(#${cut.style.startsWith("dome") ? domeGradientId : gradientId})`} />
         )}
@@ -79,10 +90,10 @@ export function GemVisualizer({
       {/* Outline stroke */}
       {cut.ellipse ? (
         <ellipse
-          cx={cut.center[0]}
-          cy={cut.center[1]}
-          rx={cut.ellipse.rx}
-          ry={cut.ellipse.ry}
+          cx={r(cut.center[0])}
+          cy={r(cut.center[1])}
+          rx={r(cut.ellipse.rx)}
+          ry={r(cut.ellipse.ry)}
           fill="none"
           stroke={colors.shadow}
           strokeWidth={1.2}
@@ -96,10 +107,10 @@ export function GemVisualizer({
       {cut.facetLines.map((line, i) => (
         <line
           key={i}
-          x1={line.x1}
-          y1={line.y1}
-          x2={line.x2}
-          y2={line.y2}
+          x1={r(line.x1)}
+          y1={r(line.y1)}
+          x2={r(line.x2)}
+          y2={r(line.y2)}
           stroke={colors.highlight}
           strokeWidth={0.6}
           strokeOpacity={0.35}
@@ -121,10 +132,10 @@ export function GemVisualizer({
         cut.facetLines.map((line, i) => (
           <line
             key={i}
-            x1={line.x1}
-            y1={line.y1}
-            x2={line.x2}
-            y2={line.y2}
+            x1={r(line.x1)}
+            y1={r(line.y1)}
+            x2={r(line.x2)}
+            y2={r(line.y2)}
             stroke={colors.highlight}
             strokeWidth={1}
             strokeOpacity={0.3}
@@ -133,15 +144,15 @@ export function GemVisualizer({
 
       {/* Subtle inclusion overlay */}
       {inclusions.map((speck, i) => (
-        <circle key={i} cx={speck.cx} cy={speck.cy} r={speck.r} fill="#2a2a2a" opacity={speck.opacity} />
+        <circle key={i} cx={r(speck.cx)} cy={r(speck.cy)} r={r(speck.r)} fill="#2a2a2a" opacity={speck.opacity} />
       ))}
 
       {/* Soft top highlight to sell "gem" over "flat shape" */}
       <ellipse
-        cx={cut.center[0] - cut.boundingRadius * 0.32}
-        cy={cut.center[1] - cut.boundingRadius * 0.42}
-        rx={cut.boundingRadius * 0.28}
-        ry={cut.boundingRadius * 0.16}
+        cx={r(cut.center[0] - cut.boundingRadius * 0.32)}
+        cy={r(cut.center[1] - cut.boundingRadius * 0.42)}
+        rx={r(cut.boundingRadius * 0.28)}
+        ry={r(cut.boundingRadius * 0.16)}
         fill="white"
         opacity={0.35}
       />

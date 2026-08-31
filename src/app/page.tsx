@@ -7,13 +7,15 @@ import { Marquee } from "@/components/layout/Marquee";
 import { Reveal, RevealGroup, RevealItem } from "@/components/layout/Reveal";
 import { HeroSlideshow } from "@/components/layout/HeroSlideshow";
 
+// Only the highest-resolution photos go in the full-bleed hero — anything
+// under ~800px looks visibly soft stretched across the viewport. The lower-
+// resolution shots (padparadscha, ruby) still work fine at card/detail size,
+// so they stay in the catalog via prisma/seed.ts without appearing here.
 const HERO_SLIDES = [
   { src: "/images/jewelry/sapphire-ring.jpg", alt: "Oval Ceylon blue sapphire ring in 18K gold" },
-  { src: "/images/gems/padparadscha-sapphire.jpg", alt: "Padparadscha sapphire, cushion cut" },
-  { src: "/images/gems/alexandrite.jpg", alt: "Colour-change alexandrite" },
-  { src: "/images/gems/cats-eye-chrysoberyl.jpg", alt: "Cat's eye chrysoberyl cabochon" },
-  { src: "/images/gems/ruby.jpg", alt: "Faceted ruby" },
   { src: "/images/gems/blue-sapphire.jpg", alt: "Cornflower blue sapphire" },
+  { src: "/images/gems/alexandrite.jpg", alt: "Alexandrite under daylight and incandescent light" },
+  { src: "/images/heritage/ratnapura-gem-mine.jpg", alt: "A raw sapphire crystal from Sri Lanka's gem-bearing gravels" },
 ];
 
 const MINERAL_MARQUEE = [

@@ -39,6 +39,17 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Gentle section-to-section scroll snapping. Only elements that opt in via
+   `snap-start` (e.g. the home page's full-height sections) become snap
+   points — everywhere else this has no visual effect, so it's safe to set
+   globally rather than re-scoping per page. `proximity`, not `mandatory`:
+   content-driven sections can run taller than the viewport, and mandatory
+   snapping would fight the user's scroll instead of just settling near a
+   break when they let go. */
+html {
+  scroll-snap-type: y proximity;
+}
+
 h1, h2, h3, h4, .font-serif {
   font-family: var(--font-serif), ui-serif, Georgia, serif;
 }

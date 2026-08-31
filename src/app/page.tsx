@@ -40,7 +40,18 @@ export default async function HomePage() {
   return (
     <div>
       {/* ---------- Hero ---------- */}
-      <section className="relative flex h-screen min-h-[720px] max-h-[920px] w-full items-center overflow-hidden bg-charcoal">
+      {/*
+        `h-dvh`, not `h-screen`: on iOS/Android, 100vh is sized against the
+        largest possible viewport (as if browser chrome were hidden), not
+        the viewport actually visible on load — so a `100vh` hero either
+        shows a sliver of the next section under the address bar, or looks
+        short once the chrome collapses. `dvh` tracks the real, current
+        viewport instead. The `920px` cap only kicks in at `lg`+ (desktop) —
+        it exists purely to stop the hero ballooning on ultra-tall desktop
+        monitors, and was clipping the hero short on tablets like iPad Mini
+        (portrait ~1024px tall) before it was scoped.
+      */}
+      <section className="relative flex h-dvh min-h-[720px] w-full snap-start items-center overflow-hidden bg-charcoal lg:max-h-[920px]">
         <HeroSlideshow images={HERO_SLIDES} />
         <div
           className="pointer-events-none absolute inset-0"
@@ -85,7 +96,7 @@ export default async function HomePage() {
 
       {/* ---------- Featured ---------- */}
       {featuredGems.length > 0 && (
-        <section className="mx-auto max-w-[120rem] px-5 py-24 sm:px-8 sm:py-32 lg:px-12 xl:px-16">
+        <section className="mx-auto flex min-h-dvh w-full max-w-[120rem] snap-start flex-col justify-center px-5 py-24 sm:px-8 sm:py-32 lg:px-12 xl:px-16">
           <Reveal className="mb-14 flex items-end justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-gold">Recently Added</p>
@@ -121,7 +132,7 @@ export default async function HomePage() {
       )}
 
       {/* ---------- Editorial statement ---------- */}
-      <section className="border-y border-border-subtle bg-charcoal py-28 sm:py-36">
+      <section className="flex min-h-dvh items-center border-y border-border-subtle bg-charcoal py-28 snap-start sm:py-36">
         <Reveal className="mx-auto max-w-4xl px-5 text-center sm:px-8">
           <p className="font-serif text-3xl leading-snug text-ivory sm:text-5xl">
             &ldquo;Every stone carries two thousand years of Ceylon&apos;s gem-bearing earth — we simply
@@ -133,7 +144,10 @@ export default async function HomePage() {
       </section>
 
       {/* ---------- Heritage / Sourcing ---------- */}
-      <section className="bg-ivory-soft">
+      {/* One snap section, one screen — Heritage and Sourcing stay side by
+          side as a single unit rather than becoming two separate
+          full-height page breaks. */}
+      <section className="flex min-h-dvh items-center bg-ivory-soft snap-start">
         <div className="mx-auto grid max-w-[120rem] gap-16 px-5 py-24 sm:px-8 sm:py-32 md:grid-cols-2 lg:px-12 xl:px-16">
           <Reveal>
             <div className="relative mb-6 aspect-[4/3] overflow-hidden rounded-2xl bg-charcoal">
@@ -167,7 +181,7 @@ export default async function HomePage() {
       </section>
 
       {/* ---------- Closing CTA ---------- */}
-      <section className="relative overflow-hidden bg-charcoal py-28 text-center sm:py-36">
+      <section className="relative flex min-h-dvh items-center overflow-hidden bg-charcoal py-28 text-center snap-start sm:py-36">
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{ background: "radial-gradient(50% 60% at 50% 100%, rgba(179,145,90,0.18), transparent 70%)" }}

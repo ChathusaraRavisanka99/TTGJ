@@ -11,6 +11,7 @@ import {
   heartPoints,
   marquisePoints,
   trillionPoints,
+  facetWedges,
 } from "./geometry";
 
 export type FacetStyle = "radial-table" | "radial-no-table" | "step" | "rose" | "dome" | "dome-ridge";
@@ -21,6 +22,8 @@ export interface CutRenderData {
   ellipse?: { rx: number; ry: number };
   outlinePath: string;
   facetLines: { x1: number; y1: number; x2: number; y2: number }[];
+  /** Alternately-shaded facet fills, layered under facetLines/tablePath — see facetWedges(). */
+  facetWedgePaths?: string[];
   tablePath?: string;
   stepPaths?: string[];
   center: Point;
@@ -92,6 +95,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         // but recognisable version of a real round brilliant's two-tier
         // crown (8 main + 8 star + 16 upper-girdle in reality).
         facetLines: [...mainFacetLines(pts, table, 8), ...starFacetLines(pts, table, 8, 4)],
+        facetWedgePaths: facetWedges(pts, table, 8),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: baseR,
@@ -107,6 +111,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         ellipse: { rx, ry },
         outlinePath: toPath(pts),
         facetLines: [...mainFacetLines(pts, table, 8), ...starFacetLines(pts, table, 8, 4)],
+        facetWedgePaths: facetWedges(pts, table, 8),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: Math.max(rx, ry),
@@ -119,6 +124,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         style: "radial-table",
         outlinePath: toPath(pts),
         facetLines: mainFacetLines(pts, table, 4),
+        facetWedgePaths: facetWedges(pts, table, 4),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: baseR * 1.05,
@@ -176,6 +182,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         style: "radial-table",
         outlinePath: toPath(pts),
         facetLines: mainFacetLines(pts, table, 5),
+        facetWedgePaths: facetWedges(pts, table, 5),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: Math.max(rx, ry),
@@ -190,6 +197,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         style: "radial-table",
         outlinePath: toPath(pts),
         facetLines: mainFacetLines(pts, table, 5),
+        facetWedgePaths: facetWedges(pts, table, 5),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: Math.max(rx, ry),
@@ -204,6 +212,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         style: "radial-table",
         outlinePath: toPath(pts),
         facetLines: mainFacetLines(pts, table),
+        facetWedgePaths: facetWedges(pts, table, 1),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: Math.max(halfW, halfH),
@@ -232,6 +241,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         style: "radial-table",
         outlinePath: toPath(pts),
         facetLines: mainFacetLines(pts, table, 5),
+        facetWedgePaths: facetWedges(pts, table, 5),
         tablePath: toPath(table),
         center: heartCenter,
         boundingRadius: r,
@@ -244,6 +254,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         style: "radial-table",
         outlinePath: toPath(pts),
         facetLines: mainFacetLines(pts, table, 6),
+        facetWedgePaths: facetWedges(pts, table, 6),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: baseR * 1.1,
@@ -350,6 +361,7 @@ export function renderCut(cutSlug: string, scale: number): CutRenderData {
         ellipse: { rx: baseR, ry: baseR },
         outlinePath: toPath(pts),
         facetLines: mainFacetLines(pts, table, 4),
+        facetWedgePaths: facetWedges(pts, table, 4),
         tablePath: toPath(table),
         center: CENTER,
         boundingRadius: baseR,

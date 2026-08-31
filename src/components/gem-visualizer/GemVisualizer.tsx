@@ -87,6 +87,21 @@ export function GemVisualizer({
         )}
       </g>
 
+      {/* Per-facet alternating tint — without this, a faceted cut is just
+          one smooth gradient plus thin wire outlines over it, which reads
+          as a decorated disc rather than a gem. Alternating a light/dark
+          overlay per wedge (derived straight from the same facet geometry
+          the outline lines already use) is what actually sells "faceted"
+          instead of "wagon wheel". */}
+      {cut.facetWedgePaths?.map((d, i) => (
+        <path
+          key={i}
+          d={d}
+          fill={i % 2 === 0 ? colors.highlight : colors.shadow}
+          fillOpacity={i % 2 === 0 ? 0.16 : 0.2}
+        />
+      ))}
+
       {/* Outline stroke */}
       {cut.ellipse ? (
         <ellipse

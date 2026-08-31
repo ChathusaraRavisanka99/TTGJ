@@ -179,6 +179,40 @@ export function marquisePoints(cx: number, cy: number, rx: number, ry: number, c
   return [...top, ...bottom].map(([x, y]) => [cx + x, cy + y]);
 }
 
+/**
+ * Splits a table-to-girdle facet ring into individual wedge polygons, one
+ * per sampled angular step, each bounded by the true girdle arc (not a
+ * straight chord across it) so curved outlines still read as curved between
+ * facets. `outline` and `table` must be angularly aligned (same length,
+ * table[i] a scaled version of outline[i]) — true for every shape built via
+ * `scaleToward`, which is how every caller of this produces its `table` arg.
+ *
+ * This exists so each facet can get its own fill (alternating tone to
+ * suggest light catching adjacent facets differently) instead of only a
+ * thin stroked outline over one flat gradient — a flat gradient plus wire
+ * outlines reads as a decorated disc/wagon-wheel, not a faceted gem.
+ */
+export function facetWedges(outline: Point[], table: Point[], sampleEvery: number): string[] {
+  const n = outline.length;
+  const indices: number[] = [];
+  for (let i = 0; i < n; i += sampleEvery) indices.push(i);
+
+  const wedges: string[] = [];
+  for (let k = 0; k < indices.length; k++) {
+    const i = indices[k];
+    const j = indices[(k + 1) % indices.length];
+    const arc: Point[] = [];
+    if (j > i) {
+      for (let idx = i; idx <= j; idx++) arc.push(outline[idx]);
+    } else {
+      for (let idx = i; idx < n; idx++) arc.push(outline[idx]);
+      for (let idx = 0; idx <= j; idx++) arc.push(outline[idx]);
+    }
+    wedges.push(toPath([table[i], ...arc, table[j]]));
+  }
+  return wedges;
+}
+
 /** Equilateral triangle with gently convex (bulged outward) sides. */
 export function trillionPoints(cx: number, cy: number, rx: number, ry: number, bulge = 0.12, count = 72): Point[] {
   const corners = regularPolygon(cx, cy, rx, ry, 3, -90);

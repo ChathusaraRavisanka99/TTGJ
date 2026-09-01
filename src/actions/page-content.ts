@@ -57,6 +57,8 @@ const homeTextSchema = z.object({
   closingKicker: z.string().max(200),
   closingHeading: z.string().max(300),
   closingBody: z.string().max(1000),
+  showFeaturedGems: z.coerce.boolean().default(false),
+  showFeaturedJewelry: z.coerce.boolean().default(false),
 });
 
 export async function updateHomeText(formData: FormData): Promise<ActionResult> {

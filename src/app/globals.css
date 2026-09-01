@@ -97,10 +97,32 @@ h1, h2, h3, h4, .font-serif {
   animation: loader-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Closing CTA's showcase gem — a slow, mild colour drift meant to read as
+   a small "light wave" passing through the stone, not a visible cycle.
+   Pure CSS filter on the wrapper (hue-rotate + a touch of brightness)
+   rather than animating GemVisualizer's `hue` prop in JS: the visualizer
+   computes its facet gradients from that prop at render time, so animating
+   it smoothly would mean re-rendering SVG fills every frame from a client
+   component. A filter sweep gets the same living, drifting-colour effect
+   entirely on the compositor, at any amplitude/speed we want, without
+   touching the visualizer itself. Small amplitude (±14deg) and a long
+   9s ease-in-out loop keep it "mild" rather than a rainbow effect.
+   Combined with the visualizer's own drop-shadow via a wrapping div
+   (filter doesn't compose with an element's own filter class otherwise). */
+@keyframes gem-color-wave {
+  0%, 100% { filter: hue-rotate(0deg) brightness(1); }
+  50% { filter: hue-rotate(14deg) brightness(1.05); }
+}
+
+.animate-gem-color-wave {
+  animation: gem-color-wave 9s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
   .animate-scroll-cue,
-  .animate-loader-in {
+  .animate-loader-in,
+  .animate-gem-color-wave {
     animation: none;
   }
 }

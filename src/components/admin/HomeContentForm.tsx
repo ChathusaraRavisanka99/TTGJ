@@ -104,6 +104,27 @@ export function HomeContentForm({ initial }: { initial: HomeContent }) {
       </section>
 
       <section>
+        <p className="font-serif text-lg text-charcoal">Sections</p>
+        <p className="mt-1 text-xs text-charcoal/50">
+          Which gems and jewelry pieces show up is picked from their admin list pages (click the star on a row) —
+          these switches just turn the whole section on or off. A section stays hidden if it&apos;s on but nothing
+          has been marked featured yet.
+        </p>
+        <div className="mt-3 flex flex-col gap-2">
+          <label className="flex items-center gap-2 text-sm text-charcoal/75">
+            <input type="hidden" name="showFeaturedGems" value="false" />
+            <input type="checkbox" name="showFeaturedGems" value="true" defaultChecked={initial.showFeaturedGems} className="accent-gold" />
+            Show Featured Gemstones section
+          </label>
+          <label className="flex items-center gap-2 text-sm text-charcoal/75">
+            <input type="hidden" name="showFeaturedJewelry" value="false" />
+            <input type="checkbox" name="showFeaturedJewelry" value="true" defaultChecked={initial.showFeaturedJewelry} className="accent-gold" />
+            Show Featured Jewelry section
+          </label>
+        </div>
+      </section>
+
+      <section>
         <p className="font-serif text-lg text-charcoal">Closing CTA</p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <div>

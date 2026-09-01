@@ -36,6 +36,13 @@ export interface HomeContent {
   closingKicker: string;
   closingHeading: string;
   closingBody: string;
+  // Independent on/off switches for the two curated sections — the items
+  // themselves are picked separately (Gemstone.isFeatured /
+  // JewelryPiece.isFeatured, toggled from their admin list pages). A
+  // section only actually renders when its switch is on AND at least one
+  // item has been marked featured.
+  showFeaturedGems: boolean;
+  showFeaturedJewelry: boolean;
 }
 
 export const DEFAULT_HOME_CONTENT: HomeContent = {
@@ -68,6 +75,8 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
   closingKicker: "Design Your Gem",
   closingHeading: "Begin with a colour in mind.",
   closingBody: "Mineral, cut, size, tone, and clarity — configured live, quoted privately.",
+  showFeaturedGems: true,
+  showFeaturedJewelry: true,
 };
 
 export interface AboutContent {

@@ -217,6 +217,12 @@ model Gemstone {
   stockStatus StockStatus @default(AVAILABLE)
   isPublished Boolean     @default(true)
 
+  // Curated by admins for the homepage's Featured Gemstones section
+  // (independent of isPublished — a piece can be published but not
+  // featured). The section itself can be switched off entirely via
+  // HomeContent.showFeaturedGems without touching any item's flag.
+  isFeatured Boolean @default(false)
+
   media MediaAsset[]
 
   quoteRequests       QuoteRequest[]
@@ -228,6 +234,7 @@ model Gemstone {
   @@index([mineralId])
   @@index([cutId])
   @@index([stockStatus])
+  @@index([isFeatured])
 }
 
 enum PieceType {
@@ -267,6 +274,10 @@ model JewelryPiece {
   stockStatus StockStatus @default(AVAILABLE)
   isPublished Boolean     @default(true)
 
+  // Same curation flag as Gemstone.isFeatured, for the homepage's
+  // Featured Jewelry section.
+  isFeatured Boolean @default(false)
+
   media     MediaAsset[]
   gemstones JewelryGemstoneLink[]
 
@@ -277,6 +288,7 @@ model JewelryPiece {
 
   @@index([pieceType])
   @@index([stockStatus])
+  @@index([isFeatured])
 }
 
 model JewelryGemstoneLink {

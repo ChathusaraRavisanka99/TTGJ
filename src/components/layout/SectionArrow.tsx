@@ -23,10 +23,14 @@ export function SectionArrow({
   direction = "down",
   tone = "light",
 }: {
-  target: string;
+  // Nullable so callers computing a dynamic chain of optional sections
+  // (see the homepage's sectionChain) can pass "no neighbor in this
+  // direction" without a separate conditional at each call site.
+  target: string | null;
   direction?: "up" | "down";
   tone?: "light" | "dark";
 }) {
+  if (!target) return null;
   const Icon = direction === "up" ? ChevronUp : ChevronDown;
   return (
     <button

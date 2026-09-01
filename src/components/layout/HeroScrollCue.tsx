@@ -1,7 +1,8 @@
 "use client";
 
 /** Same look as the original static hero scroll hint, just made clickable. */
-export function HeroScrollCue({ target }: { target: string }) {
+export function HeroScrollCue({ target }: { target: string | null }) {
+  if (!target) return null;
   return (
     <button
       type="button"

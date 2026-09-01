@@ -26,6 +26,7 @@ export const gemstoneSchema = z.object({
   showPrice: z.coerce.boolean().default(false),
   stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
   isPublished: z.coerce.boolean().default(true),
+  isFeatured: z.coerce.boolean().default(false),
 });
 
 export type GemstoneInput = z.infer<typeof gemstoneSchema>;
@@ -43,6 +44,7 @@ export const jewelrySchema = z.object({
   showPrice: z.coerce.boolean().default(false),
   stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
   isPublished: z.coerce.boolean().default(true),
+  isFeatured: z.coerce.boolean().default(false),
 });
 
 export type JewelryInput = z.infer<typeof jewelrySchema>;

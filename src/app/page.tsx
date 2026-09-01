@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getPageContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";
 import { LinkButton } from "@/components/ui/Button";
 import { GemCard } from "@/components/catalog/GemCard";
+import { JewelryCard } from "@/components/catalog/JewelryCard";
 import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 import { Marquee } from "@/components/layout/Marquee";
 import { Reveal, RevealGroup, RevealItem } from "@/components/layout/Reveal";
@@ -23,15 +24,47 @@ const MINERAL_MARQUEE = [
 ];
 
 export default async function HomePage() {
-  const [featuredGems, content] = await Promise.all([
+  const [featuredGems, featuredJewelry, content] = await Promise.all([
     prisma.gemstone.findMany({
-      where: { isPublished: true },
+      where: { isPublished: true, isFeatured: true },
       orderBy: { createdAt: "desc" },
-      take: 4,
+      take: 8,
       include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true, media: true },
+    }),
+    prisma.jewelryPiece.findMany({
+      where: { isPublished: true, isFeatured: true },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      include: { media: { orderBy: { sortOrder: "asc" } } },
     }),
     getPageContent("home", DEFAULT_HOME_CONTENT),
   ]);
+
+  // Each of these two sections is curated by admins (feature specific items
+  // from their list pages) and independently switched on/off from Home Page
+  // content — either can be absent, so the up/down scroll arrows below
+  // can't hardcode their neighbor's id. This chain is just "whichever
+  // sections actually rendered, in order" — prevSection/nextSection look up
+  // each one's real neighbor so the arrows always land on a section that
+  // exists, however many of these are turned on.
+  const showFeaturedGems = content.showFeaturedGems && featuredGems.length > 0;
+  const showFeaturedJewelry = content.showFeaturedJewelry && featuredJewelry.length > 0;
+  const sectionChain = [
+    "hero",
+    showFeaturedGems ? "featured" : null,
+    showFeaturedJewelry ? "featured-jewelry" : null,
+    "editorial",
+    "heritage-sourcing",
+    "closing-cta",
+  ].filter((id): id is string => id !== null);
+  const prevSection = (id: string) => {
+    const i = sectionChain.indexOf(id);
+    return i > 0 ? sectionChain[i - 1] : null;
+  };
+  const nextSection = (id: string) => {
+    const i = sectionChain.indexOf(id);
+    return i >= 0 && i < sectionChain.length - 1 ? sectionChain[i + 1] : null;
+  };
 
   return (
     <div>
@@ -76,7 +109,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <HeroScrollCue target="featured" />
+        <HeroScrollCue target={nextSection("hero")} />
       </section>
 
       {/* ---------- Marquee ---------- */}
@@ -84,12 +117,16 @@ export default async function HomePage() {
         <Marquee items={MINERAL_MARQUEE} />
       </div>
 
-      {/* ---------- Featured ---------- */}
-      {featuredGems.length > 0 && (
+      {/* ---------- Featured Gemstones ---------- */}
+      {/* Curated, not automatic: admins mark items Gemstone.isFeatured from
+          /admin/gems (star on each row), and the whole section can be
+          switched off from Home Page content regardless of how many items
+          are marked — see showFeaturedGems above. */}
+      {showFeaturedGems && (
         <section id="featured" className="relative mx-auto flex min-h-dvh w-full max-w-[120rem] snap-start flex-col justify-center px-5 py-24 sm:px-8 sm:py-32 lg:px-12 xl:px-16">
           <Reveal className="mb-14 flex items-end justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gold">Recently Added</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-gold">Hand-Selected</p>
               <h2 className="mt-3 font-serif text-4xl text-charcoal sm:text-5xl">Featured Gemstones</h2>
             </div>
             <Link href="/gems" className="hidden text-sm text-charcoal/70 underline decoration-charcoal/30 underline-offset-4 hover:text-charcoal sm:block">
@@ -120,8 +157,43 @@ export default async function HomePage() {
               </RevealItem>
             ))}
           </RevealGroup>
-          <SectionArrow target="hero" direction="up" tone="dark" />
-          <SectionArrow target="editorial" direction="down" tone="dark" />
+          <SectionArrow target={prevSection("featured")} direction="up" tone="dark" />
+          <SectionArrow target={nextSection("featured")} direction="down" tone="dark" />
+        </section>
+      )}
+
+      {/* ---------- Featured Jewelry ---------- */}
+      {/* Same curation pattern as Featured Gemstones, independently toggled
+          (JewelryPiece.isFeatured + showFeaturedJewelry). */}
+      {showFeaturedJewelry && (
+        <section id="featured-jewelry" className="relative mx-auto flex min-h-dvh w-full max-w-[120rem] snap-start flex-col justify-center bg-ivory-soft px-5 py-24 sm:px-8 sm:py-32 lg:px-12 xl:px-16">
+          <Reveal className="mb-14 flex items-end justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gold">Hand-Selected</p>
+              <h2 className="mt-3 font-serif text-4xl text-charcoal sm:text-5xl">Featured Jewelry</h2>
+            </div>
+            <Link href="/jewelry" className="hidden text-sm text-charcoal/70 underline decoration-charcoal/30 underline-offset-4 hover:text-charcoal sm:block">
+              View all
+            </Link>
+          </Reveal>
+          <RevealGroup className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+            {featuredJewelry.map((piece) => (
+              <RevealItem key={piece.id}>
+                <JewelryCard
+                  slug={piece.slug}
+                  name={piece.name}
+                  pieceType={piece.pieceType}
+                  metalType={piece.metalType}
+                  stockStatus={piece.stockStatus}
+                  primaryImageUrl={piece.media.find((m) => m.isPrimary)?.url ?? piece.media[0]?.url}
+                  price={piece.price}
+                  showPrice={piece.showPrice}
+                />
+              </RevealItem>
+            ))}
+          </RevealGroup>
+          <SectionArrow target={prevSection("featured-jewelry")} direction="up" tone="dark" />
+          <SectionArrow target={nextSection("featured-jewelry")} direction="down" tone="dark" />
         </section>
       )}
 
@@ -134,8 +206,8 @@ export default async function HomePage() {
           <div className="mx-auto mt-8 h-px w-16 bg-gold" />
           <p className="mt-6 text-xs uppercase tracking-[0.3em] text-ivory/45">{content.editorialAttribution}</p>
         </Reveal>
-        <SectionArrow target="featured" direction="up" tone="light" />
-        <SectionArrow target="heritage-sourcing" direction="down" tone="light" />
+        <SectionArrow target={prevSection("editorial")} direction="up" tone="light" />
+        <SectionArrow target={nextSection("editorial")} direction="down" tone="light" />
       </section>
 
       {/* ---------- Heritage / Sourcing ---------- */}
@@ -188,8 +260,8 @@ export default async function HomePage() {
             </Link>
           </div>
         </Reveal>
-        <SectionArrow target="editorial" direction="up" tone="light" />
-        <SectionArrow target="closing-cta" direction="down" tone="light" />
+        <SectionArrow target={prevSection("heritage-sourcing")} direction="up" tone="light" />
+        <SectionArrow target={nextSection("heritage-sourcing")} direction="down" tone="light" />
       </section>
 
       {/* ---------- Closing CTA ---------- */}
@@ -204,7 +276,7 @@ export default async function HomePage() {
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{ background: "radial-gradient(50% 60% at 50% 100%, rgba(179,145,90,0.18), transparent 70%)" }}
         />
-        <SectionArrow target="heritage-sourcing" direction="up" tone="light" />
+        <SectionArrow target={prevSection("closing-cta")} direction="up" tone="light" />
         <div className="relative mx-auto grid max-w-4xl items-center gap-10 px-5 text-center sm:px-8 lg:grid-cols-[1fr_auto] lg:gap-16 lg:text-left">
           <Reveal className="order-2 lg:order-1">
             <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.closingKicker}</p>
@@ -218,7 +290,7 @@ export default async function HomePage() {
               renderer used across the catalog and configurator, now with
               real per-facet shading (see gem-visualizer commit) rather than
               the flat "flower" look it used to have. */}
-          <Reveal delay={0.1} className="order-1 mx-auto w-44 sm:w-56 lg:order-2 lg:w-64">
+          <Reveal delay={0.1} className="animate-gem-color-wave order-1 mx-auto w-44 sm:w-56 lg:order-2 lg:w-64">
             <GemVisualizer
               cutSlug="round-brilliant"
               hue={221}

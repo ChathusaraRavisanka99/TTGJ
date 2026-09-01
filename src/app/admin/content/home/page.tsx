@@ -17,8 +17,9 @@ export default async function AdminHomeContentPage() {
         </Link>
       </div>
       <p className="mt-1 text-sm text-charcoal/60">
-        Edit the hero slideshow, banner images, and marketing copy shown on the home page. Featured gemstones come
-        from the catalog and aren&apos;t edited here.
+        Edit the hero slideshow, banner images, and marketing copy shown on the home page. Which gemstones and
+        jewelry are featured is picked from their own catalog pages, not here — this page only switches those two
+        sections on or off (under Text → Sections, below).
       </p>
 
       <div className="mt-8 border-t border-border-subtle pt-8">

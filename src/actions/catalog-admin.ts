@@ -63,6 +63,7 @@ export async function createGemstone(formData: FormData): Promise<ActionResult> 
       showPrice: data.showPrice,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
+      isFeatured: data.isFeatured,
     },
   });
 
@@ -109,11 +110,13 @@ export async function updateGemstone(id: string, formData: FormData): Promise<Ac
       showPrice: data.showPrice,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
+      isFeatured: data.isFeatured,
     },
   });
 
   revalidatePath("/admin/gems");
   revalidatePath(`/admin/gems/${id}`);
+  revalidatePath("/");
   return { ok: true };
 }
 
@@ -121,6 +124,16 @@ export async function deleteGemstone(id: string): Promise<ActionResult> {
   await requireAdmin();
   await prisma.gemstone.delete({ where: { id } });
   revalidatePath("/admin/gems");
+  return { ok: true };
+}
+
+// Quick per-row toggle on the admin gems list, so curating the homepage's
+// Featured Gemstones section doesn't require opening the full edit form.
+export async function toggleGemstoneFeatured(id: string, featured: boolean): Promise<ActionResult> {
+  await requireAdmin();
+  await prisma.gemstone.update({ where: { id }, data: { isFeatured: featured } });
+  revalidatePath("/admin/gems");
+  revalidatePath("/");
   return { ok: true };
 }
 
@@ -193,6 +206,7 @@ export async function createJewelry(formData: FormData): Promise<ActionResult> {
       showPrice: data.showPrice,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
+      isFeatured: data.isFeatured,
     },
   });
 
@@ -222,11 +236,13 @@ export async function updateJewelry(id: string, formData: FormData): Promise<Act
       showPrice: data.showPrice,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
+      isFeatured: data.isFeatured,
     },
   });
 
   revalidatePath("/admin/jewelry");
   revalidatePath(`/admin/jewelry/${id}`);
+  revalidatePath("/");
   return { ok: true };
 }
 
@@ -234,6 +250,16 @@ export async function deleteJewelry(id: string): Promise<ActionResult> {
   await requireAdmin();
   await prisma.jewelryPiece.delete({ where: { id } });
   revalidatePath("/admin/jewelry");
+  return { ok: true };
+}
+
+// Quick per-row toggle on the admin jewelry list, mirroring
+// toggleGemstoneFeatured above.
+export async function toggleJewelryFeatured(id: string, featured: boolean): Promise<ActionResult> {
+  await requireAdmin();
+  await prisma.jewelryPiece.update({ where: { id }, data: { isFeatured: featured } });
+  revalidatePath("/admin/jewelry");
+  revalidatePath("/");
   return { ok: true };
 }
 

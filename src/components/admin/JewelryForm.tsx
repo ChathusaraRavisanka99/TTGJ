@@ -22,6 +22,7 @@ interface JewelryFormProps {
     showPrice: boolean;
     stockStatus: string;
     isPublished: boolean;
+    isFeatured: boolean;
   };
 }
 
@@ -118,6 +119,12 @@ export function JewelryForm({ initial }: JewelryFormProps) {
         <input type="hidden" name="isPublished" value="false" />
         <input type="checkbox" name="isPublished" value="true" defaultChecked={initial?.isPublished ?? true} className="accent-gold" />
         Published (visible in the public catalog)
+      </label>
+
+      <label className="flex items-center gap-2 text-sm text-charcoal/75">
+        <input type="hidden" name="isFeatured" value="false" />
+        <input type="checkbox" name="isFeatured" value="true" defaultChecked={initial?.isFeatured ?? false} className="accent-gold" />
+        Featured (shown in the homepage&apos;s Featured Jewelry section)
       </label>
 
       <FieldError>{error ?? undefined}</FieldError>

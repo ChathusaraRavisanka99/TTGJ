@@ -40,6 +40,13 @@ export function CreateCertLabForm() {
             <Input id="new-lab-website" name="websiteUrl" placeholder="https://www.gia.edu" />
           </div>
           <div>
+            <Label htmlFor="new-lab-logo">Logo (optional)</Label>
+            <input id="new-lab-logo" name="logo" type="file" accept="image/jpeg,image/png,image/webp" className="w-full text-sm" />
+            <p className="mt-1.5 text-xs text-charcoal/50">
+              Shown as the &ldquo;Certified&rdquo; badge on that lab&apos;s gems. You can add or replace it later too.
+            </p>
+          </div>
+          <div>
             <Label htmlFor="new-lab-url">Verification URL (optional)</Label>
             <Input
               id="new-lab-url"
@@ -53,7 +60,6 @@ export function CreateCertLabForm() {
               lab has no public lookup tool.
             </p>
           </div>
-          <p className="text-xs text-charcoal/50">You can add the lab&apos;s logo after saving, from its row below.</p>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" variant="gold" disabled={pending}>{pending ? "Adding..." : "Add Lab"}</Button>

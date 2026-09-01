@@ -95,6 +95,12 @@ export function CertLabRow({ lab }: { lab: CertLab }) {
             <div className="sm:col-span-2">
               <Label htmlFor={`lab-verify-${lab.id}`}>Verification URL</Label>
               <Input id={`lab-verify-${lab.id}`} name="verifyUrlTemplate" defaultValue={lab.verifyUrlTemplate ?? ""} placeholder="https://...{certId}" />
+              <p className="mt-1.5 text-xs text-charcoal/50">
+                If the lab lets buyers verify a report online, paste its lookup URL and replace the report number in
+                it with the literal text <code className="rounded bg-ivory-soft px-1 py-0.5">{"{certId}"}</code>.
+                Ratnavue substitutes each gemstone&apos;s own certificate number into that spot automatically. Leave
+                blank if the lab has no public lookup tool.
+              </p>
             </div>
             <div className="flex gap-2 sm:col-span-2">
               <Button type="submit" size="sm" variant="gold">Save</Button>

@@ -161,6 +161,21 @@ export async function createCertLab(formData: FormData): Promise<ActionResult> {
   const parsed = certLabSchema.safeParse(obj(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid certification lab." };
   const d = parsed.data;
+
+  // The logo file rides along in the same FormData as the rest of the
+  // form — unlike a gemstone's certificate file (which needs a gemstone id
+  // to attach to before it can be uploaded), a lab logo has nothing else
+  // to wait on, so it's saved as part of this one create call.
+  const logo = formData.get("logo") as File | null;
+  let logoUrl: string | undefined;
+  if (logo && logo.size > 0) {
+    try {
+      logoUrl = (await saveLabLogo(logo)).url;
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : "Logo upload failed." };
+    }
+  }
+
   try {
     await prisma.certificationLab.create({
       data: {
@@ -168,10 +183,17 @@ export async function createCertLab(formData: FormData): Promise<ActionResult> {
         slug: slugify(d.name),
         websiteUrl: d.websiteUrl || undefined,
         verifyUrlTemplate: d.verifyUrlTemplate || undefined,
+        logoUrl,
         active: d.active,
       },
     });
   } catch (err) {
+    // The lab row didn't get created, so an already-saved logo file would
+    // otherwise be orphaned on disk.
+    if (logoUrl) {
+      const filename = logoUrl.split("/").pop();
+      if (filename) await unlink(path.join(UPLOAD_DIR, filename)).catch(() => {});
+    }
     const message = uniqueConstraintMessage(err, "certification lab");
     if (message) return { ok: false, error: message };
     throw err;

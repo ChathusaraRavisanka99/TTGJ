@@ -12,7 +12,7 @@ export default async function AdminTreatmentsPage() {
       <p className="mt-1 text-sm text-charcoal/60">Disclosed prominently on every gemstone — treatment transparency matters to buyers.</p>
 
       <div className="mt-6">
-        <CreateSimpleForm action={createTreatment} placeholder="E.g. Diffusion" />
+        <CreateSimpleForm action={createTreatment} label="Add Treatment" placeholder="E.g. Diffusion" />
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">

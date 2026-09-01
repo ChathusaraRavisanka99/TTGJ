@@ -29,7 +29,13 @@ export async function createMineral(formData: FormData): Promise<ActionResult> {
   const parsed = mineralSchema.safeParse(obj(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid mineral." };
   const d = parsed.data;
-  await prisma.mineral.create({ data: { ...d, description: d.description || undefined, slug: slugify(d.name) } });
+  try {
+    await prisma.mineral.create({ data: { ...d, description: d.description || undefined, slug: slugify(d.name) } });
+  } catch (err) {
+    const message = uniqueConstraintMessage(err, "mineral");
+    if (message) return { ok: false, error: message };
+    throw err;
+  }
   revalidatePath("/admin/master-data/minerals");
   return { ok: true };
 }
@@ -97,18 +103,24 @@ async function createSimple(model: SimpleModel, formData: FormData, extra: Recor
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid entry." };
   const d = parsed.data;
   const data = { name: d.name, active: d.active, slug: slugify(d.name), ...extra };
-  if (model === "cut") await prisma.cut.create({ data: data as never });
-  if (model === "treatment") await prisma.treatment.create({ data: data as never });
-  if (model === "origin") await prisma.origin.create({ data: data as never });
+  try {
+    if (model === "cut") await prisma.cut.create({ data: data as never });
+    if (model === "treatment") await prisma.treatment.create({ data: data as never });
+    if (model === "origin") await prisma.origin.create({ data: data as never });
+  } catch (err) {
+    const message = uniqueConstraintMessage(err, model);
+    if (message) return { ok: false, error: message };
+    throw err;
+  }
   revalidatePath(`/admin/master-data/${model === "cut" ? "cuts" : model + "s"}`);
   return { ok: true };
 }
 
-export async function createTreatment(formData: FormData) {
+export async function createTreatment(formData: FormData): Promise<ActionResult> {
   return createSimple("treatment", formData);
 }
 
-export async function createOrigin(formData: FormData) {
+export async function createOrigin(formData: FormData): Promise<ActionResult> {
   const isCeylon = formData.get("isCeylon") === "on";
   return createSimple("origin", formData, { isCeylon });
 }
@@ -146,9 +158,15 @@ export async function createCertLab(formData: FormData): Promise<ActionResult> {
   const parsed = certLabSchema.safeParse(obj(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid certification lab." };
   const d = parsed.data;
-  await prisma.certificationLab.create({
-    data: { name: d.name, slug: slugify(d.name), verifyUrlTemplate: d.verifyUrlTemplate || undefined, active: d.active },
-  });
+  try {
+    await prisma.certificationLab.create({
+      data: { name: d.name, slug: slugify(d.name), verifyUrlTemplate: d.verifyUrlTemplate || undefined, active: d.active },
+    });
+  } catch (err) {
+    const message = uniqueConstraintMessage(err, "certification lab");
+    if (message) return { ok: false, error: message };
+    throw err;
+  }
   revalidatePath("/admin/master-data/certification-labs");
   return { ok: true };
 }

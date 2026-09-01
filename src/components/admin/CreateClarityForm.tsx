@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { createClarityGrade } from "@/actions/master-data";
 import { Input, Textarea, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 
 export function CreateClarityForm() {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -20,31 +22,36 @@ export function CreateClarityForm() {
       setError(result.error);
       return;
     }
+    setOpen(false);
     router.refresh();
   }
 
   return (
-    // No sm:items-end here: the Description textarea is intrinsically
-    // taller than the plain Name/Sort Order inputs, and bottom-aligning
-    // grid items dragged those shorter fields' labels down out of line
-    // with Description's — a genuinely jumbled-looking layout.
-    <form action={handleSubmit} className="grid gap-3 rounded-xl border border-border-subtle bg-surface p-5 sm:grid-cols-4">
-      <div>
-        <Label htmlFor="cg-name">Name</Label>
-        <Input id="cg-name" name="name" required />
-      </div>
-      <div className="sm:col-span-2">
-        <Label htmlFor="cg-description">Description</Label>
-        <Textarea id="cg-description" name="description" required />
-      </div>
-      <div>
-        <Label htmlFor="cg-sortOrder">Sort Order</Label>
-        <Input id="cg-sortOrder" name="sortOrder" type="number" defaultValue={0} />
-      </div>
-      <Button type="submit" variant="gold" className="sm:col-span-4" disabled={pending}>
-        {pending ? "Adding..." : "Add Clarity Grade"}
-      </Button>
-      <FieldError className="sm:col-span-4">{error ?? undefined}</FieldError>
-    </form>
+    <>
+      <Button type="button" variant="gold" onClick={() => setOpen(true)}>Add Clarity Grade</Button>
+      <Modal open={open} onClose={() => setOpen(false)} title="Add Clarity Grade">
+        <form action={handleSubmit} className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="cg-name">Name</Label>
+            <Input id="cg-name" name="name" required />
+          </div>
+          <div>
+            <Label htmlFor="cg-sortOrder">Sort Order</Label>
+            <Input id="cg-sortOrder" name="sortOrder" type="number" defaultValue={0} />
+          </div>
+          <div className="sm:col-span-2">
+            <Label htmlFor="cg-description">Description</Label>
+            <Textarea id="cg-description" name="description" required />
+          </div>
+          <div className="flex justify-end gap-2 sm:col-span-2">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="gold" disabled={pending}>
+              {pending ? "Adding..." : "Add Clarity Grade"}
+            </Button>
+          </div>
+          <FieldError className="sm:col-span-2">{error ?? undefined}</FieldError>
+        </form>
+      </Modal>
+    </>
   );
 }

@@ -12,7 +12,12 @@ export default async function AdminOriginsPage() {
       <p className="mt-1 text-sm text-charcoal/60">Ceylon origin is called out prominently across the storefront.</p>
 
       <div className="mt-6">
-        <CreateSimpleForm action={createOrigin} placeholder="E.g. Madagascar" extraField={{ name: "isCeylon", label: "Is Ceylon origin" }} />
+        <CreateSimpleForm
+          action={createOrigin}
+          label="Add Origin"
+          placeholder="E.g. Madagascar"
+          extraField={{ name: "isCeylon", label: "Is Ceylon origin" }}
+        />
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">

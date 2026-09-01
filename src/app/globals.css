@@ -83,9 +83,24 @@ h1, h2, h3, h4, .font-serif {
   animation: scroll-cue 2s ease-in-out infinite;
 }
 
+/* PageLoader's entrance — deliberately plain CSS, not motion/react. A
+   loading indicator has to be visible as soon as it paints, independent of
+   whether the JS bundle driving a library-based animation has finished
+   loading/executing yet — which is precisely the condition it exists to
+   cover for. CSS keyframes run on the compositor regardless. */
+@keyframes loader-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-loader-in {
+  animation: loader-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
-  .animate-scroll-cue {
+  .animate-scroll-cue,
+  .animate-loader-in {
     animation: none;
   }
 }

@@ -15,10 +15,22 @@ const FULL_BLEED_HERO_ROUTES = ["/", "/about", "/sourcing"];
  * to clear it, since fixed elements are pulled out of document flow. Admin
  * routes render their own chrome (see SiteChrome) and never show the public
  * Navbar at all, so they need neither the home treatment nor the padding.
+ *
+ * `key={pathname}` forces a fresh <main> on every navigation so
+ * .animate-page-in's entrance (see globals.css) restarts each time instead
+ * of only playing once on first load — without it, React would just patch
+ * the existing DOM in place and the new page would simply pop in, which is
+ * the "not just appearing right away" this exists to fix. Each route is
+ * already an independent Server Component render, so remounting here
+ * doesn't lose anything a real navigation wouldn't already have reset.
  */
 export function MainWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const hasFullBleedHero = FULL_BLEED_HERO_ROUTES.includes(pathname);
   const isAdmin = pathname.startsWith("/admin");
-  return <main className={cn("flex-1", !hasFullBleedHero && !isAdmin && "pt-24")}>{children}</main>;
+  return (
+    <main key={pathname} className={cn("animate-page-in flex-1", !hasFullBleedHero && !isAdmin && "pt-24")}>
+      {children}
+    </main>
+  );
 }

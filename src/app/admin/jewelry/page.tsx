@@ -3,10 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { toggleJewelryFeatured } from "@/actions/catalog-admin";
 import { StockBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
 import { ToggleFeaturedButton } from "@/components/admin/ToggleFeaturedButton";
 
-export default async function AdminJewelryPage() {
-  const pieces = await prisma.jewelryPiece.findMany({ orderBy: { createdAt: "desc" } });
+const PAGE_SIZE = 20;
+
+export default async function AdminJewelryPage({ searchParams }: PageProps<"/admin/jewelry">) {
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page) || 1);
+
+  const [pieces, total] = await Promise.all([
+    prisma.jewelryPiece.findMany({
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.jewelryPiece.count(),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div>
@@ -58,6 +72,8 @@ export default async function AdminJewelryPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />
     </div>
   );
 }

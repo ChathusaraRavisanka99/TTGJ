@@ -3,6 +3,7 @@ import { getGemstones, getMasterData } from "@/lib/catalog";
 import { GemCard } from "@/components/catalog/GemCard";
 import { GemFilterBar } from "@/components/catalog/GemFilterBar";
 import { RevealGroup, RevealItem } from "@/components/layout/Reveal";
+import { Pagination } from "@/components/ui/Pagination";
 
 export const metadata: Metadata = { title: "Shop Gemstones" };
 
@@ -21,9 +22,10 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
     maxCarat: get("maxCarat") ? Number(get("maxCarat")) : undefined,
     inStockOnly: get("inStockOnly") === "1",
     sort: (get("sort") as "newest" | "carat" | "az" | undefined) ?? "newest",
+    page: get("page") ? Number(get("page")) : undefined,
   };
 
-  const [gems, masterData] = await Promise.all([getGemstones(filters), getMasterData()]);
+  const [{ items: gems, page, totalPages }, masterData] = await Promise.all([getGemstones(filters), getMasterData()]);
 
   return (
     <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
@@ -75,6 +77,8 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
           ))}
         </RevealGroup>
       )}
+
+      <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />
     </div>
   );
 }

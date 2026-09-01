@@ -1,25 +1,35 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
+import { Pagination } from "@/components/ui/Pagination";
 import { cn } from "@/lib/utils";
 import { resolveGemColor } from "@/components/gem-visualizer/color";
 import { getQuoteGemVisual } from "@/lib/quote-visual";
 
 const STATUSES = ["SUBMITTED", "UNDER_REVIEW", "QUOTED", "ACCEPTED", "DECLINED", "EXPIRED"];
+const PAGE_SIZE = 20;
 
 export default async function AdminQuotesPage({ searchParams }: PageProps<"/admin/quotes">) {
   const sp = await searchParams;
   const status = typeof sp.status === "string" ? sp.status : undefined;
+  const page = Math.max(1, Number(sp.page) || 1);
 
-  const quotes = await prisma.quoteRequest.findMany({
-    where: status ? { status: status as never } : undefined,
-    orderBy: { createdAt: "desc" },
-    include: {
-      user: true,
-      gemstone: { include: { cut: true, mineral: true, clarityGrade: true } },
-      jewelry: true,
-    },
-  });
+  const where = status ? { status: status as never } : undefined;
+  const [quotes, total] = await Promise.all([
+    prisma.quoteRequest.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: {
+        user: true,
+        gemstone: { include: { cut: true, mineral: true, clarityGrade: true } },
+        jewelry: true,
+      },
+    }),
+    prisma.quoteRequest.count({ where }),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div>
@@ -84,6 +94,8 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
           </tbody>
         </table>
       </div>
+
+      <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />
     </div>
   );
 }

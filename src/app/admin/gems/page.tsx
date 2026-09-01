@@ -3,13 +3,25 @@ import { prisma } from "@/lib/prisma";
 import { toggleGemstoneFeatured } from "@/actions/catalog-admin";
 import { StockBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
 import { ToggleFeaturedButton } from "@/components/admin/ToggleFeaturedButton";
 
-export default async function AdminGemsPage() {
-  const gems = await prisma.gemstone.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { mineral: true, cut: true },
-  });
+const PAGE_SIZE = 20;
+
+export default async function AdminGemsPage({ searchParams }: PageProps<"/admin/gems">) {
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page) || 1);
+
+  const [gems, total] = await Promise.all([
+    prisma.gemstone.findMany({
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: { mineral: true, cut: true },
+    }),
+    prisma.gemstone.count(),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div>
@@ -63,6 +75,8 @@ export default async function AdminGemsPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />
     </div>
   );
 }

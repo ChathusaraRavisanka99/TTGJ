@@ -1,6 +1,17 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
+const GEMS_PAGE_SIZE = 24;
+const JEWELRY_PAGE_SIZE = 24;
+
+export interface PaginatedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface GemFilters {
   q?: string;
   mineral?: string;
@@ -12,6 +23,7 @@ export interface GemFilters {
   maxCarat?: number;
   inStockOnly?: boolean;
   sort?: "newest" | "carat" | "az";
+  page?: number;
 }
 
 export async function getGemstones(filters: GemFilters) {
@@ -41,18 +53,27 @@ export async function getGemstones(filters: GemFilters) {
   const orderBy: Prisma.GemstoneOrderByWithRelationInput =
     filters.sort === "carat" ? { caratWeight: "desc" } : filters.sort === "az" ? { name: "asc" } : { createdAt: "desc" };
 
-  return prisma.gemstone.findMany({
-    where,
-    orderBy,
-    include: {
-      mineral: true,
-      cut: true,
-      clarityGrade: true,
-      treatment: true,
-      origin: true,
-      media: { orderBy: { sortOrder: "asc" } },
-    },
-  });
+  const page = Math.max(1, filters.page ?? 1);
+
+  const [items, total] = await Promise.all([
+    prisma.gemstone.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * GEMS_PAGE_SIZE,
+      take: GEMS_PAGE_SIZE,
+      include: {
+        mineral: true,
+        cut: true,
+        clarityGrade: true,
+        treatment: true,
+        origin: true,
+        media: { orderBy: { sortOrder: "asc" } },
+      },
+    }),
+    prisma.gemstone.count({ where }),
+  ]);
+
+  return { items, page, pageSize: GEMS_PAGE_SIZE, total, totalPages: Math.max(1, Math.ceil(total / GEMS_PAGE_SIZE)) };
 }
 
 export async function getGemstoneBySlug(slug: string) {
@@ -76,6 +97,7 @@ export interface JewelryFilters {
   metalType?: string;
   inStockOnly?: boolean;
   sort?: "newest" | "az";
+  page?: number;
 }
 
 export async function getJewelry(filters: JewelryFilters) {
@@ -93,14 +115,23 @@ export async function getJewelry(filters: JewelryFilters) {
 
   const orderBy: Prisma.JewelryPieceOrderByWithRelationInput = filters.sort === "az" ? { name: "asc" } : { createdAt: "desc" };
 
-  return prisma.jewelryPiece.findMany({
-    where,
-    orderBy,
-    include: {
-      media: { orderBy: { sortOrder: "asc" } },
-      gemstones: { include: { gemstone: true } },
-    },
-  });
+  const page = Math.max(1, filters.page ?? 1);
+
+  const [items, total] = await Promise.all([
+    prisma.jewelryPiece.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * JEWELRY_PAGE_SIZE,
+      take: JEWELRY_PAGE_SIZE,
+      include: {
+        media: { orderBy: { sortOrder: "asc" } },
+        gemstones: { include: { gemstone: true } },
+      },
+    }),
+    prisma.jewelryPiece.count({ where }),
+  ]);
+
+  return { items, page, pageSize: JEWELRY_PAGE_SIZE, total, totalPages: Math.max(1, Math.ceil(total / JEWELRY_PAGE_SIZE)) };
 }
 
 export async function getJewelryBySlug(slug: string) {

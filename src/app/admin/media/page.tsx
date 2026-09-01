@@ -2,12 +2,24 @@ import Link from "next/link";
 import Image from "next/image";
 import { Video } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { Pagination } from "@/components/ui/Pagination";
 
-export default async function AdminMediaPage() {
-  const media = await prisma.mediaAsset.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { gemstone: { select: { id: true, name: true } }, jewelry: { select: { id: true, name: true } } },
-  });
+const PAGE_SIZE = 30;
+
+export default async function AdminMediaPage({ searchParams }: PageProps<"/admin/media">) {
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page) || 1);
+
+  const [media, total] = await Promise.all([
+    prisma.mediaAsset.findMany({
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: { gemstone: { select: { id: true, name: true } }, jewelry: { select: { id: true, name: true } } },
+    }),
+    prisma.mediaAsset.count(),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div>
@@ -37,6 +49,8 @@ export default async function AdminMediaPage() {
         })}
         {media.length === 0 && <p className="col-span-full py-12 text-center text-charcoal/50">No media uploaded yet.</p>}
       </div>
+
+      <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />
     </div>
   );
 }

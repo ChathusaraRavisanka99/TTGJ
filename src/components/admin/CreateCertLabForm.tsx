@@ -41,9 +41,16 @@ export function CreateCertLabForm() {
           </div>
           <div>
             <Label htmlFor="new-lab-logo">Logo (optional)</Label>
-            <input id="new-lab-logo" name="logo" type="file" accept="image/jpeg,image/png,image/webp" className="w-full text-sm" />
+            <input
+              id="new-lab-logo"
+              name="logo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="block w-full text-sm text-charcoal/70 file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-gold file:px-4 file:py-2 file:text-xs file:font-medium file:tracking-wide file:text-charcoal file:transition-colors hover:file:bg-gold-soft"
+            />
             <p className="mt-1.5 text-xs text-charcoal/50">
-              Shown as the &ldquo;Certified&rdquo; badge on that lab&apos;s gems. You can add or replace it later too.
+              Only images are supported (JPEG, PNG, or WEBP) — shown as the &ldquo;Certified&rdquo; badge on that
+              lab&apos;s gems.
             </p>
           </div>
           <div>

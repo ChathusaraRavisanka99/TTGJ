@@ -24,7 +24,7 @@ export function FieldHint({ children }: { children: React.ReactNode }) {
   return <p className="mt-1.5 text-xs text-charcoal/55 leading-relaxed">{children}</p>;
 }
 
-export function FieldError({ children }: { children?: string }) {
+export function FieldError({ children, className }: { children?: string; className?: string }) {
   if (!children) return null;
-  return <p className="mt-1.5 text-xs text-red-700">{children}</p>;
+  return <p className={cn("mt-1.5 text-xs text-red-700", className)}>{children}</p>;
 }

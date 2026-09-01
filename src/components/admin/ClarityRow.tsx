@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateClarityGrade, deleteClarityGrade } from "@/actions/master-data";
-import { Input, Textarea } from "@/components/ui/Field";
+import { Input, Textarea, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
 interface Grade {
@@ -18,9 +18,18 @@ export function ClarityRow({ grade }: { grade: Grade }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   async function handleSave(formData: FormData) {
-    await updateClarityGrade(grade.id, formData);
+    setError(null);
+    setSaving(true);
+    const result = await updateClarityGrade(grade.id, formData);
+    setSaving(false);
+    if (result && !result.ok) {
+      setError(result.error);
+      return;
+    }
     setEditing(false);
     router.refresh();
   }
@@ -50,7 +59,10 @@ export function ClarityRow({ grade }: { grade: Grade }) {
   return (
     <tr className="border-b border-border-subtle bg-ivory-soft last:border-0">
       <td colSpan={4} className="px-4 py-4">
-        <form action={handleSave} className="grid gap-3 sm:grid-cols-4 sm:items-end">
+        {/* No sm:items-end — see CreateClarityForm for why: it bottom-aligns
+            grid items, and the Description textarea's extra height drags
+            the shorter Name/Sort Order inputs down out of line with it. */}
+        <form action={handleSave} className="grid gap-3 sm:grid-cols-4">
           <div>
             <Input name="name" defaultValue={grade.name} required />
           </div>
@@ -61,10 +73,11 @@ export function ClarityRow({ grade }: { grade: Grade }) {
             <Input name="sortOrder" type="number" defaultValue={grade.sortOrder} />
           </div>
           <div className="flex gap-2 sm:col-span-4">
-            <Button type="submit" size="sm" variant="gold">Save</Button>
+            <Button type="submit" size="sm" variant="gold" disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
             <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
           </div>
           <input type="hidden" name="active" value={grade.active ? "true" : "false"} />
+          <FieldError className="sm:col-span-4">{error ?? undefined}</FieldError>
         </form>
       </td>
     </tr>

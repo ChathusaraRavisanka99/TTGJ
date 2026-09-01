@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { slugify } from "@/lib/utils";
@@ -9,6 +10,18 @@ import type { ActionResult } from "./auth";
 
 function obj(formData: FormData) {
   return Object.fromEntries(formData.entries());
+}
+
+// Prisma throws P2002 on a unique-constraint violation (e.g. a name/slug
+// that already exists) rather than returning a normal result, so every
+// create/update below that touches a @unique field needs to catch it
+// explicitly and turn it into a graceful ActionResult — otherwise it
+// surfaces as a raw unhandled 500 with a Prisma stack trace in the UI.
+function uniqueConstraintMessage(err: unknown, label: string): string | null {
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    return `A ${label} with that name already exists.`;
+  }
+  return null;
 }
 
 export async function createMineral(formData: FormData): Promise<ActionResult> {
@@ -43,7 +56,13 @@ export async function createClarityGrade(formData: FormData): Promise<ActionResu
   const parsed = clarityGradeSchema.safeParse(obj(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid clarity grade." };
   const d = parsed.data;
-  await prisma.clarityGrade.create({ data: { ...d, slug: slugify(d.name) } });
+  try {
+    await prisma.clarityGrade.create({ data: { ...d, slug: slugify(d.name) } });
+  } catch (err) {
+    const message = uniqueConstraintMessage(err, "clarity grade");
+    if (message) return { ok: false, error: message };
+    throw err;
+  }
   revalidatePath("/admin/master-data/clarity");
   return { ok: true };
 }
@@ -52,7 +71,13 @@ export async function updateClarityGrade(id: string, formData: FormData): Promis
   await requireAdmin();
   const parsed = clarityGradeSchema.safeParse(obj(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid clarity grade." };
-  await prisma.clarityGrade.update({ where: { id }, data: parsed.data });
+  try {
+    await prisma.clarityGrade.update({ where: { id }, data: parsed.data });
+  } catch (err) {
+    const message = uniqueConstraintMessage(err, "clarity grade");
+    if (message) return { ok: false, error: message };
+    throw err;
+  }
   revalidatePath("/admin/master-data/clarity");
   return { ok: true };
 }

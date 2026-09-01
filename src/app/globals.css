@@ -39,13 +39,19 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Gentle section-to-section scroll snapping. Only elements that opt in via
+/* Section-to-section scroll snapping. Only elements that opt in via
    `snap-start` (e.g. the home page's full-height sections) become snap
    points — everywhere else this has no visual effect, so it's safe to set
-   globally rather than re-scoping per page. `proximity`, not `mandatory`:
-   content-driven sections can run taller than the viewport, and mandatory
-   snapping would fight the user's scroll instead of just settling near a
-   break when they let go. */
+   globally rather than re-scoping per page.
+   `proximity`, not `mandatory`: mandatory was tried here to make the
+   section landing pixel-exact (proximity's imprecision could leave the
+   top-pinned up-arrow just above the viewport), but it traps the scroll
+   position at the LAST snap point on the page — verified directly, even a
+   programmatic scrollTo(maxScroll) got overridden back to it — which made
+   the footer completely unreachable once the last section had snap-start.
+   That's a much worse bug than an occasionally-clipped arrow, so this
+   stays proximity; the arrow issue is mitigated instead by giving it more
+   clearance from the section edge (see SectionArrow). */
 html {
   scroll-snap-type: y proximity;
 }

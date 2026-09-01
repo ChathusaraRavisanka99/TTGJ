@@ -193,7 +193,13 @@ export default async function HomePage() {
       </section>
 
       {/* ---------- Closing CTA ---------- */}
-      <section id="closing-cta" className="relative flex min-h-dvh items-center overflow-hidden bg-charcoal py-28 snap-start sm:py-36">
+      {/* Deliberately NOT a snap-start point, unlike every other section
+          above: this is the last one before the footer, and with
+          `scroll-snap-type: mandatory` a snap point here had nowhere valid
+          to rest once you scrolled past it — the footer isn't a snap point,
+          so the browser pulled the page back up to this section instead of
+          letting you reach the bottom of the page at all. */}
+      <section id="closing-cta" className="relative flex min-h-dvh items-center overflow-hidden bg-charcoal py-28 sm:py-36">
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{ background: "radial-gradient(50% 60% at 50% 100%, rgba(179,145,90,0.18), transparent 70%)" }}

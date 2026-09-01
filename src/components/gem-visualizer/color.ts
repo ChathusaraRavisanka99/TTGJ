@@ -8,6 +8,12 @@ export interface GemColorStops {
   table: string;
 }
 
+// Rounds to 1 decimal place — division/multiplication chains below (e.g.
+// darkness/100 * 68) routinely land on values like 62.87999999999995 that
+// are harmless as CSS but look broken the moment one of these strings is
+// shown to a human as a "colour code" (see the admin quote view).
+const r1 = (n: number) => Math.round(n * 10) / 10;
+
 /** darkness: 0 (lightest/pastel) - 100 (deepest/darkest tone). */
 export function resolveGemColor(hue: number, darkness: number, saturation = 72): GemColorStops {
   const clampedDarkness = Math.min(100, Math.max(0, darkness));
@@ -16,14 +22,44 @@ export function resolveGemColor(hue: number, darkness: number, saturation = 72):
   // Saturation peaks around the middle tones and eases at the extremes,
   // which reads more like a real gem than a flat linear ramp.
   const satAdjust = saturation - Math.abs(clampedDarkness - 55) * 0.25;
-  const s = Math.min(95, Math.max(35, satAdjust));
+  const s = r1(Math.min(95, Math.max(35, satAdjust)));
+  const l = r1(lightness);
+  const h = r1(hue);
 
-  const base = `hsl(${hue}, ${s}%, ${lightness}%)`;
-  const highlight = `hsl(${hue}, ${Math.max(20, s - 25)}%, ${Math.min(96, lightness + 26)}%)`;
-  const shadow = `hsl(${hue}, ${Math.min(100, s + 10)}%, ${Math.max(6, lightness - 30)}%)`;
-  const table = `hsl(${hue}, ${s}%, ${Math.min(94, lightness + 12)}%)`;
+  const base = `hsl(${h}, ${s}%, ${l}%)`;
+  const highlight = `hsl(${h}, ${r1(Math.max(20, s - 25))}%, ${r1(Math.min(96, l + 26))}%)`;
+  const shadow = `hsl(${h}, ${r1(Math.min(100, s + 10))}%, ${r1(Math.max(6, l - 30))}%)`;
+  const table = `hsl(${h}, ${s}%, ${r1(Math.min(94, l + 12))}%)`;
 
   return { base, highlight, shadow, table };
+}
+
+/**
+ * Converts an "hsl(h, s%, l%)" string (as produced by `resolveGemColor`) to
+ * a #RRGGBB hex code — for showing a plain, universally-recognized colour
+ * code alongside the rendered swatch (e.g. on the admin quote view), since
+ * HSL-the-string isn't what most people mean by "the colour code".
+ */
+export function hslStringToHex(hsl: string): string {
+  const match = hsl.match(/hsl\(([\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)/);
+  if (!match) return "#000000";
+  const h = Number(match[1]);
+  const s = Number(match[2]) / 100;
+  const l = Number(match[3]) / 100;
+
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let [r, g, b] = [0, 0, 0];
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+
+  const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
 }
 
 /** Normalizes a hue that may wrap past 360 (e.g. Ruby: 345-10) into [0,360). */

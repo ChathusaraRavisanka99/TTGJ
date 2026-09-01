@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
+import { resolveGemColor } from "@/components/gem-visualizer/color";
+import { getQuoteGemVisual } from "@/lib/quote-visual";
 
 const STATUSES = ["SUBMITTED", "UNDER_REVIEW", "QUOTED", "ACCEPTED", "DECLINED", "EXPIRED"];
 
@@ -12,7 +14,11 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
   const quotes = await prisma.quoteRequest.findMany({
     where: status ? { status: status as never } : undefined,
     orderBy: { createdAt: "desc" },
-    include: { user: true, gemstone: true, jewelry: true },
+    include: {
+      user: true,
+      gemstone: { include: { cut: true, mineral: true, clarityGrade: true } },
+      jewelry: true,
+    },
   });
 
   return (
@@ -47,10 +53,20 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
             </tr>
           </thead>
           <tbody>
-            {quotes.map((q) => (
+            {quotes.map((q) => {
+              const visual = getQuoteGemVisual(q);
+              return (
               <tr key={q.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
                 <td className="px-4 py-3">
-                  <Link href={`/admin/quotes/${q.id}`} className="text-charcoal hover:text-gold">
+                  <Link href={`/admin/quotes/${q.id}`} className="flex items-center gap-2 text-charcoal hover:text-gold">
+                    {visual && (
+                      <span
+                        className="h-3.5 w-3.5 shrink-0 rounded-full border border-border-subtle"
+                        style={{ backgroundColor: resolveGemColor(visual.hue, visual.darkness, visual.saturation ?? 72).base }}
+                        title={`${visual.mineralName} · ${visual.cutName}`}
+                        aria-hidden
+                      />
+                    )}
                     {q.gemstone?.name ?? q.jewelry?.name ?? "Configured gem"}
                   </Link>
                 </td>
@@ -60,7 +76,8 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
                 <td className="px-4 py-3">{q.noteFlaggedForPrice ? <span className="text-amber-700">⚠ Price?</span> : "—"}</td>
                 <td className="px-4 py-3"><QuoteStatusBadge status={q.status} /></td>
               </tr>
-            ))}
+              );
+            })}
             {quotes.length === 0 && (
               <tr><td colSpan={6} className="px-4 py-8 text-center text-charcoal/50">No quote requests found.</td></tr>
             )}

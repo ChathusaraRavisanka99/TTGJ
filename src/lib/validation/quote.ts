@@ -5,6 +5,9 @@ export const configuredSpecSchema = z.object({
   mineralName: z.string(),
   cutId: z.string(),
   cutName: z.string(),
+  // Needed to actually render the cut (GemVisualizer keys its facet
+  // geometry off the slug, not the id) — e.g. for the admin quote view.
+  cutSlug: z.string().optional(),
   caratWeight: z.number().min(0.1).max(50),
   hue: z.number().min(0).max(360),
   darkness: z.number().min(0).max(100),

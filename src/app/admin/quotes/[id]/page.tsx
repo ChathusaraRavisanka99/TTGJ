@@ -3,18 +3,25 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { QuoteStatusForm } from "@/components/admin/QuoteStatusForm";
+import { QuoteGemPreview } from "@/components/admin/QuoteGemPreview";
+import { getQuoteGemVisual } from "@/lib/quote-visual";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
 
 export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin/quotes/[id]">) {
   const { id } = await params;
   const quote = await prisma.quoteRequest.findUnique({
     where: { id },
-    include: { user: true, gemstone: true, jewelry: true },
+    include: {
+      user: true,
+      gemstone: { include: { cut: true, mineral: true, clarityGrade: true } },
+      jewelry: true,
+    },
   });
 
   if (!quote) notFound();
 
   const spec = quote.configuredSpec as ConfiguredSpec | null;
+  const gemVisual = getQuoteGemVisual(quote);
 
   return (
     <div className="max-w-3xl">
@@ -42,16 +49,22 @@ export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin
           {quote.jewelry && (
             <Link href={`/admin/jewelry/${quote.jewelry.id}`} className="mt-1 block text-charcoal hover:text-gold">{quote.jewelry.name}</Link>
           )}
-          {spec && (
-            <div className="mt-1 text-sm text-charcoal/70">
-              <p>Configured: {spec.mineralName}, {spec.cutName}</p>
-              <p>{spec.caratWeight} ct · {spec.clarityName}</p>
-            </div>
+          {!quote.gemstone && !quote.jewelry && spec && (
+            <p className="mt-1 text-charcoal">Configured gem</p>
           )}
           <p className="mt-2 text-sm text-charcoal/60">Quantity: {quote.quantity}</p>
           <p className="text-xs text-charcoal/45">Submitted {quote.createdAt.toLocaleString()}</p>
         </div>
       </div>
+
+      {gemVisual && (
+        <div className="mt-6 rounded-xl border border-border-subtle bg-surface p-5">
+          <p className="text-xs uppercase tracking-wide text-charcoal/45">Colour &amp; Cut</p>
+          <div className="mt-3">
+            <QuoteGemPreview visual={gemVisual} seedKey={quote.id} />
+          </div>
+        </div>
+      )}
 
       {quote.note && (
         <div className="mt-6 rounded-xl border border-border-subtle bg-surface p-5">

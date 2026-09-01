@@ -76,6 +76,7 @@ export function GemConfiguratorClient({ minerals, cuts, clarityGrades, isAuthent
           mineralName: mineral.name,
           cutId: cut.id,
           cutName: cut.name,
+          cutSlug: cut.slug,
           caratWeight,
           hue,
           darkness,

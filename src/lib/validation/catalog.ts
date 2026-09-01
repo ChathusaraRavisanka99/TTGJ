@@ -69,6 +69,10 @@ export const simpleMasterDataSchema = z.object({
 
 export const certLabSchema = z.object({
   name: z.string().min(2).max(100),
+  // The lab's general website (e.g. a homepage link on its logo badge) —
+  // separate from verifyUrlTemplate below, which is a specific per-report
+  // lookup URL, not every lab has one, and this one doesn't need {certId}.
+  websiteUrl: z.string().max(500).url("Enter a full URL, e.g. https://www.gia.edu").optional().or(z.literal("")),
   // Must contain the literal token `{certId}` if present — checked so a
   // template without it (which would silently produce a broken link for
   // every gem) is rejected at save time instead of at render time.

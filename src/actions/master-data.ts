@@ -1,10 +1,13 @@
 "use server";
 
+import { unlink } from "fs/promises";
+import path from "path";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { slugify } from "@/lib/utils";
+import { saveLabLogo, UPLOAD_DIR } from "@/lib/media";
 import { mineralSchema, clarityGradeSchema, simpleMasterDataSchema, certLabSchema } from "@/lib/validation/catalog";
 import type { ActionResult } from "./auth";
 
@@ -160,7 +163,13 @@ export async function createCertLab(formData: FormData): Promise<ActionResult> {
   const d = parsed.data;
   try {
     await prisma.certificationLab.create({
-      data: { name: d.name, slug: slugify(d.name), verifyUrlTemplate: d.verifyUrlTemplate || undefined, active: d.active },
+      data: {
+        name: d.name,
+        slug: slugify(d.name),
+        websiteUrl: d.websiteUrl || undefined,
+        verifyUrlTemplate: d.verifyUrlTemplate || undefined,
+        active: d.active,
+      },
     });
   } catch (err) {
     const message = uniqueConstraintMessage(err, "certification lab");
@@ -176,12 +185,64 @@ export async function updateCertLab(id: string, formData: FormData): Promise<Act
   const parsed = certLabSchema.safeParse(obj(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid certification lab." };
   const d = parsed.data;
-  await prisma.certificationLab.update({
-    where: { id },
-    data: { name: d.name, verifyUrlTemplate: d.verifyUrlTemplate || null, active: d.active },
-  });
+  try {
+    await prisma.certificationLab.update({
+      where: { id },
+      data: { name: d.name, websiteUrl: d.websiteUrl || null, verifyUrlTemplate: d.verifyUrlTemplate || null, active: d.active },
+    });
+  } catch (err) {
+    const message = uniqueConstraintMessage(err, "certification lab");
+    if (message) return { ok: false, error: message };
+    throw err;
+  }
   revalidatePath("/admin/master-data/certification-labs");
   revalidatePath("/admin/gems");
+  return { ok: true };
+}
+
+export async function uploadCertLabLogo(id: string, formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) return { ok: false, error: "No file provided." };
+
+  const lab = await prisma.certificationLab.findUnique({ where: { id }, select: { logoUrl: true } });
+  if (!lab) return { ok: false, error: "Certification lab not found." };
+
+  try {
+    const saved = await saveLabLogo(file);
+    await prisma.certificationLab.update({ where: { id }, data: { logoUrl: saved.url } });
+
+    if (lab.logoUrl) {
+      const oldFilename = lab.logoUrl.split("/").pop();
+      if (oldFilename) await unlink(path.join(UPLOAD_DIR, oldFilename)).catch(() => {});
+    }
+
+    revalidatePath("/admin/master-data/certification-labs");
+    revalidatePath("/admin/gems");
+    revalidatePath("/gems", "layout");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Upload failed." };
+  }
+}
+
+export async function removeCertLabLogo(id: string): Promise<ActionResult> {
+  await requireAdmin();
+
+  const lab = await prisma.certificationLab.findUnique({ where: { id }, select: { logoUrl: true } });
+  if (!lab) return { ok: false, error: "Certification lab not found." };
+
+  await prisma.certificationLab.update({ where: { id }, data: { logoUrl: null } });
+
+  if (lab.logoUrl) {
+    const filename = lab.logoUrl.split("/").pop();
+    if (filename) await unlink(path.join(UPLOAD_DIR, filename)).catch(() => {});
+  }
+
+  revalidatePath("/admin/master-data/certification-labs");
+  revalidatePath("/admin/gems");
+  revalidatePath("/gems", "layout");
   return { ok: true };
 }
 

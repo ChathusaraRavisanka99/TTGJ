@@ -9,9 +9,9 @@ export default async function AdminCertificationLabsPage() {
     <div>
       <h1 className="font-serif text-3xl text-charcoal">Certification Labs</h1>
       <p className="mt-1 text-sm text-charcoal/60">
-        Gemological labs available on the gemstone form. Add a verification URL for any lab with a public
-        report-lookup tool, and a &ldquo;Verify Certificate&rdquo; link appears automatically on that gem&apos;s
-        public page.
+        Gemological labs available on the gemstone form. A lab with a logo shows a &ldquo;Certified&rdquo; badge on
+        that gem&apos;s public page; add a verification URL for any lab with a public report-lookup tool and a
+        &ldquo;Verify Certificate&rdquo; link appears there automatically too.
       </p>
 
       <div className="mt-6">
@@ -22,6 +22,7 @@ export default async function AdminCertificationLabsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
+              <th className="px-4 py-3">Logo</th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Verification URL</th>
               <th className="px-4 py-3">Status</th>

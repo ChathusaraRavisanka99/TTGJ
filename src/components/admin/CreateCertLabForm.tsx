@@ -36,6 +36,10 @@ export function CreateCertLabForm() {
             <Input id="new-lab-name" name="name" required placeholder="E.g. GIA" />
           </div>
           <div>
+            <Label htmlFor="new-lab-website">Website (optional)</Label>
+            <Input id="new-lab-website" name="websiteUrl" placeholder="https://www.gia.edu" />
+          </div>
+          <div>
             <Label htmlFor="new-lab-url">Verification URL (optional)</Label>
             <Input
               id="new-lab-url"
@@ -49,6 +53,7 @@ export function CreateCertLabForm() {
               lab has no public lookup tool.
             </p>
           </div>
+          <p className="text-xs text-charcoal/50">You can add the lab&apos;s logo after saving, from its row below.</p>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" variant="gold" disabled={pending}>{pending ? "Adding..." : "Add Lab"}</Button>

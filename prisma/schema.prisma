@@ -146,6 +146,11 @@ model CertificationLab {
   // "https://www.gia.edu/report-check?reportno={certId}". Left blank for
   // labs with no public lookup tool.
   verifyUrlTemplate String?
+  websiteUrl        String?
+  // Uploaded via the same local-disk storage as everything else in
+  // src/lib/media.ts (an /api/media/... URL), not a MediaAsset row —
+  // it belongs to the lab itself, not to any one gemstone's gallery.
+  logoUrl           String?
 
   active    Boolean @default(true)
   sortOrder Int     @default(0)

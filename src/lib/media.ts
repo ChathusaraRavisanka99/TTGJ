@@ -78,4 +78,25 @@ export async function saveCertificateFile(file: File): Promise<{ url: string }> 
   return { url: `/api/media/${filename}` };
 }
 
+// Certification lab logos: small, square-ish trust-badge marks shown on the
+// public gem page. WEBP keeps transparency (most lab marks are transparent
+// PNG/SVG originals) and a much smaller cap than product photos, since this
+// is an icon-sized badge, not a gallery image.
+export async function saveLabLogo(file: File): Promise<{ url: string }> {
+  await mkdir(UPLOAD_DIR, { recursive: true });
+
+  if (!IMAGE_TYPES.has(file.type)) {
+    throw new Error("Unsupported file type. Please upload a JPEG, PNG, or WEBP logo.");
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const filename = `${randomUUID()}.webp`;
+  const optimized = await sharp(buffer)
+    .resize({ width: 400, height: 400, fit: "inside", withoutEnlargement: true })
+    .webp({ quality: 90 })
+    .toBuffer();
+  await writeFile(path.join(UPLOAD_DIR, filename), optimized);
+  return { url: `/api/media/${filename}` };
+}
+
 export { UPLOAD_DIR };

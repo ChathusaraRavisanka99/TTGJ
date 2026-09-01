@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { ShieldCheck, FileText, ExternalLink } from "lucide-react";
 import { getGemstoneBySlug } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
@@ -36,7 +37,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
         </Reveal>
 
         <Reveal delay={0.1} y={16}>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <p className="text-xs uppercase tracking-widest text-gold">{gem.mineral.name}</p>
             <StockBadge status={gem.stockStatus} />
             {gem.origin.isCeylon && (
@@ -44,6 +45,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
                 Ceylon Origin
               </span>
             )}
+            {gem.certLab && <CertifiedBadge lab={gem.certLab} />}
           </div>
           <h1 className="mt-2 font-serif text-4xl text-charcoal">{gem.name}</h1>
           {gem.showPrice && gem.price != null && (
@@ -112,4 +114,35 @@ function Spec({ label, value, hint }: { label: string; value: string; hint?: str
       {hint && <p className="mt-0.5 text-xs text-charcoal/45">{hint}</p>}
     </div>
   );
+}
+
+// Trust badge shown whenever a gem has a certification lab attached — the
+// lab's own logo if one's been uploaded (Certification Labs admin page),
+// falling back to a generic shield icon so the badge still reads correctly
+// for labs nobody's gotten around to adding a logo for yet. Clickable
+// through to the lab's website when one is on file.
+function CertifiedBadge({ lab }: { lab: { name: string; logoUrl: string | null; websiteUrl: string | null } }) {
+  const content = (
+    <>
+      {lab.logoUrl ? (
+        <span className="relative h-4 w-4 shrink-0 overflow-hidden rounded-sm bg-white">
+          <Image src={lab.logoUrl} alt="" fill className="object-contain" sizes="16px" />
+        </span>
+      ) : (
+        <ShieldCheck size={13} />
+      )}
+      Certified by {lab.name}
+    </>
+  );
+  const className =
+    "inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-[11px] font-medium tracking-wide text-charcoal/80 transition-colors hover:border-gold";
+
+  if (lab.websiteUrl) {
+    return (
+      <a href={lab.websiteUrl} target="_blank" rel="noopener noreferrer" className={className}>
+        {content}
+      </a>
+    );
+  }
+  return <span className={className}>{content}</span>;
 }

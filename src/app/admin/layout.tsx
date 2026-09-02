@@ -14,9 +14,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-1px)] bg-ivory-soft">
+    <div className="flex min-h-[calc(100vh-1px)] bg-ivory-soft print:block print:bg-white">
       <AdminSidebar />
-      <div className="flex-1 px-8 py-8">{children}</div>
+      <div className="flex-1 px-8 py-8 print:p-0">{children}</div>
     </div>
   );
 }

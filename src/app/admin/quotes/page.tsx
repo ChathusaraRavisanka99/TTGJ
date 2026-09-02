@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { resolveGemColor } from "@/components/gem-visualizer/color";
 import { getQuoteGemVisual } from "@/lib/quote-visual";
 
@@ -57,6 +57,7 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
               <th className="px-4 py-3">Item</th>
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Qty</th>
+              <th className="px-4 py-3">Price</th>
               <th className="px-4 py-3">Submitted</th>
               <th className="px-4 py-3">Flagged</th>
               <th className="px-4 py-3">Status</th>
@@ -82,6 +83,7 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
                 </td>
                 <td className="px-4 py-3 text-charcoal/70">{q.user.email}</td>
                 <td className="px-4 py-3 text-charcoal/70">{q.quantity}</td>
+                <td className="px-4 py-3 text-charcoal/70">{q.quotedPrice != null ? formatPrice(q.quotedPrice) : "—"}</td>
                 <td className="px-4 py-3 text-charcoal/70">{q.createdAt.toLocaleDateString()}</td>
                 <td className="px-4 py-3">{q.noteFlaggedForPrice ? <span className="text-amber-700">⚠ Price?</span> : "—"}</td>
                 <td className="px-4 py-3"><QuoteStatusBadge status={q.status} /></td>
@@ -89,7 +91,7 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
               );
             })}
             {quotes.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-charcoal/50">No quote requests found.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-charcoal/50">No quote requests found.</td></tr>
             )}
           </tbody>
         </table>

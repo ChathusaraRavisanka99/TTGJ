@@ -34,6 +34,7 @@ model User {
   sessions        Session[]
   quoteRequests   QuoteRequest[]
   sourcingRequest SourcingRequest[]
+  invoices        Invoice[]
 }
 
 model Account {
@@ -381,11 +382,47 @@ model QuoteRequest {
 
   status QuoteStatus @default(SUBMITTED)
 
+  // Set by the admin alongside (or before) moving status to QUOTED. A flat
+  // total for the requested quantity, not a per-unit price — this business
+  // is quote-only with one line item per request, so a fuller line-item
+  // breakdown would be more structure than the data actually needs.
+  quotedPrice     Float?
+  quoteValidUntil DateTime?
+  quotedAt        DateTime?
+
+  // Created automatically the moment status is set to ACCEPTED (see
+  // updateQuoteRequest) — never created directly. A quote can have at most
+  // one invoice.
+  invoice Invoice?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
+}
+
+model Invoice {
+  id            String @id @default(cuid())
+  // Sequential per calendar year, e.g. "INV-2026-0007" — generated in
+  // createInvoiceForQuote from a count of that year's existing invoices.
+  invoiceNumber String @unique
+
+  quoteRequestId String       @unique
+  quoteRequest   QuoteRequest @relation(fields: [quoteRequestId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Snapshotted from QuoteRequest.quotedPrice at the moment of acceptance,
+  // deliberately not read live off the quote — an invoice is a historical
+  // record and shouldn't silently change if the quote is edited afterward.
+  amount   Float
+  issuedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model SourcingRequest {

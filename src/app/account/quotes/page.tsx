@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
+import { formatPrice } from "@/lib/utils";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
 
 export const metadata: Metadata = { title: "My Quote Requests" };
@@ -44,6 +45,14 @@ export default async function AccountQuotesPage() {
                   </div>
                   <QuoteStatusBadge status={q.status} />
                 </div>
+                {q.quotedPrice != null && (
+                  <div className="mt-3 flex items-baseline justify-between border-t border-border-subtle pt-3">
+                    <p className="font-serif text-xl text-charcoal">{formatPrice(q.quotedPrice)}</p>
+                    {q.quoteValidUntil && (
+                      <p className="text-xs text-charcoal/45">Valid until {q.quoteValidUntil.toLocaleDateString()}</p>
+                    )}
+                  </div>
+                )}
                 {q.note && <p className="mt-3 text-sm text-charcoal/70">&ldquo;{q.note}&rdquo;</p>}
                 {q.adminNotes && (
                   <div className="mt-3 rounded-lg bg-ivory-soft p-3 text-sm text-charcoal/75">

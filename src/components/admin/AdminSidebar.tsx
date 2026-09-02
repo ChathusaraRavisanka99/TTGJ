@@ -11,6 +11,7 @@ const NAV = [
   { href: "/admin/media", label: "Media" },
   { href: "/admin/quotes", label: "Quote Requests" },
   { href: "/admin/sourcing", label: "Sourcing Requests" },
+  { href: "/admin/invoices", label: "Invoices" },
   { href: "/admin/customers", label: "Customers" },
 ];
 
@@ -34,7 +35,7 @@ export function AdminSidebar() {
   const isActive = (href: string, exact?: boolean) => (exact ? pathname === href : pathname.startsWith(href));
 
   return (
-    <nav className="w-60 shrink-0 border-r border-white/10 bg-charcoal px-4 py-8 text-ivory/80">
+    <nav className="w-60 shrink-0 border-r border-white/10 bg-charcoal px-4 py-8 text-ivory/80 print:hidden">
       <Link href="/admin" className="block px-2 font-serif text-xl text-ivory">
         Ratnavue Admin
       </Link>

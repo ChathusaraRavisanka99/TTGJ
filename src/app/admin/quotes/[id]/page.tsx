@@ -5,6 +5,7 @@ import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { QuoteStatusForm } from "@/components/admin/QuoteStatusForm";
 import { QuoteGemPreview } from "@/components/admin/QuoteGemPreview";
 import { getQuoteGemVisual } from "@/lib/quote-visual";
+import { formatPrice } from "@/lib/utils";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
 
 export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin/quotes/[id]">) {
@@ -15,6 +16,7 @@ export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin
       user: true,
       gemstone: { include: { cut: true, mineral: true, clarityGrade: true } },
       jewelry: true,
+      invoice: true,
     },
   });
 
@@ -50,6 +52,14 @@ export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin
             )}
             <p className="mt-2 text-sm text-charcoal/60">Quantity: {quote.quantity}</p>
             <p className="text-xs text-charcoal/45">Submitted {quote.createdAt.toLocaleString()}</p>
+            {quote.quotedPrice != null && (
+              <div className="mt-3 border-t border-border-subtle pt-3">
+                <p className="font-serif text-xl text-charcoal">{formatPrice(quote.quotedPrice)}</p>
+                {quote.quoteValidUntil && (
+                  <p className="text-xs text-charcoal/45">Valid until {quote.quoteValidUntil.toLocaleDateString()}</p>
+                )}
+              </div>
+            )}
           </div>
 
           {gemVisual && (
@@ -85,7 +95,30 @@ export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin
             </Link>
           </div>
 
-          <QuoteStatusForm id={quote.id} kind="quote" currentStatus={quote.status} currentAdminNotes={quote.adminNotes ?? ""} />
+          {quote.quotedPrice != null && (
+            <div className="rounded-xl border border-border-subtle bg-surface p-5">
+              <p className="text-xs uppercase tracking-wide text-charcoal/45">Documents</p>
+              <div className="mt-3 flex flex-col gap-2">
+                <Link href={`/admin/quotes/${quote.id}/print`} className="text-sm text-gold underline decoration-gold/40 underline-offset-2 hover:text-charcoal">
+                  View printable quote →
+                </Link>
+                {quote.invoice && (
+                  <Link href={`/admin/invoices/${quote.invoice.id}`} className="text-sm text-gold underline decoration-gold/40 underline-offset-2 hover:text-charcoal">
+                    View invoice {quote.invoice.invoiceNumber} →
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
+          <QuoteStatusForm
+            id={quote.id}
+            kind="quote"
+            currentStatus={quote.status}
+            currentAdminNotes={quote.adminNotes ?? ""}
+            currentQuotedPrice={quote.quotedPrice}
+            currentQuoteValidUntil={quote.quoteValidUntil?.toISOString() ?? null}
+          />
         </div>
       </div>
     </div>

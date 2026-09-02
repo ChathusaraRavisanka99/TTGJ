@@ -48,7 +48,19 @@ providers.push(
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    // NextAuth's JWT strategy is one rolling session token, not a separate
+    // access/refresh pair — but maxAge + updateAge together produce the
+    // same effect as one: `updateAge` is how long the token is good for
+    // before it's silently re-signed (the "access" window), and each
+    // re-sign resets `maxAge` from that moment (the "refresh" window). So
+    // an active user is re-issued a fresh token every 30 minutes, and each
+    // reissue buys another full hour — miss that hour with no activity at
+    // all and the token is simply expired, no separate refresh step to run.
+    maxAge: 60 * 60, // 1 hour
+    updateAge: 60 * 30, // 30 minutes
+  },
   pages: {
     signIn: "/account/login",
   },

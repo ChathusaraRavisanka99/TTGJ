@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogOut } from "lucide-react";
+import { signOutAction } from "@/actions/auth";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -90,6 +92,17 @@ export function AdminSidebar() {
       <Link href="/" className="mt-8 block px-3 text-xs text-ivory/40 hover:text-ivory/70">
         ← Back to storefront
       </Link>
+
+      {/* Admin had no sign-out affordance anywhere in /admin/* before this —
+          the only way out was to already know to go to /account first. */}
+      <form action={signOutAction} className="mt-2">
+        <button
+          type="submit"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-ivory/40 transition-colors hover:text-ivory/70"
+        >
+          <LogOut size={13} /> Sign Out
+        </button>
+      </form>
     </nav>
   );
 }

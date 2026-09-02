@@ -71,7 +71,7 @@ export function AdminSidebar() {
         ))}
       </div>
 
-      <p className="mt-8 px-3 text-xs uppercase tracking-wide text-ivory/40">Page Content</p>
+      <p className="mt-8 px-3 text-xs uppercase tracking-wide text-ivory/40">CMS</p>
       <div className="mt-2 space-y-1">
         {PAGE_CONTENT.map((item) => (
           <Link

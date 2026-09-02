@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Printer } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
 import { Pagination } from "@/components/ui/Pagination";
@@ -36,6 +37,7 @@ export default async function AdminInvoicesPage({ searchParams }: PageProps<"/ad
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Issued</th>
+              <th className="px-4 py-3">Documents</th>
             </tr>
           </thead>
           <tbody>
@@ -50,10 +52,19 @@ export default async function AdminInvoicesPage({ searchParams }: PageProps<"/ad
                 <td className="px-4 py-3 text-charcoal/70">{inv.user.email}</td>
                 <td className="px-4 py-3 text-charcoal/70">{formatPrice(inv.amount)}</td>
                 <td className="px-4 py-3 text-charcoal/70">{inv.issuedAt.toLocaleDateString()}</td>
+                <td className="px-4 py-3">
+                  <Link
+                    href={`/admin/invoices/${inv.id}`}
+                    title="Print invoice"
+                    className="flex items-center gap-1 text-xs text-charcoal/60 hover:text-gold"
+                  >
+                    <Printer size={14} /> Print
+                  </Link>
+                </td>
               </tr>
             ))}
             {invoices.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-charcoal/50">No invoices yet.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-charcoal/50">No invoices yet.</td></tr>
             )}
           </tbody>
         </table>

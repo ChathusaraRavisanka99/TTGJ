@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Printer, Receipt } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
@@ -25,6 +26,7 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
         user: true,
         gemstone: { include: { cut: true, mineral: true, clarityGrade: true } },
         jewelry: true,
+        invoice: true,
       },
     }),
     prisma.quoteRequest.count({ where }),
@@ -61,6 +63,7 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
               <th className="px-4 py-3">Submitted</th>
               <th className="px-4 py-3">Flagged</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Documents</th>
             </tr>
           </thead>
           <tbody>
@@ -87,11 +90,35 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
                 <td className="px-4 py-3 text-charcoal/70">{q.createdAt.toLocaleDateString()}</td>
                 <td className="px-4 py-3">{q.noteFlaggedForPrice ? <span className="text-amber-700">⚠ Price?</span> : "—"}</td>
                 <td className="px-4 py-3"><QuoteStatusBadge status={q.status} /></td>
+                <td className="px-4 py-3">
+                  {q.quotedPrice != null ? (
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/admin/quotes/${q.id}/print`}
+                        title="Print quote"
+                        className="flex items-center gap-1 text-xs text-charcoal/60 hover:text-gold"
+                      >
+                        <Printer size={14} /> Quote
+                      </Link>
+                      {q.invoice && (
+                        <Link
+                          href={`/admin/invoices/${q.invoice.id}`}
+                          title="Print invoice"
+                          className="flex items-center gap-1 text-xs text-charcoal/60 hover:text-gold"
+                        >
+                          <Receipt size={14} /> Invoice
+                        </Link>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-charcoal/30">—</span>
+                  )}
+                </td>
               </tr>
               );
             })}
             {quotes.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-charcoal/50">No quote requests found.</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-charcoal/50">No quote requests found.</td></tr>
             )}
           </tbody>
         </table>

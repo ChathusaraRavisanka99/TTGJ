@@ -7,10 +7,11 @@ import { GemCard } from "@/components/catalog/GemCard";
 import { JewelryCard } from "@/components/catalog/JewelryCard";
 import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 import { Marquee } from "@/components/layout/Marquee";
-import { Reveal, RevealGroup, RevealItem } from "@/components/layout/Reveal";
+import { Reveal } from "@/components/layout/Reveal";
 import { HeroSlideshow } from "@/components/layout/HeroSlideshow";
 import { HeroScrollCue } from "@/components/layout/HeroScrollCue";
 import { SectionArrow } from "@/components/layout/SectionArrow";
+import { CardSlider } from "@/components/ui/CardSlider";
 
 const MINERAL_MARQUEE = [
   { label: "Blue Sapphire", color: "#3a5f9e" },
@@ -133,30 +134,32 @@ export default async function HomePage() {
               View all
             </Link>
           </Reveal>
-          <RevealGroup className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-            {featuredGems.map((gem) => (
-              <RevealItem key={gem.id}>
-                <GemCard
-                  slug={gem.slug}
-                  name={gem.name}
-                  mineralName={gem.mineral.name}
-                  cutSlug={gem.cut.slug}
-                  cutName={gem.cut.name}
-                  caratWeight={gem.caratWeight}
-                  colorHue={gem.colorHue}
-                  colorLightness={gem.colorLightness}
-                  claritySlug={gem.clarityGrade.slug}
-                  clarityName={gem.clarityGrade.name}
-                  treatmentName={gem.treatment.name}
-                  isCeylon={gem.origin.isCeylon}
-                  stockStatus={gem.stockStatus}
-                  primaryImageUrl={gem.media.find((m) => m.isPrimary)?.url ?? gem.media[0]?.url}
-                  price={gem.price}
-                  showPrice={gem.showPrice}
-                />
-              </RevealItem>
-            ))}
-          </RevealGroup>
+          <Reveal>
+            <CardSlider>
+              {featuredGems.map((gem) => (
+                <div key={gem.id} className="w-[calc(50%-12px)] shrink-0 snap-start sm:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)]">
+                  <GemCard
+                    slug={gem.slug}
+                    name={gem.name}
+                    mineralName={gem.mineral.name}
+                    cutSlug={gem.cut.slug}
+                    cutName={gem.cut.name}
+                    caratWeight={gem.caratWeight}
+                    colorHue={gem.colorHue}
+                    colorLightness={gem.colorLightness}
+                    claritySlug={gem.clarityGrade.slug}
+                    clarityName={gem.clarityGrade.name}
+                    treatmentName={gem.treatment.name}
+                    isCeylon={gem.origin.isCeylon}
+                    stockStatus={gem.stockStatus}
+                    primaryImageUrl={gem.media.find((m) => m.isPrimary)?.url ?? gem.media[0]?.url}
+                    price={gem.price}
+                    showPrice={gem.showPrice}
+                  />
+                </div>
+              ))}
+            </CardSlider>
+          </Reveal>
           <SectionArrow target={prevSection("featured")} direction="up" tone="dark" />
           <SectionArrow target={nextSection("featured")} direction="down" tone="dark" />
         </section>
@@ -176,22 +179,24 @@ export default async function HomePage() {
               View all
             </Link>
           </Reveal>
-          <RevealGroup className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-            {featuredJewelry.map((piece) => (
-              <RevealItem key={piece.id}>
-                <JewelryCard
-                  slug={piece.slug}
-                  name={piece.name}
-                  pieceType={piece.pieceType}
-                  metalType={piece.metalType}
-                  stockStatus={piece.stockStatus}
-                  primaryImageUrl={piece.media.find((m) => m.isPrimary)?.url ?? piece.media[0]?.url}
-                  price={piece.price}
-                  showPrice={piece.showPrice}
-                />
-              </RevealItem>
-            ))}
-          </RevealGroup>
+          <Reveal>
+            <CardSlider>
+              {featuredJewelry.map((piece) => (
+                <div key={piece.id} className="w-[calc(50%-12px)] shrink-0 snap-start sm:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)]">
+                  <JewelryCard
+                    slug={piece.slug}
+                    name={piece.name}
+                    pieceType={piece.pieceType}
+                    metalType={piece.metalType}
+                    stockStatus={piece.stockStatus}
+                    primaryImageUrl={piece.media.find((m) => m.isPrimary)?.url ?? piece.media[0]?.url}
+                    price={piece.price}
+                    showPrice={piece.showPrice}
+                  />
+                </div>
+              ))}
+            </CardSlider>
+          </Reveal>
           <SectionArrow target={prevSection("featured-jewelry")} direction="up" tone="dark" />
           <SectionArrow target={nextSection("featured-jewelry")} direction="down" tone="dark" />
         </section>

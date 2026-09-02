@@ -60,6 +60,17 @@ h1, h2, h3, h4, .font-serif {
   font-family: var(--font-serif), ui-serif, Georgia, serif;
 }
 
+/* CardSlider's scroll track — the scrollbar itself is redundant with the
+   arrow buttons and scroll-snap dots-less drag, so it's hidden rather than
+   styled; the row is still fully scrollable by touch/trackpad/drag. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 ::selection {
   background: var(--color-gold-soft);
   color: var(--color-charcoal);

@@ -62,19 +62,34 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "relative text-sm tracking-wide transition-colors duration-300 after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full",
-                transparent ? "text-ivory/85 hover:text-ivory" : "text-charcoal/75 hover:text-charcoal",
-                pathname.startsWith(link.href) && (transparent ? "text-ivory after:w-full" : "text-charcoal font-medium after:w-full")
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const active = pathname.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "relative pb-1 text-sm tracking-wide transition-colors duration-300 after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full",
+                  transparent ? "text-ivory/85 hover:text-ivory" : "text-charcoal/75 hover:text-charcoal",
+                  active && (transparent ? "text-ivory" : "text-charcoal font-medium")
+                )}
+              >
+                {link.label}
+                {/* Shared layoutId — Framer Motion tracks this element's
+                    identity across renders and animates it from wherever it
+                    was (under the previously active link) to wherever it now
+                    is, instead of the underline just snapping from link to
+                    link the way the hover-only `after:` pseudo-element does. */}
+                {active && (
+                  <motion.span
+                    layoutId="navbar-active-indicator"
+                    className={cn("absolute -bottom-1 left-0 h-px w-full", transparent ? "bg-ivory" : "bg-gold")}
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                  />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
@@ -102,7 +117,15 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
       {open && (
         <nav className="flex flex-col gap-1 border-t border-border-subtle bg-ivory px-5 py-4 md:hidden">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn(
+                "py-3 text-sm text-charcoal/80",
+                pathname.startsWith(link.href) && "font-medium text-charcoal"
+              )}
+              onClick={() => setOpen(false)}
+            >
               {link.label}
             </Link>
           ))}

@@ -28,7 +28,7 @@ export function JewelryCard(props: JewelryCardProps) {
   return (
     <Link
       href={`/jewelry/${props.slug}`}
-      className="group block overflow-hidden rounded-xl border border-border-subtle bg-surface transition-shadow hover:shadow-lg hover:shadow-charcoal/5"
+      className="group flex h-full flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface transition-shadow hover:shadow-lg hover:shadow-charcoal/5"
     >
       <div className="relative aspect-square bg-ivory-soft">
         {props.primaryImageUrl ? (
@@ -47,15 +47,18 @@ export function JewelryCard(props: JewelryCardProps) {
           <StockBadge status={props.stockStatus} />
         </div>
       </div>
-      <div className="p-4">
-        <p className="font-serif text-lg leading-snug text-charcoal">{props.name}</p>
+      <div className="flex flex-1 flex-col p-4">
+        <p className="line-clamp-2 font-serif text-lg leading-snug text-charcoal">{props.name}</p>
         <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/50">
           {props.pieceType.charAt(0) + props.pieceType.slice(1).toLowerCase()} · {METAL_LABELS[props.metalType]}
         </p>
+        {/* mt-auto pins price/CTA to the card's bottom edge regardless of how
+            many lines the name above wrapped to — combined with the root
+            Link's h-full, this keeps every card in a row the same height. */}
         {props.showPrice && props.price != null ? (
-          <p className="mt-2 font-serif text-base text-charcoal">{formatPrice(props.price)}</p>
+          <p className="mt-auto pt-2 font-serif text-base text-charcoal">{formatPrice(props.price)}</p>
         ) : (
-          <p className="mt-3 text-xs font-medium text-gold transition-colors group-hover:text-charcoal">
+          <p className="mt-auto pt-3 text-xs font-medium text-gold transition-colors group-hover:text-charcoal">
             Request a Quote →
           </p>
         )}

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { cn } from "@/lib/utils";
+import { BackLink } from "@/components/admin/BackLink";
 
 const STATUSES = ["SUBMITTED", "UNDER_REVIEW", "QUOTED", "ACCEPTED", "DECLINED", "EXPIRED"];
 const PAGE_SIZE = 20;
@@ -27,6 +28,7 @@ export default async function AdminSourcingPage({ searchParams }: PageProps<"/ad
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Sourcing Requests</h1>
 
       <div className="mt-4 flex flex-wrap gap-2">

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
+import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminCustomerDetailPage({ params }: PageProps<"/admin/customers/[id]">) {
   const { id } = await params;
@@ -17,6 +18,7 @@ export default async function AdminCustomerDetailPage({ params }: PageProps<"/ad
 
   return (
     <div className="max-w-6xl">
+      <BackLink href="/admin/customers" label="Back to Customers" />
       <h1 className="font-serif text-3xl text-charcoal">{customer.name}</h1>
       <p className="text-sm text-charcoal/60">{customer.email}{customer.phone ? ` · ${customer.phone}` : ""}</p>
       <p className="mt-1 text-xs text-charcoal/45">Joined {customer.createdAt.toLocaleDateString()}</p>

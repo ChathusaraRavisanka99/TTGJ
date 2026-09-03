@@ -4,12 +4,14 @@ import { setHomeImage } from "@/actions/page-content";
 import { HomeContentForm } from "@/components/admin/HomeContentForm";
 import { HeroSlidesManager } from "@/components/admin/HeroSlidesManager";
 import { ContentImageField } from "@/components/admin/ContentImageField";
+import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminHomeContentPage() {
   const content = await getPageContent("home", DEFAULT_HOME_CONTENT);
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-3xl text-charcoal">Home Page Content</h1>
         <Link href="/" target="_blank" className="text-sm text-gold underline">

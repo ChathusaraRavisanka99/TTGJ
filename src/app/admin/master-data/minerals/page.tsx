@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { MineralRow } from "@/components/admin/MineralRow";
 import { CreateMineralForm } from "@/components/admin/CreateMineralForm";
+import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminMineralsPage() {
   const minerals = await prisma.mineral.findMany({ orderBy: { sortOrder: "asc" } });
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Minerals</h1>
       <p className="mt-1 text-sm text-charcoal/60">
         Hue ranges constrain the colour picker in the gem configurator and admin gemstone form.

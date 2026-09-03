@@ -3,6 +3,7 @@ import { Printer } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
 import { Pagination } from "@/components/ui/Pagination";
+import { BackLink } from "@/components/admin/BackLink";
 
 const PAGE_SIZE = 20;
 
@@ -23,6 +24,7 @@ export default async function AdminInvoicesPage({ searchParams }: PageProps<"/ad
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Invoices</h1>
       <p className="mt-1 text-sm text-charcoal/60">
         Created automatically whenever a quote is marked Accepted — see a quote&apos;s Documents panel to accept one.

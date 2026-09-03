@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { ClarityRow } from "@/components/admin/ClarityRow";
 import { CreateClarityForm } from "@/components/admin/CreateClarityForm";
+import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminClarityPage() {
   const grades = await prisma.clarityGrade.findMany({ orderBy: { sortOrder: "asc" } });
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Clarity Scale</h1>
       <p className="mt-1 text-sm text-charcoal/60">
         A simplified colored-gemstone clarity scale (not the diamond GIA scale), shown to customers on product pages and the configurator.

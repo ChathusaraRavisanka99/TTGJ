@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Pagination } from "@/components/ui/Pagination";
+import { BackLink } from "@/components/admin/BackLink";
 
 const PAGE_SIZE = 20;
 
@@ -23,6 +24,7 @@ export default async function AdminCustomersPage({ searchParams }: PageProps<"/a
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Customers</h1>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">

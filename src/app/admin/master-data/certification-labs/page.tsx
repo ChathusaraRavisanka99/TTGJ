@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { CreateCertLabForm } from "@/components/admin/CreateCertLabForm";
 import { CertLabRow } from "@/components/admin/CertLabRow";
+import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminCertificationLabsPage() {
   const labs = await prisma.certificationLab.findMany({ orderBy: { sortOrder: "asc" } });
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Certification Labs</h1>
       <p className="mt-1 text-sm text-charcoal/60">
         Gemological labs available on the gemstone form. A lab with a logo shows a &ldquo;Certified&rdquo; badge on

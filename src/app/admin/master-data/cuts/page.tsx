@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { toggleCutActive } from "@/actions/master-data";
 import { ToggleActiveButton } from "@/components/admin/ToggleActiveButton";
+import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminCutsPage() {
   const cuts = await prisma.cut.findMany({ orderBy: { sortOrder: "asc" } });
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Cuts</h1>
       <p className="mt-1 text-sm text-charcoal/60">
         This is the fixed set of 18 standard gem cuts. You can enable or disable which ones are selectable, but new

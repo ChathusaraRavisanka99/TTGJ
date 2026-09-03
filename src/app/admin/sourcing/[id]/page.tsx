@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { QuoteStatusForm } from "@/components/admin/QuoteStatusForm";
+import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminSourcingDetailPage({ params }: PageProps<"/admin/sourcing/[id]">) {
   const { id } = await params;
@@ -12,6 +13,7 @@ export default async function AdminSourcingDetailPage({ params }: PageProps<"/ad
 
   return (
     <div className="max-w-6xl">
+      <BackLink href="/admin/sourcing" label="Back to Sourcing Requests" />
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-3xl text-charcoal">Sourcing Request</h1>
         <QuoteStatusBadge status={request.status} />

@@ -4,6 +4,7 @@ import { getMasterData } from "@/lib/catalog";
 import { GemstoneForm } from "@/components/admin/GemstoneForm";
 import { MediaManager } from "@/components/admin/MediaManager";
 import { CertificateManager } from "@/components/admin/CertificateManager";
+import { BackLink } from "@/components/admin/BackLink";
 
 export default async function EditGemstonePage({ params }: PageProps<"/admin/gems/[id]">) {
   const { id } = await params;
@@ -16,6 +17,7 @@ export default async function EditGemstonePage({ params }: PageProps<"/admin/gem
 
   return (
     <div>
+      <BackLink href="/admin/gems" label="Back to Gemstones" />
       <h1 className="font-serif text-3xl text-charcoal">{gem.name}</h1>
 
       <div className="mt-6">

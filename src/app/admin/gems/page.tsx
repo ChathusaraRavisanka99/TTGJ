@@ -5,6 +5,7 @@ import { StockBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { ToggleFeaturedButton } from "@/components/admin/ToggleFeaturedButton";
+import { BackLink } from "@/components/admin/BackLink";
 
 const PAGE_SIZE = 20;
 
@@ -25,6 +26,7 @@ export default async function AdminGemsPage({ searchParams }: PageProps<"/admin/
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-3xl text-charcoal">Gemstones</h1>
         <Link href="/admin/gems/new">

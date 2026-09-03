@@ -3,12 +3,14 @@ import { getPageContent, DEFAULT_ABOUT_CONTENT } from "@/lib/page-content";
 import { setAboutImage } from "@/actions/page-content";
 import { AboutContentForm } from "@/components/admin/AboutContentForm";
 import { ContentImageField } from "@/components/admin/ContentImageField";
+import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminAboutContentPage() {
   const content = await getPageContent("about", DEFAULT_ABOUT_CONTENT);
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-3xl text-charcoal">About Page Content</h1>
         <Link href="/about" target="_blank" className="text-sm text-gold underline">

@@ -108,8 +108,13 @@ export function PrintableDocument({
             </tbody>
           </table>
 
-          <div className="mt-2 flex justify-end">
-            <div className="flex w-64 items-center justify-between border-t-2 border-gold pt-4">
+          {/* Full-width rule (echoing the one under the header) rather than
+              a short bar clipped to the total box's own width — that read
+              as a stray fragment disconnected from the rest of the
+              document instead of a section divider. */}
+          <div className="mt-2 h-px bg-gradient-to-r from-transparent via-border-subtle to-gold/50" />
+          <div className="mt-4 flex justify-end">
+            <div className="flex w-64 items-center justify-between">
               <p className="text-sm uppercase tracking-wide text-charcoal/60">Total</p>
               <p className="font-serif text-2xl text-gold">{formatPrice(amount)}</p>
             </div>

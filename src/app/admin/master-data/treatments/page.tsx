@@ -2,12 +2,14 @@ import { prisma } from "@/lib/prisma";
 import { createTreatment, toggleTreatmentActive } from "@/actions/master-data";
 import { CreateSimpleForm } from "@/components/admin/CreateSimpleForm";
 import { ToggleActiveButton } from "@/components/admin/ToggleActiveButton";
+import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminTreatmentsPage() {
   const treatments = await prisma.treatment.findMany({ orderBy: { sortOrder: "asc" } });
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Treatments</h1>
       <p className="mt-1 text-sm text-charcoal/60">Disclosed prominently on every gemstone — treatment transparency matters to buyers.</p>
 

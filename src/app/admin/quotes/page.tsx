@@ -6,6 +6,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { cn, formatPrice } from "@/lib/utils";
 import { resolveGemColor } from "@/components/gem-visualizer/color";
 import { getQuoteGemVisual } from "@/lib/quote-visual";
+import { BackLink } from "@/components/admin/BackLink";
 
 const STATUSES = ["SUBMITTED", "UNDER_REVIEW", "QUOTED", "ACCEPTED", "DECLINED", "EXPIRED"];
 const PAGE_SIZE = 20;
@@ -35,6 +36,7 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Quote Requests</h1>
 
       <div className="mt-4 flex flex-wrap gap-2">

@@ -6,6 +6,7 @@ import { QuoteStatusForm } from "@/components/admin/QuoteStatusForm";
 import { QuoteGemPreview } from "@/components/admin/QuoteGemPreview";
 import { getQuoteGemVisual } from "@/lib/quote-visual";
 import { formatPrice } from "@/lib/utils";
+import { BackLink } from "@/components/admin/BackLink";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
 
 export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin/quotes/[id]">) {
@@ -27,6 +28,7 @@ export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin
 
   return (
     <div className="max-w-6xl">
+      <BackLink href="/admin/quotes" label="Back to Quote Requests" />
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-3xl text-charcoal">Quote Request</h1>
         <QuoteStatusBadge status={quote.status} />

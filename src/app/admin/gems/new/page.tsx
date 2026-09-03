@@ -1,11 +1,13 @@
 import { getMasterData } from "@/lib/catalog";
 import { GemstoneForm } from "@/components/admin/GemstoneForm";
+import { BackLink } from "@/components/admin/BackLink";
 
 export default async function NewGemstonePage() {
   const { minerals, cuts, clarityGrades, treatments, origins, certificationLabs } = await getMasterData();
 
   return (
     <div>
+      <BackLink href="/admin/gems" label="Back to Gemstones" />
       <h1 className="font-serif text-3xl text-charcoal">Add Gemstone</h1>
       <div className="mt-6">
         <GemstoneForm

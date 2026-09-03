@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Video } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Pagination } from "@/components/ui/Pagination";
+import { BackLink } from "@/components/admin/BackLink";
 
 const PAGE_SIZE = 30;
 
@@ -23,6 +24,7 @@ export default async function AdminMediaPage({ searchParams }: PageProps<"/admin
 
   return (
     <div>
+      <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Media Library</h1>
       <p className="mt-1 text-sm text-charcoal/60">
         All uploaded product images and videos. Manage uploads, primary image, and ordering from each product&apos;s edit page.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition, type CSSProperties } from "react";
 import Image from "next/image";
 import { Reorder, useDragControls } from "motion/react";
 import { GripVertical, Trash2, Plus, ChevronDown, X } from "lucide-react";
@@ -252,12 +252,24 @@ function BlockCard({
 
 function LivePreview({ blocks }: { blocks: AboutBlock[] }) {
   const outerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.3);
+  const [scale, setScale] = useState<number | null>(null);
 
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so the first real measurement lands
+  // before the browser paints — otherwise the panel briefly paints at the
+  // 0.3 placeholder scale and then snaps to the real one a frame later,
+  // which reads as the preview "zooming in" on its own right after the
+  // page loads. The >0.5px-change guard just avoids redundant re-renders
+  // from sub-pixel ResizeObserver noise; it isn't fixing a runaway loop
+  // (the measured scale was confirmed stable at rest).
+  useLayoutEffect(() => {
     const el = outerRef.current;
     if (!el) return;
-    const update = () => setScale(Math.max(0.15, el.clientWidth / 1440));
+    let last = -1;
+    const update = () => {
+      if (Math.abs(el.clientWidth - last) < 0.5) return;
+      last = el.clientWidth;
+      setScale(Math.max(0.15, el.clientWidth / 1440));
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -267,9 +279,14 @@ function LivePreview({ blocks }: { blocks: AboutBlock[] }) {
   return (
     <div ref={outerRef} className="w-full overflow-hidden rounded-2xl border border-border-subtle bg-ivory-soft">
       <div className="h-[calc(100vh-260px)] overflow-y-auto">
-        <div style={{ width: 1440, zoom: scale } as CSSProperties}>
-          <AboutBlocksRenderer blocks={blocks} animate={false} />
-        </div>
+        {/* Rendered only once the real scale is measured (useLayoutEffect
+            resolves this before the first paint), so there's nothing to
+            flash from a placeholder value. */}
+        {scale !== null && (
+          <div style={{ width: 1440, zoom: scale } as CSSProperties}>
+            <AboutBlocksRenderer blocks={blocks} animate={false} />
+          </div>
+        )}
       </div>
     </div>
   );

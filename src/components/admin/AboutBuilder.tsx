@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition, type CSSProperties } from "react";
+import { useEffect, useRef, useState, useTransition, type CSSProperties } from "react";
 import Image from "next/image";
 import { Reorder, useDragControls } from "motion/react";
 import { GripVertical, Trash2, Plus, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -262,6 +262,7 @@ function ColumnCard({
   onMoveRight,
   canMoveLeft,
   canMoveRight,
+  onExpand,
 }: {
   column: AboutColumn;
   onChangeBlock: (block: AboutBlock) => void;
@@ -271,8 +272,22 @@ function ColumnCard({
   onMoveRight: () => void;
   canMoveLeft: boolean;
   canMoveRight: boolean;
+  onExpand: () => void;
 }) {
   const [open, setOpen] = useState(false);
+
+  function toggle() {
+    // Compute `next` from the current value directly rather than inside
+    // the setOpen updater — calling a parent's setState (onExpand ->
+    // focusRow) from inside another component's state-updater function is
+    // an impurity React warns about ("Cannot update a component while
+    // rendering a different component"). A plain event handler can call
+    // as many setStates/side effects as it wants; it's specifically the
+    // updater function's own body that has to stay side-effect-free.
+    const next = !open;
+    setOpen(next);
+    if (next) onExpand();
+  }
 
   return (
     <div className="min-w-[240px] flex-1 rounded-lg border border-border-subtle bg-ivory-soft/60">
@@ -295,7 +310,7 @@ function ColumnCard({
         >
           <ChevronRight size={14} />
         </button>
-        <button type="button" onClick={() => setOpen((o) => !o)} className="flex flex-1 items-center gap-1.5 truncate text-left">
+        <button type="button" onClick={toggle} className="flex flex-1 items-center gap-1.5 truncate text-left">
           <span className="truncate text-xs font-medium text-charcoal">{BLOCK_LABELS[column.block.type]}</span>
           <ChevronDown size={13} className={`shrink-0 text-charcoal/40 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
@@ -353,6 +368,7 @@ function RowCard({
   onAddColumn,
   onRemoveRow,
   canRemoveRow,
+  onExpandRow,
 }: {
   row: AboutRow;
   index: number;
@@ -363,6 +379,7 @@ function RowCard({
   onAddColumn: (type: BlockTypeEntry) => void;
   onRemoveRow: () => void;
   canRemoveRow: boolean;
+  onExpandRow: () => void;
 }) {
   const controls = useDragControls();
   const [addOpen, setAddOpen] = useState(false);
@@ -418,6 +435,7 @@ function RowCard({
             onMoveRight={() => onMoveColumn(col.id, 1)}
             canMoveLeft={i > 0}
             canMoveRight={i < row.columns.length - 1}
+            onExpand={onExpandRow}
           />
         ))}
       </div>
@@ -435,10 +453,32 @@ function RowCard({
 // an explicit height by hand.
 const PREVIEW_SCALE = 0.33;
 
-function LivePreview({ rows }: { rows: AboutRow[] }) {
+function LivePreview({
+  rows,
+  focusedRowId,
+  focusNonce,
+}: {
+  rows: AboutRow[];
+  focusedRowId: string | null;
+  focusNonce: number | null;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // The preview pane scrolls independently of the row list beside it (its
+  // own fixed-height box) — without this, a row you just added or opened
+  // for editing can sit below the pane's current scroll position, so an
+  // edit that's actually correct looks like it isn't showing up at all.
+  // Depending on focusNonce (not just the id) means re-expanding the same
+  // row re-triggers the scroll too, even though the id didn't change.
+  useEffect(() => {
+    if (!focusedRowId) return;
+    const el = scrollRef.current?.querySelector(`[data-row-id="${focusedRowId}"]`);
+    el?.scrollIntoView({ block: "start", behavior: "auto" });
+  }, [focusedRowId, focusNonce]);
+
   return (
     <div className="mx-auto w-full max-w-[480px] overflow-hidden rounded-2xl border border-border-subtle bg-ivory-soft lg:mx-0">
-      <div className="h-[calc(100vh-260px)] overflow-y-auto">
+      <div ref={scrollRef} className="h-[calc(100vh-260px)] overflow-y-auto">
         <div style={{ width: 1440, zoom: PREVIEW_SCALE } as CSSProperties}>
           <AboutBlocksRenderer rows={rows} animate={false} />
         </div>
@@ -454,6 +494,13 @@ export function AboutBuilder({ initialRows }: { initialRows: AboutRow[] }) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [addRowMenuOpen, setAddRowMenuOpen] = useState(false);
+  // A nonce alongside the id, not just the id alone, so re-focusing the
+  // SAME row (e.g. collapsing and re-expanding its card) still re-triggers
+  // the preview's scroll-into-view — React bails out of a state update
+  // (and the effect depending on it) when the new value is === the old one.
+  const [focus, setFocus] = useState<{ rowId: string; nonce: number } | null>(null);
+  const focusNonceRef = useRef(0);
+  const focusRow = (rowId: string) => setFocus({ rowId, nonce: ++focusNonceRef.current });
 
   const dirty = JSON.stringify(rows) !== JSON.stringify(savedRows);
 
@@ -509,6 +556,7 @@ export function AboutBuilder({ initialRows }: { initialRows: AboutRow[] }) {
         return { ...r, columns };
       }),
     );
+    focusRow(rowId);
     setSaved(false);
   }
 
@@ -516,6 +564,7 @@ export function AboutBuilder({ initialRows }: { initialRows: AboutRow[] }) {
     const row: AboutRow = { id: crypto.randomUUID(), columns: [{ id: crypto.randomUUID(), span: 12, block: type.create(crypto.randomUUID()) }] };
     setRows((prev) => [...prev, row]);
     setAddRowMenuOpen(false);
+    focusRow(row.id);
     setSaved(false);
   }
 
@@ -576,14 +625,20 @@ export function AboutBuilder({ initialRows }: { initialRows: AboutRow[] }) {
               onAddColumn={(type) => addColumn(row.id, type)}
               onRemoveRow={() => removeRow(row.id)}
               canRemoveRow={rows.length > 1}
+              onExpandRow={() => focusRow(row.id)}
             />
           ))}
         </Reorder.Group>
       </div>
 
-      <div>
+      {/* Sticky: the row list can grow much taller than the preview panel
+          (more rows, an expanded editor far down the list) — without this,
+          scrolling down to reach a field also scrolls the whole preview,
+          including whatever row it just auto-scrolled to, off the top of
+          the browser window. */}
+      <div className="lg:sticky lg:top-6 lg:self-start">
         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-charcoal/50">Live preview</p>
-        <LivePreview rows={rows} />
+        <LivePreview rows={rows} focusedRowId={focus?.rowId ?? null} focusNonce={focus?.nonce ?? null} />
       </div>
     </div>
   );

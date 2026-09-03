@@ -287,13 +287,21 @@ function MultiColumnRow({ row, animate }: { row: AboutRow; animate: boolean }) {
 export function AboutBlocksRenderer({ rows, animate = true }: { rows: AboutRow[]; animate?: boolean }) {
   return (
     <div>
-      {rows.map((row) =>
-        row.columns.length === 1 && row.columns[0].span === 12 ? (
-          <FullSection key={row.id} block={row.columns[0].block} animate={animate} />
-        ) : (
-          <MultiColumnRow key={row.id} row={row} animate={animate} />
-        ),
-      )}
+      {rows.map((row) => (
+        // data-row-id lets the admin preview pane (which scrolls
+        // independently of the page around it, in its own fixed-height
+        // box) scroll a specific row into view when it's being edited —
+        // without this, an added or edited block below the pane's current
+        // scroll position is invisible there even though it's correct on
+        // the real page, which reads as "the preview doesn't match."
+        <div key={row.id} data-row-id={row.id}>
+          {row.columns.length === 1 && row.columns[0].span === 12 ? (
+            <FullSection block={row.columns[0].block} animate={animate} />
+          ) : (
+            <MultiColumnRow row={row} animate={animate} />
+          )}
+        </div>
+      ))}
     </div>
   );
 }

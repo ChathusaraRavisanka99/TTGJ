@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Reveal } from "@/components/layout/Reveal";
 import { LinkButton } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import type { AboutBlock, AboutRow, ColumnSpan } from "@/lib/about-blocks";
+import type { AboutBlock, AboutRow, ColumnSpan, SpacerHeight } from "@/lib/about-blocks";
 
 // The single source of truth for how About-page rows/blocks render —
 // shared by the real /about page (server-rendered from saved content) and
@@ -154,6 +154,17 @@ function CtaSection({ block, animate }: { block: Extract<AboutBlock, { type: "ct
   );
 }
 
+const SPACER_HEIGHTS: Record<SpacerHeight, string> = {
+  sm: "h-8 sm:h-12",
+  md: "h-16 sm:h-24",
+  lg: "h-24 sm:h-36",
+  xl: "h-32 sm:h-48",
+};
+
+function SpacerSection({ block }: { block: Extract<AboutBlock, { type: "spacer" }> }) {
+  return <div className={cn("w-full bg-background", SPACER_HEIGHTS[block.height])} />;
+}
+
 function FullSection({ block, animate }: { block: AboutBlock; animate: boolean }) {
   switch (block.type) {
     case "hero":
@@ -170,6 +181,8 @@ function FullSection({ block, animate }: { block: AboutBlock; animate: boolean }
       return <PrinciplesSection block={block} animate={animate} />;
     case "cta":
       return <CtaSection block={block} animate={animate} />;
+    case "spacer":
+      return <SpacerSection block={block} />;
     default:
       return null;
   }
@@ -250,6 +263,8 @@ function BoxedBlock({ block }: { block: AboutBlock }) {
       return <PrinciplesSection block={block} animate={false} />;
     case "cta":
       return <CtaSection block={block} animate={false} />;
+    case "spacer":
+      return <SpacerSection block={block} />;
     default:
       return null;
   }

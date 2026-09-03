@@ -8,7 +8,9 @@ import { updateAboutRows, uploadAboutBlockImage } from "@/actions/page-content";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select, Label, FieldError, FieldHint } from "@/components/ui/Field";
 import { AboutBlocksRenderer } from "@/components/about/AboutBlocksRenderer";
-import { BLOCK_TYPES, SPAN_PRESETS, type AboutBlock, type AboutRow, type AboutColumn, type ColumnSpan } from "@/lib/about-blocks";
+import { BLOCK_TYPES, SPAN_PRESETS, type AboutBlock, type AboutRow, type AboutColumn, type ColumnSpan, type SpacerHeight } from "@/lib/about-blocks";
+
+const SPACER_HEIGHT_LABELS: Record<SpacerHeight, string> = { sm: "Small", md: "Medium", lg: "Large", xl: "Extra large" };
 
 // Full drag-and-drop page builder for the About page, laid out as rows of
 // side-by-side columns (a 12-unit grid, like a normal page builder) rather
@@ -154,6 +156,18 @@ function BlockFields({ block, onChange }: { block: AboutBlock; onChange: (block:
             <Textarea value={block.body} onChange={(e) => onChange({ ...block, body: e.target.value })} />
           </div>
           <FieldHint>The Shop Gemstones / Submit a Sourcing Request buttons below this are fixed.</FieldHint>
+        </div>
+      );
+    case "spacer":
+      return (
+        <div>
+          <Label>Height</Label>
+          <Select value={block.height} onChange={(e) => onChange({ ...block, height: e.target.value as SpacerHeight })}>
+            {(Object.entries(SPACER_HEIGHT_LABELS) as [SpacerHeight, string][]).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </Select>
+          <FieldHint>Empty space filled with the page background — no visible line.</FieldHint>
         </div>
       );
     case "principles": {

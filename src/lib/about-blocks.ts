@@ -65,6 +65,18 @@ export interface CtaBlock {
   body: string;
 }
 
+// Empty vertical space, filled with the page's base background colour (not
+// transparent) so it reliably blends in wherever it's placed — including
+// between two sections that don't share a colour — rather than showing
+// through to whatever happens to sit behind it.
+export type SpacerHeight = "sm" | "md" | "lg" | "xl";
+
+export interface SpacerBlock {
+  id: string;
+  type: "spacer";
+  height: SpacerHeight;
+}
+
 export type AboutBlock =
   | HeroBlock
   | TextBlock
@@ -72,7 +84,8 @@ export type AboutBlock =
   | QuoteBlock
   | PrinciplesBlock
   | ImageBlock
-  | CtaBlock;
+  | CtaBlock
+  | SpacerBlock;
 
 // A column's width, in twelfths of its row — the same 12-unit convention as
 // Bootstrap/most grid systems. Rows aren't required to sum to 12; a row
@@ -159,6 +172,12 @@ export const BLOCK_TYPES: {
     label: "Closing CTA",
     description: "A centered heading, body text, and the Shop/Sourcing buttons.",
     create: (id) => ({ id, type: "cta", heading: "A closing heading.", body: "A short closing sentence." }),
+  },
+  {
+    type: "spacer",
+    label: "Spacer",
+    description: "Empty vertical space — matches the page background, no visible line.",
+    create: (id) => ({ id, type: "spacer", height: "md" }),
   },
 ];
 
@@ -278,6 +297,12 @@ const ctaBlockSchema = z.object({
   body: z.string().max(500),
 });
 
+const spacerBlockSchema = z.object({
+  id: z.string().min(1).max(64),
+  type: z.literal("spacer"),
+  height: z.enum(["sm", "md", "lg", "xl"]),
+});
+
 export const aboutBlockSchema = z.discriminatedUnion("type", [
   heroBlockSchema,
   textBlockSchema,
@@ -286,6 +311,7 @@ export const aboutBlockSchema = z.discriminatedUnion("type", [
   principlesBlockSchema,
   imageBlockSchema,
   ctaBlockSchema,
+  spacerBlockSchema,
 ]);
 
 const spanSchema = z.union([

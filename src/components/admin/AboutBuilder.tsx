@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useTransition, type CSSProperties } from "react";
+import { useEffect, useRef, useState, useTransition, type CSSProperties } from "react";
 import Image from "next/image";
 import { Reorder, useDragControls } from "motion/react";
 import { GripVertical, Trash2, Plus, ChevronDown, X } from "lucide-react";
@@ -250,43 +250,24 @@ function BlockCard({
   );
 }
 
+// Fixed scale, fixed simulated viewport width — deliberately NOT measured
+// from the container at runtime. A ResizeObserver-driven scale (tried
+// first) could balloon toward 1 on a wide monitor, since the panel had no
+// width cap of its own, and something about a Reorder drag elsewhere on
+// the page could knock a stray measurement into that state too — a fixed
+// number can't do either, at the cost of the panel not perfectly filling
+// odd container widths. `zoom` (rather than `transform: scale`) is what
+// lets the outer `overflow-y-auto` get a correctly-sized scrollable area
+// without also having to measure and set an explicit height by hand.
+const PREVIEW_SCALE = 0.33;
+
 function LivePreview({ blocks }: { blocks: AboutBlock[] }) {
-  const outerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState<number | null>(null);
-
-  // useLayoutEffect (not useEffect) so the first real measurement lands
-  // before the browser paints — otherwise the panel briefly paints at the
-  // 0.3 placeholder scale and then snaps to the real one a frame later,
-  // which reads as the preview "zooming in" on its own right after the
-  // page loads. The >0.5px-change guard just avoids redundant re-renders
-  // from sub-pixel ResizeObserver noise; it isn't fixing a runaway loop
-  // (the measured scale was confirmed stable at rest).
-  useLayoutEffect(() => {
-    const el = outerRef.current;
-    if (!el) return;
-    let last = -1;
-    const update = () => {
-      if (Math.abs(el.clientWidth - last) < 0.5) return;
-      last = el.clientWidth;
-      setScale(Math.max(0.15, el.clientWidth / 1440));
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
   return (
-    <div ref={outerRef} className="w-full overflow-hidden rounded-2xl border border-border-subtle bg-ivory-soft">
+    <div className="mx-auto w-full max-w-[480px] overflow-hidden rounded-2xl border border-border-subtle bg-ivory-soft lg:mx-0">
       <div className="h-[calc(100vh-260px)] overflow-y-auto">
-        {/* Rendered only once the real scale is measured (useLayoutEffect
-            resolves this before the first paint), so there's nothing to
-            flash from a placeholder value. */}
-        {scale !== null && (
-          <div style={{ width: 1440, zoom: scale } as CSSProperties}>
-            <AboutBlocksRenderer blocks={blocks} animate={false} />
-          </div>
-        )}
+        <div style={{ width: 1440, zoom: PREVIEW_SCALE } as CSSProperties}>
+          <AboutBlocksRenderer blocks={blocks} animate={false} />
+        </div>
       </div>
     </div>
   );

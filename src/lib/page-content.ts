@@ -57,18 +57,19 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
   heroKicker: "Ceylon Gemstones & Fine Jewelry",
   heroHeadingLine1: "Colour, cut, and",
   heroHeadingLine2: "provenance —",
-  heroHeadingHighlight: "designed by you.",
+  heroHeadingHighlight: "chosen by you, sourced by us.",
   heroSubtext:
-    "Explore ethically sourced Ceylon sapphires, rubies, and rare gems. Configure your own stone in real time, then request a private quote from our gemologists.",
+    "Explore ethically sourced Ceylon sapphires, rubies, and rare colour stones — each one honestly graded and clearly disclosed. Configure your own stone in real time, then request a private quote from our gemologists.",
   heritageImage: "/images/heritage/blue-crystal-macro.jpg",
   heritageKicker: "Heritage",
   heritageHeading: "Two thousand years of Ceylon gems",
   heritageBody:
-    "Sri Lanka's gem gravels have produced some of history's most celebrated sapphires and rubies for over two millennia. Ratnavue is built around that legacy — every gem is honestly graded, and treatment status is always disclosed.",
+    "Sri Lanka's gem gravels — illam, as they're known locally — have produced some of history's most celebrated sapphires and rubies for over two millennia, pulled from the same riverbeds that once supplied ancient trading ports. Ratnavue is built around that legacy: every gem is honestly graded, and treatment status is always disclosed.",
   sourcingImage: "/images/heritage/gemologist-sorting-emeralds.jpg",
   sourcingKicker: "Sourcing",
   sourcingHeading: "Can't find the exact stone?",
-  sourcingBody: "Tell us what you're looking for and our sourcing team will search Sri Lanka's gem markets on your behalf.",
+  sourcingBody:
+    "Tell us the mineral, size, cut, or colour you have in mind, and our sourcing team will search Sri Lanka's gem markets on your behalf — no obligation until you see what we find.",
   editorialQuote: "Every stone carries two thousand years of Ceylon's gem-bearing earth — we simply",
   editorialQuoteHighlight: "reveal what was already there.",
   editorialAttribution: "Ratnavue Gemological House",
@@ -107,27 +108,30 @@ export const DEFAULT_ABOUT_CONTENT: AboutContent = {
   heroKicker: "Our Story",
   heroHeading: "A colour-first approach to Ceylon gems",
   introLabel: "The Island",
-  introLead: "Sri Lanka — Ceylon — has yielded some of the world's finest gemstones for over two thousand years.",
+  introLead:
+    "Sri Lanka — Ceylon, as gem traders have called it for two thousand years — has yielded some of the world's finest sapphires, rubies, and colour stones.",
   introBody1:
-    "The island's gem-bearing gravels, known locally as illam, have produced sapphires and rubies coveted by royal courts from Rome to the Mughal empire. That legacy is still being pulled from the earth today, stone by stone, largely by hand.",
+    "The island's gem-bearing gravels, known locally as illam, have produced sapphires and rubies coveted by royal courts from Rome to the Mughal empire — Marco Polo wrote of the King of Ceylon's ruby, and gem traders have followed the same river gravels around Ratnapura, the island's 'City of Gems,' ever since. That legacy is still being pulled from the earth today, largely by hand, one stone at a time.",
   introBody2:
-    "Ratnavue is built around that heritage: every gemstone is meant to be honestly graded and clearly disclosed, cut to standards that respect its natural character rather than force it into a trend.",
+    "Ratnavue is built around that heritage: every gemstone is meant to be honestly graded and clearly disclosed, cut to standards that respect its natural character rather than force it into a trend we'll have moved past in a decade.",
   breakImage: "/images/hero/01-loose-ruby-crystals.jpg",
   breakCaptionKicker: "Rough to reveal",
-  breakCaptionBody: "Raw ruby crystals, as they come out of the earth — every facet still to be discovered by the cutter's hand.",
+  breakCaptionBody:
+    "Raw ruby crystals, fresh from Sri Lanka's gem gravels — every facet still to be discovered by the cutter's hand, every stone still holding its true colour until the first cut reveals it.",
   quote: "The stone should always come",
   quoteHighlight: "first.",
   principle1Title: "Honest grading",
   principle1Body:
-    "Every gemstone is graded on its own merits and described plainly — no inflated clarity claims, no vague colour names standing in for the real hue.",
+    "Every gemstone is graded on its own merits and described in plain language — no inflated clarity claims, no vague colour names standing in for the real hue.",
   principle2Title: "Treatment disclosed",
   principle2Body:
-    "Heated, unheated, or otherwise — treatment status is stated on every listing, and unheated stones are identified prominently, not buried in fine print.",
+    "Heated, unheated, or otherwise — treatment status is stated on every listing in the same breath as the price, and unheated stones are identified prominently, never buried in fine print.",
   principle3Title: "Stone-first design",
   principle3Body:
-    "Jewelry here is designed around the gemstone rather than the other way around — the setting exists to let the stone speak, not to compete with it.",
-  ctaHeading: "See it for yourself.",
-  ctaBody: "Browse the current collection, or tell us what you're looking for and our sourcing team will go find it.",
+    "Jewelry here is designed around the gemstone rather than the other way around — the setting exists to hold the stone securely and let it speak, not to compete with it.",
+  ctaHeading: "Come see the collection.",
+  ctaBody:
+    "Browse the current collection, or tell us exactly what you're picturing and let our sourcing team go find it in Sri Lanka's gem markets on your behalf.",
 };
 
 export async function getPageContent<T extends object>(page: string, defaults: T): Promise<T> {

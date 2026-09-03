@@ -27,19 +27,25 @@ export default async function AboutPage() {
           oversized desktop monitors — 1100px is well above ordinary laptop/
           desktop viewport heights (~900-1100px), which a lower cap here was
           clipping short, leaving bare background visible below the hero. */}
-      <section className="relative flex h-dvh min-h-[520px] w-full items-end overflow-hidden bg-charcoal lg:max-h-[1100px]">
+      <section className="relative flex h-dvh min-h-[520px] w-full items-center overflow-hidden bg-charcoal lg:max-h-[1100px]">
         <Image src={content.heroImage} alt={content.heroHeading} fill priority className="object-cover" />
+        {/* Text moved from bottom-anchored to vertically centered, so the
+            darkening now needs to hold up behind the middle of the image
+            (wherever that lands) rather than just the bottom edge — a
+            left-to-right scrim (strongest behind the text, clear toward the
+            image's right side) reads correctly regardless of what's behind
+            it vertically, which a bottom-weighted gradient no longer would. */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "linear-gradient(0deg, rgba(33,29,26,0.94) 0%, rgba(33,29,26,0.55) 45%, rgba(33,29,26,0.15) 75%, transparent 100%)",
+              "linear-gradient(90deg, rgba(33,29,26,0.92) 0%, rgba(33,29,26,0.72) 38%, rgba(33,29,26,0.3) 68%, transparent 100%)",
           }}
         />
-        <div className="relative mx-auto w-full max-w-[120rem] px-5 pb-10 sm:px-8 sm:pb-14 lg:px-12 xl:px-16">
+        <div className="relative mx-auto w-full max-w-[120rem] px-5 sm:px-8 lg:px-12 xl:px-16">
           <Reveal>
             <p className="text-xs uppercase tracking-[0.35em] text-gold-soft">{content.heroKicker}</p>
-            <h1 className="mt-4 max-w-2xl font-serif text-5xl leading-[1.05] text-ivory sm:text-6xl lg:text-7xl">
+            <h1 className="mt-5 max-w-3xl font-serif text-6xl leading-[1.05] text-ivory sm:text-7xl lg:text-8xl">
               {content.heroHeading}
             </h1>
           </Reveal>
@@ -76,9 +82,15 @@ export default async function AboutPage() {
       </section>
 
       {/* ---------- Pull quote ---------- */}
-      <section className="my-20 border-y border-border-subtle bg-charcoal py-24 sm:my-28 sm:py-32">
-        <Reveal className="mx-auto max-w-4xl px-5 text-center sm:px-8">
-          <p className="font-serif text-3xl leading-snug text-ivory sm:text-5xl">
+      {/* min-h-dvh + items-center instead of a modest py-24 band: at a
+          normal padding this section read as a squeezed strip rather than
+          the deliberate, full-screen pause the line is meant to be (see the
+          homepage's own editorial section, which already does this).
+          Left-aligned like every other section on the page now, rather
+          than the one centered exception. */}
+      <section className="flex min-h-dvh items-center border-y border-border-subtle bg-charcoal py-24 sm:py-32">
+        <Reveal className="mx-auto w-full max-w-[120rem] px-5 sm:px-8 lg:px-12 xl:px-16">
+          <p className="max-w-4xl font-serif text-4xl leading-snug text-ivory sm:text-6xl lg:text-7xl">
             {content.quote} <span className="text-gold-soft">{content.quoteHighlight}</span>
           </p>
         </Reveal>

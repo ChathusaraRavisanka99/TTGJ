@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import NextAuth from "next-auth";
+import authConfig from "@/lib/auth.config";
+
+// Deliberately NOT `import { auth } from "@/lib/auth"` — that config pulls
+// in PrismaAdapter, Prisma Client, and the Credentials/Google providers
+// (bcryptjs included), none of which run on the Edge runtime and all of
+// which together push the middleware bundle past Vercel's Edge Function
+// size limit. Middleware only ever needs to read/verify the existing
+// session JWT, which needs no providers at all — so it gets its own
+// `auth()` built from just the edge-safe slice of the config.
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;

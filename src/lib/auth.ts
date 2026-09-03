@@ -5,6 +5,7 @@ import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import authConfig from "@/lib/auth.config";
 
 const providers: Provider[] = [];
 
@@ -46,26 +47,25 @@ providers.push(
   })
 );
 
+// NextAuth's JWT strategy is one rolling session token, not a separate
+// access/refresh pair — but maxAge + updateAge together (set in
+// auth.config.ts, shared with middleware) produce the same effect as one:
+// `updateAge` is how long the token is good for before it's silently
+// re-signed (the "access" window), and each re-sign resets `maxAge` from
+// that moment (the "refresh" window). So an active user is re-issued a
+// fresh token every 30 minutes, and each reissue buys another full hour —
+// miss that hour with no activity at all and the token is simply expired,
+// no separate refresh step to run.
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
-  session: {
-    strategy: "jwt",
-    // NextAuth's JWT strategy is one rolling session token, not a separate
-    // access/refresh pair — but maxAge + updateAge together produce the
-    // same effect as one: `updateAge` is how long the token is good for
-    // before it's silently re-signed (the "access" window), and each
-    // re-sign resets `maxAge` from that moment (the "refresh" window). So
-    // an active user is re-issued a fresh token every 30 minutes, and each
-    // reissue buys another full hour — miss that hour with no activity at
-    // all and the token is simply expired, no separate refresh step to run.
-    maxAge: 60 * 60, // 1 hour
-    updateAge: 60 * 30, // 30 minutes
-  },
-  pages: {
-    signIn: "/account/login",
-  },
   providers,
   callbacks: {
+    ...authConfig.callbacks,
+    // Overrides auth.config.ts's jwt callback: same "embed role at
+    // sign-in" behaviour, plus a Prisma fallback for tokens that predate
+    // the role field. Prisma is only available here (Node runtime, not
+    // Edge) — middleware uses the config without this branch.
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as { role?: string }).role ?? "CUSTOMER";
@@ -75,13 +75,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = dbUser?.role ?? "CUSTOMER";
       }
       return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = (token.role as "CUSTOMER" | "ADMIN") ?? "CUSTOMER";
-      }
-      return session;
     },
   },
 });

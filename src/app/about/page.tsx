@@ -6,5 +6,5 @@ export const metadata: Metadata = { title: "Our Story" };
 
 export default async function AboutPage() {
   const content = await getPageContent("about", DEFAULT_ABOUT_CONTENT);
-  return <AboutBlocksRenderer blocks={content.blocks} />;
+  return <AboutBlocksRenderer rows={content.rows} />;
 }

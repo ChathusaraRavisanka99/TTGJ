@@ -1,22 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type CSSProperties } from "react";
+import { useRef, useState, useTransition, type CSSProperties } from "react";
 import Image from "next/image";
 import { Reorder, useDragControls } from "motion/react";
-import { GripVertical, Trash2, Plus, ChevronDown, X } from "lucide-react";
-import { updateAboutBlocks, uploadAboutBlockImage } from "@/actions/page-content";
+import { GripVertical, Trash2, Plus, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { updateAboutRows, uploadAboutBlockImage } from "@/actions/page-content";
 import { Button } from "@/components/ui/Button";
-import { Input, Textarea, Label, FieldError, FieldHint } from "@/components/ui/Field";
+import { Input, Textarea, Select, Label, FieldError, FieldHint } from "@/components/ui/Field";
 import { AboutBlocksRenderer } from "@/components/about/AboutBlocksRenderer";
-import { BLOCK_TYPES, type AboutBlock } from "@/lib/about-blocks";
+import { BLOCK_TYPES, SPAN_PRESETS, type AboutBlock, type AboutRow, type AboutColumn, type ColumnSpan } from "@/lib/about-blocks";
 
-// Full drag-and-drop page builder for the About page: a Reorder.Group of
-// block cards (add/remove/reorder/edit) on the left, and a live preview
-// pane on the right rendering the exact same draft state through
-// AboutBlocksRenderer — the same component the real page uses — so the
-// preview can never show something the saved page wouldn't. Nothing here
-// touches the database until "Save Changes" is pressed; edits before that
-// live only in this component's state.
+// Full drag-and-drop page builder for the About page, laid out as rows of
+// side-by-side columns (a 12-unit grid, like a normal page builder) rather
+// than a single top-to-bottom stack — drag rows to reorder them, add
+// columns to a row to sit blocks side-by-side, and set each column's
+// width share. The live preview pane on the right renders the exact same
+// draft state through AboutBlocksRenderer — the same component the real
+// page uses — so the preview can never show something the saved page
+// wouldn't. Nothing here touches the database until "Save Changes" is
+// pressed; edits before that live only in this component's state.
+
+type BlockTypeEntry = (typeof BLOCK_TYPES)[number];
 
 function BlockImageField({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
   const [pending, startTransition] = useTransition();
@@ -172,7 +176,7 @@ function BlockFields({ block, onChange }: { block: AboutBlock; onChange: (block:
             <div key={i} className="rounded-lg border border-border-subtle p-3">
               <div className="flex items-center justify-between">
                 <Label className="mb-0">Item {i + 1}</Label>
-                {block.items.length > 1 && (
+                {p.items.length > 1 && (
                   <button type="button" onClick={() => removeItem(i)} className="text-charcoal/40 hover:text-red-700">
                     <X size={14} />
                   </button>
@@ -197,55 +201,169 @@ function BlockFields({ block, onChange }: { block: AboutBlock; onChange: (block:
 
 const BLOCK_LABELS = Object.fromEntries(BLOCK_TYPES.map((t) => [t.type, t.label])) as Record<AboutBlock["type"], string>;
 
-function BlockCard({
-  block,
-  onChange,
+function BlockTypeMenu({ onPick, align = "right" }: { onPick: (type: BlockTypeEntry) => void; align?: "left" | "right" }) {
+  return (
+    <div className={`absolute z-10 mt-1 w-72 rounded-lg border border-border-subtle bg-surface p-1.5 shadow-lg ${align === "right" ? "right-0" : "left-0"}`}>
+      {BLOCK_TYPES.map((t) => (
+        <button
+          key={t.type}
+          type="button"
+          onClick={() => onPick(t)}
+          className="block w-full rounded-md px-3 py-2 text-left hover:bg-ivory-soft"
+        >
+          <span className="text-sm font-medium text-charcoal">{t.label}</span>
+          <span className="block text-xs text-charcoal/55">{t.description}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ColumnCard({
+  column,
+  onChangeBlock,
+  onChangeSpan,
   onRemove,
-  canRemove,
+  onMoveLeft,
+  onMoveRight,
+  canMoveLeft,
+  canMoveRight,
 }: {
-  block: AboutBlock;
-  onChange: (block: AboutBlock) => void;
+  column: AboutColumn;
+  onChangeBlock: (block: AboutBlock) => void;
+  onChangeSpan: (span: ColumnSpan) => void;
   onRemove: () => void;
-  canRemove: boolean;
+  onMoveLeft: () => void;
+  onMoveRight: () => void;
+  canMoveLeft: boolean;
+  canMoveRight: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const controls = useDragControls();
 
   return (
-    <Reorder.Item
-      value={block}
-      dragListener={false}
-      dragControls={controls}
-      className="rounded-xl border border-border-subtle bg-surface shadow-sm"
-    >
-      <div className="flex items-center gap-2 p-3">
+    <div className="min-w-[240px] flex-1 rounded-lg border border-border-subtle bg-ivory-soft/60">
+      <div className="flex items-center gap-1 p-2">
+        <button
+          type="button"
+          onClick={onMoveLeft}
+          disabled={!canMoveLeft}
+          className="text-charcoal/40 hover:text-charcoal disabled:opacity-20 disabled:hover:text-charcoal/40"
+          aria-label="Move column left"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <button
+          type="button"
+          onClick={onMoveRight}
+          disabled={!canMoveRight}
+          className="text-charcoal/40 hover:text-charcoal disabled:opacity-20 disabled:hover:text-charcoal/40"
+          aria-label="Move column right"
+        >
+          <ChevronRight size={14} />
+        </button>
+        <button type="button" onClick={() => setOpen((o) => !o)} className="flex flex-1 items-center gap-1.5 truncate text-left">
+          <span className="truncate text-xs font-medium text-charcoal">{BLOCK_LABELS[column.block.type]}</span>
+          <ChevronDown size={13} className={`shrink-0 text-charcoal/40 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        <Select
+          value={column.span}
+          onChange={(e) => onChangeSpan(Number(e.target.value) as ColumnSpan)}
+          className="w-auto shrink-0 py-1 pl-2 pr-6 text-[11px]"
+        >
+          {SPAN_PRESETS.map((p) => (
+            <option key={p.span} value={p.span}>{p.label}</option>
+          ))}
+        </Select>
+        <button type="button" onClick={onRemove} className="text-charcoal/40 hover:text-red-700" aria-label="Remove column">
+          <Trash2 size={13} />
+        </button>
+      </div>
+      {open && (
+        <div className="border-t border-border-subtle p-3">
+          <BlockFields block={column.block} onChange={onChangeBlock} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RowCard({
+  row,
+  index,
+  onChangeBlock,
+  onChangeSpan,
+  onRemoveColumn,
+  onMoveColumn,
+  onAddColumn,
+  onRemoveRow,
+  canRemoveRow,
+}: {
+  row: AboutRow;
+  index: number;
+  onChangeBlock: (colId: string, block: AboutBlock) => void;
+  onChangeSpan: (colId: string, span: ColumnSpan) => void;
+  onRemoveColumn: (colId: string) => void;
+  onMoveColumn: (colId: string, direction: -1 | 1) => void;
+  onAddColumn: (type: BlockTypeEntry) => void;
+  onRemoveRow: () => void;
+  canRemoveRow: boolean;
+}) {
+  const controls = useDragControls();
+  const [addOpen, setAddOpen] = useState(false);
+  const totalSpan = row.columns.reduce((sum, c) => sum + c.span, 0);
+
+  return (
+    <Reorder.Item value={row} dragListener={false} dragControls={controls} className="rounded-xl border border-border-subtle bg-surface p-3 shadow-sm">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onPointerDown={(e) => controls.start(e)}
           className="cursor-grab touch-none text-charcoal/40 hover:text-charcoal active:cursor-grabbing"
-          aria-label="Drag to reorder"
+          aria-label="Drag to reorder row"
         >
           <GripVertical size={16} />
         </button>
-        <button type="button" onClick={() => setOpen((o) => !o)} className="flex flex-1 items-center justify-between text-left">
-          <span className="text-sm font-medium text-charcoal">{BLOCK_LABELS[block.type]}</span>
-          <ChevronDown size={16} className={`text-charcoal/40 transition-transform ${open ? "rotate-180" : ""}`} />
-        </button>
+        <span className="text-xs font-medium uppercase tracking-wide text-charcoal/50">
+          Row {index + 1} · {totalSpan}/12 used
+        </span>
+        <div className="relative ml-auto">
+          <Button type="button" variant="outline" size="sm" onClick={() => setAddOpen((o) => !o)} disabled={row.columns.length >= 4}>
+            <Plus size={12} /> Add column
+          </Button>
+          {addOpen && (
+            <BlockTypeMenu
+              onPick={(t) => {
+                onAddColumn(t);
+                setAddOpen(false);
+              }}
+            />
+          )}
+        </div>
         <button
           type="button"
-          onClick={onRemove}
-          disabled={!canRemove}
-          title={canRemove ? "Remove block" : "The page needs at least one block"}
+          onClick={onRemoveRow}
+          disabled={!canRemoveRow}
+          title={canRemoveRow ? "Remove row" : "The page needs at least one row"}
           className="text-charcoal/40 hover:text-red-700 disabled:opacity-30 disabled:hover:text-charcoal/40"
         >
           <Trash2 size={15} />
         </button>
       </div>
-      {open && (
-        <div className="border-t border-border-subtle p-4">
-          <BlockFields block={block} onChange={onChange} />
-        </div>
-      )}
+      <div className="mt-3 flex flex-wrap gap-3">
+        {row.columns.map((col, i) => (
+          <ColumnCard
+            key={col.id}
+            column={col}
+            onChangeBlock={(block) => onChangeBlock(col.id, block)}
+            onChangeSpan={(span) => onChangeSpan(col.id, span)}
+            onRemove={() => onRemoveColumn(col.id)}
+            onMoveLeft={() => onMoveColumn(col.id, -1)}
+            onMoveRight={() => onMoveColumn(col.id, 1)}
+            canMoveLeft={i > 0}
+            canMoveRight={i < row.columns.length - 1}
+          />
+        ))}
+      </div>
     </Reorder.Item>
   );
 }
@@ -253,101 +371,129 @@ function BlockCard({
 // Fixed scale, fixed simulated viewport width — deliberately NOT measured
 // from the container at runtime. A ResizeObserver-driven scale (tried
 // first) could balloon toward 1 on a wide monitor, since the panel had no
-// width cap of its own, and something about a Reorder drag elsewhere on
-// the page could knock a stray measurement into that state too — a fixed
-// number can't do either, at the cost of the panel not perfectly filling
-// odd container widths. `zoom` (rather than `transform: scale`) is what
-// lets the outer `overflow-y-auto` get a correctly-sized scrollable area
-// without also having to measure and set an explicit height by hand.
+// width cap of its own. A fixed number can't do that, at the cost of the
+// panel not perfectly filling odd container widths. `zoom` (rather than
+// `transform: scale`) is what lets the outer `overflow-y-auto` get a
+// correctly-sized scrollable area without also having to measure and set
+// an explicit height by hand.
 const PREVIEW_SCALE = 0.33;
 
-function LivePreview({ blocks }: { blocks: AboutBlock[] }) {
+function LivePreview({ rows }: { rows: AboutRow[] }) {
   return (
     <div className="mx-auto w-full max-w-[480px] overflow-hidden rounded-2xl border border-border-subtle bg-ivory-soft lg:mx-0">
       <div className="h-[calc(100vh-260px)] overflow-y-auto">
         <div style={{ width: 1440, zoom: PREVIEW_SCALE } as CSSProperties}>
-          <AboutBlocksRenderer blocks={blocks} animate={false} />
+          <AboutBlocksRenderer rows={rows} animate={false} />
         </div>
       </div>
     </div>
   );
 }
 
-export function AboutBuilder({ initialBlocks }: { initialBlocks: AboutBlock[] }) {
-  const [blocks, setBlocks] = useState<AboutBlock[]>(initialBlocks);
-  const [savedBlocks, setSavedBlocks] = useState<AboutBlock[]>(initialBlocks);
+export function AboutBuilder({ initialRows }: { initialRows: AboutRow[] }) {
+  const [rows, setRows] = useState<AboutRow[]>(initialRows);
+  const [savedRows, setSavedRows] = useState<AboutRow[]>(initialRows);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [addRowMenuOpen, setAddRowMenuOpen] = useState(false);
 
-  const dirty = JSON.stringify(blocks) !== JSON.stringify(savedBlocks);
+  const dirty = JSON.stringify(rows) !== JSON.stringify(savedRows);
 
-  useEffect(() => {
-    if (!dirty) return;
-    const handler = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [dirty]);
-
-  function updateBlock(id: string, next: AboutBlock) {
-    setBlocks((prev) => prev.map((b) => (b.id === id ? next : b)));
+  function changeBlock(rowId: string, colId: string, block: AboutBlock) {
+    setRows((prev) => prev.map((r) => (r.id !== rowId ? r : { ...r, columns: r.columns.map((c) => (c.id !== colId ? c : { ...c, block })) })));
     setSaved(false);
   }
 
-  function removeBlock(id: string) {
-    if (blocks.length <= 1) return;
-    if (!confirm("Remove this block?")) return;
-    setBlocks((prev) => prev.filter((b) => b.id !== id));
+  function changeSpan(rowId: string, colId: string, span: ColumnSpan) {
+    setRows((prev) => prev.map((r) => (r.id !== rowId ? r : { ...r, columns: r.columns.map((c) => (c.id !== colId ? c : { ...c, span })) })));
     setSaved(false);
   }
 
-  function addBlock(type: (typeof BLOCK_TYPES)[number]) {
-    const block = type.create(crypto.randomUUID());
-    setBlocks((prev) => [...prev, block]);
-    setAddMenuOpen(false);
+  function removeColumn(rowId: string, colId: string) {
+    const row = rows.find((r) => r.id === rowId);
+    if (!row) return;
+    if (row.columns.length <= 1) {
+      if (rows.length <= 1) return;
+      if (!confirm("This is the last column in this row — remove the whole row?")) return;
+      setRows(rows.filter((r) => r.id !== rowId));
+    } else {
+      if (!confirm("Remove this column?")) return;
+      setRows(rows.map((r) => (r.id !== rowId ? r : { ...r, columns: r.columns.filter((c) => c.id !== colId) })));
+    }
+    setSaved(false);
+  }
+
+  function moveColumn(rowId: string, colId: string, direction: -1 | 1) {
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== rowId) return r;
+        const idx = r.columns.findIndex((c) => c.id === colId);
+        const nextIdx = idx + direction;
+        if (idx < 0 || nextIdx < 0 || nextIdx >= r.columns.length) return r;
+        const columns = [...r.columns];
+        [columns[idx], columns[nextIdx]] = [columns[nextIdx], columns[idx]];
+        return { ...r, columns };
+      }),
+    );
+    setSaved(false);
+  }
+
+  function addColumn(rowId: string, type: BlockTypeEntry) {
+    const newCol: AboutColumn = { id: crypto.randomUUID(), span: 6, block: type.create(crypto.randomUUID()) };
+    setRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== rowId || r.columns.length >= 4) return r;
+        // Shrink a lone full-width column so the new one has visible room
+        // beside it — purely a friendlier default, not enforced elsewhere.
+        const columns = r.columns.length === 1 && r.columns[0].span === 12
+          ? [{ ...r.columns[0], span: 6 as ColumnSpan }, newCol]
+          : [...r.columns, newCol];
+        return { ...r, columns };
+      }),
+    );
+    setSaved(false);
+  }
+
+  function addRow(type: BlockTypeEntry) {
+    const row: AboutRow = { id: crypto.randomUUID(), columns: [{ id: crypto.randomUUID(), span: 12, block: type.create(crypto.randomUUID()) }] };
+    setRows((prev) => [...prev, row]);
+    setAddRowMenuOpen(false);
+    setSaved(false);
+  }
+
+  function removeRow(rowId: string) {
+    if (rows.length <= 1) return;
+    if (!confirm("Remove this row?")) return;
+    setRows(rows.filter((r) => r.id !== rowId));
     setSaved(false);
   }
 
   function handleSave() {
     setError(null);
     startTransition(async () => {
-      const result = await updateAboutBlocks(blocks);
+      const result = await updateAboutRows(rows);
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      setSavedBlocks(blocks);
+      setSavedRows(rows);
       setSaved(true);
     });
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_1fr]">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,560px)_1fr]">
       <div>
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-medium uppercase tracking-wide text-charcoal/50">
-            {blocks.length} block{blocks.length === 1 ? "" : "s"}
+            {rows.length} row{rows.length === 1 ? "" : "s"}
           </p>
           <div className="relative">
-            <Button type="button" variant="outline" size="sm" onClick={() => setAddMenuOpen((o) => !o)}>
-              <Plus size={14} /> Add block
+            <Button type="button" variant="outline" size="sm" onClick={() => setAddRowMenuOpen((o) => !o)}>
+              <Plus size={14} /> Add row
             </Button>
-            {addMenuOpen && (
-              <div className="absolute right-0 z-10 mt-1 w-72 rounded-lg border border-border-subtle bg-surface p-1.5 shadow-lg">
-                {BLOCK_TYPES.map((t) => (
-                  <button
-                    key={t.type}
-                    type="button"
-                    onClick={() => addBlock(t)}
-                    className="block w-full rounded-md px-3 py-2 text-left hover:bg-ivory-soft"
-                  >
-                    <span className="text-sm font-medium text-charcoal">{t.label}</span>
-                    <span className="block text-xs text-charcoal/55">{t.description}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+            {addRowMenuOpen && <BlockTypeMenu onPick={addRow} />}
           </div>
         </div>
 
@@ -360,22 +506,19 @@ export function AboutBuilder({ initialBlocks }: { initialBlocks: AboutBlock[] })
           <FieldError>{error ?? undefined}</FieldError>
         </div>
 
-        <Reorder.Group
-          axis="y"
-          values={blocks}
-          onReorder={(next) => {
-            setBlocks(next);
-            setSaved(false);
-          }}
-          className="mt-4 space-y-3"
-        >
-          {blocks.map((block) => (
-            <BlockCard
-              key={block.id}
-              block={block}
-              onChange={(next) => updateBlock(block.id, next)}
-              onRemove={() => removeBlock(block.id)}
-              canRemove={blocks.length > 1}
+        <Reorder.Group axis="y" values={rows} onReorder={(next) => { setRows(next); setSaved(false); }} className="mt-4 space-y-3">
+          {rows.map((row, i) => (
+            <RowCard
+              key={row.id}
+              row={row}
+              index={i}
+              onChangeBlock={(colId, block) => changeBlock(row.id, colId, block)}
+              onChangeSpan={(colId, span) => changeSpan(row.id, colId, span)}
+              onRemoveColumn={(colId) => removeColumn(row.id, colId)}
+              onMoveColumn={(colId, direction) => moveColumn(row.id, colId, direction)}
+              onAddColumn={(type) => addColumn(row.id, type)}
+              onRemoveRow={() => removeRow(row.id)}
+              canRemoveRow={rows.length > 1}
             />
           ))}
         </Reorder.Group>
@@ -383,7 +526,7 @@ export function AboutBuilder({ initialBlocks }: { initialBlocks: AboutBlock[] })
 
       <div>
         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-charcoal/50">Live preview</p>
-        <LivePreview blocks={blocks} />
+        <LivePreview rows={rows} />
       </div>
     </div>
   );

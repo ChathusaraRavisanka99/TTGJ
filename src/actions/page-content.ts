@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/rbac";
 import { saveUploadedMedia } from "@/lib/media";
 import { getPageContent, savePageContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";
-import { aboutBlocksSchema, type AboutBlock } from "@/lib/about-blocks";
+import { aboutRowsSchema, type AboutRow } from "@/lib/about-blocks";
 import type { ActionResult } from "./auth";
 
 function obj(formData: FormData) {
@@ -137,12 +137,12 @@ export async function removeHeroSlide(index: number): Promise<ActionResult> {
 
 // ---------- About (block-based page builder) ----------
 
-export async function updateAboutBlocks(blocks: AboutBlock[]): Promise<ActionResult> {
+export async function updateAboutRows(rows: AboutRow[]): Promise<ActionResult> {
   await requireAdmin();
-  const parsed = aboutBlocksSchema.safeParse(blocks);
+  const parsed = aboutRowsSchema.safeParse(rows);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid content." };
 
-  await savePageContent("about", { blocks: parsed.data } satisfies { blocks: AboutBlock[] });
+  await savePageContent("about", { rows: parsed.data } satisfies { rows: AboutRow[] });
   revalidatePath("/about");
   revalidatePath("/admin/content/about");
   return { ok: true };

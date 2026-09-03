@@ -16,12 +16,13 @@ export default async function AdminAboutContentPage() {
         </Link>
       </div>
       <p className="mt-1 text-sm text-charcoal/60">
-        Add, remove, and drag to reorder blocks. The panel on the right updates live as you edit — nothing changes on
-        the real page until you press Save.
+        Drag rows to reorder them. Add columns to a row to place blocks side-by-side, and set how much width each
+        one takes. The panel on the right updates live as you edit — nothing changes on the real page until you
+        press Save.
       </p>
 
       <div className="mt-6">
-        <AboutBuilder initialBlocks={content.blocks} />
+        <AboutBuilder initialRows={content.rows} />
       </div>
     </div>
   );

@@ -1,0 +1,51 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --yes create-next-app@latest ratnavue-tmp --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --turbopack --no-git)",
+      "Bash(npm install *)",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('base64'\\)\\)\")",
+      "Bash(powershell.exe -Command \"Start-Process 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\")",
+      "Bash(mkdir -p src/lib src/lib/validation src/actions src/types storage/uploads)",
+      "Bash(touch storage/uploads/.gitkeep)",
+      "Bash(npx prisma *)",
+      "Bash(npm view *)",
+      "Bash(docker compose *)",
+      "Bash(docker exec *)",
+      "Bash(docker port *)",
+      "Bash(netstat -ano)",
+      "Bash(powershell.exe -Command \"Get-Process -Id 6508,9172 | Select-Object Id,ProcessName,Path\")",
+      "Bash(mkdir -p \"/g/Project/TTGJ Webapp/src/app/api/auth/[...nextauth]\")",
+      "Bash(npm run *)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/gems)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/configurator)",
+      "Bash(curl -s http://localhost:3000/gems)",
+      "Bash(curl -s -o /dev/null -w \"account/login: %{http_code}\\\\n\" http://localhost:3000/account/login)",
+      "Bash(curl -s -o /dev/null -w \"account \\(guarded\\): %{http_code}\\\\n\" http://localhost:3000/account)",
+      "Bash(curl -s -o /dev/null -w \"admin \\(guarded\\): %{http_code}\\\\n\" http://localhost:3000/admin)",
+      "Bash(curl -s -o /dev/null -w \"gem detail: %{http_code}\\\\n\" http://localhost:3000/gems/ceylon-royal-blue-sapphire)",
+      "Bash(curl -s http://localhost:3000/gems/ceylon-royal-blue-sapphire)",
+      "Bash(curl -s -b /tmp/cookies.txt http://localhost:3000/gems/ceylon-royal-blue-sapphire)",
+      "Bash(curl -s -b /tmp/cookies.txt -o /dev/null -w \"account: %{http_code}\\\\n\" http://localhost:3000/account)",
+      "Bash(curl -s -b /tmp/cookies.txt http://localhost:3000/account)",
+      "Bash(node -e ' *)",
+      "Bash(mkdir -p \"/g/Project/TTGJ Webapp/src/app/admin/gems/new\" \\\\ *)",
+      "Bash(curl -s -o /dev/null -w \"home: %{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"configurator: %{http_code}\\\\n\" http://localhost:3000/configurator)",
+      "Bash(rm -f .next/dev/logs/next-development.log)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3000/configurator)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(npx playwright *)",
+      "Bash(NODE_PATH=\"/g/Project/TTGJ Webapp/node_modules\" node check3d.mjs)",
+      "Bash(cp \"C:\\\\Users\\\\RAVISH~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\g--Project-TTGJ-Webapp\\\\4885ecde-a317-4bc5-8a5d-4391fb33a8fd\\\\scratchpad\\\\check3d.mjs\" \"/g/Project/TTGJ Webapp/check3d.mjs\")",
+      "Bash(node check3d.mjs)",
+      "Bash(npm uninstall *)"
+    ],
+    "additionalDirectories": [
+      "G:\\Project\\TTGJ Webapp\\src\\app\\api\\auth",
+      "G:\\Project\\TTGJ Webapp\\src\\app\\admin\\gems"
+    ]
+  }
+}

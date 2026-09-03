@@ -8,7 +8,7 @@ import { updateAboutRows, uploadAboutBlockImage } from "@/actions/page-content";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select, Label, FieldError, FieldHint } from "@/components/ui/Field";
 import { AboutBlocksRenderer } from "@/components/about/AboutBlocksRenderer";
-import { BLOCK_TYPES, SPAN_PRESETS, type AboutBlock, type AboutRow, type AboutColumn, type ColumnSpan, type SpacerHeight } from "@/lib/about-blocks";
+import { BLOCK_TYPES, SPAN_PRESETS, SPACER_DEFAULT_COLOR, type AboutBlock, type AboutRow, type AboutColumn, type ColumnSpan, type SpacerHeight } from "@/lib/about-blocks";
 
 const SPACER_HEIGHT_LABELS: Record<SpacerHeight, string> = { sm: "Small", md: "Medium", lg: "Large", xl: "Extra large" };
 
@@ -160,14 +160,34 @@ function BlockFields({ block, onChange }: { block: AboutBlock; onChange: (block:
       );
     case "spacer":
       return (
-        <div>
-          <Label>Height</Label>
-          <Select value={block.height} onChange={(e) => onChange({ ...block, height: e.target.value as SpacerHeight })}>
-            {(Object.entries(SPACER_HEIGHT_LABELS) as [SpacerHeight, string][]).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </Select>
-          <FieldHint>Empty space filled with the page background — no visible line.</FieldHint>
+        <div className="space-y-4">
+          <div>
+            <Label>Height</Label>
+            <Select value={block.height} onChange={(e) => onChange({ ...block, height: e.target.value as SpacerHeight })}>
+              {(Object.entries(SPACER_HEIGHT_LABELS) as [SpacerHeight, string][]).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label>Colour</Label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={/^#[0-9a-fA-F]{6}$/.test(block.color) ? block.color : SPACER_DEFAULT_COLOR}
+                onChange={(e) => onChange({ ...block, color: e.target.value })}
+                className="h-9 w-14 shrink-0 cursor-pointer rounded border border-border-subtle bg-surface p-1"
+                aria-label="Pick spacer colour"
+              />
+              <Input
+                value={block.color}
+                onChange={(e) => onChange({ ...block, color: e.target.value })}
+                placeholder={SPACER_DEFAULT_COLOR}
+                className="w-32"
+              />
+            </div>
+            <FieldHint>Defaults to the page background — pick a colour to use it as a divider band instead.</FieldHint>
+          </div>
         </div>
       );
     case "principles": {

@@ -65,16 +65,22 @@ export interface CtaBlock {
   body: string;
 }
 
-// Empty vertical space, filled with the page's base background colour (not
-// transparent) so it reliably blends in wherever it's placed — including
-// between two sections that don't share a colour — rather than showing
-// through to whatever happens to sit behind it.
+// Empty vertical space, filled with a solid colour — defaults to the page's
+// own background so it blends in by default, but is editable (a colour
+// picker in the builder) so it can also act as a coloured divider band
+// between sections.
 export type SpacerHeight = "sm" | "md" | "lg" | "xl";
+
+// The page's own --color-ivory background (see globals.css) — kept as a
+// literal here rather than imported, since this default just needs to
+// match visually, not stay wired to the CSS variable.
+export const SPACER_DEFAULT_COLOR = "#faf7f1";
 
 export interface SpacerBlock {
   id: string;
   type: "spacer";
   height: SpacerHeight;
+  color: string;
 }
 
 export type AboutBlock =
@@ -176,8 +182,8 @@ export const BLOCK_TYPES: {
   {
     type: "spacer",
     label: "Spacer",
-    description: "Empty vertical space — matches the page background, no visible line.",
-    create: (id) => ({ id, type: "spacer", height: "md" }),
+    description: "Empty vertical space in a colour of your choice — matches the page background by default.",
+    create: (id) => ({ id, type: "spacer", height: "md", color: SPACER_DEFAULT_COLOR }),
   },
 ];
 
@@ -301,6 +307,7 @@ const spacerBlockSchema = z.object({
   id: z.string().min(1).max(64),
   type: z.literal("spacer"),
   height: z.enum(["sm", "md", "lg", "xl"]),
+  color: z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Enter a hex colour like #faf7f1."),
 });
 
 export const aboutBlockSchema = z.discriminatedUnion("type", [

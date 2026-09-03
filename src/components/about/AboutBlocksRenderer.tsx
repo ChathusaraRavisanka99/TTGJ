@@ -162,7 +162,7 @@ const SPACER_HEIGHTS: Record<SpacerHeight, string> = {
 };
 
 function SpacerSection({ block }: { block: Extract<AboutBlock, { type: "spacer" }> }) {
-  return <div className={cn("w-full bg-background", SPACER_HEIGHTS[block.height])} />;
+  return <div className={cn("w-full", SPACER_HEIGHTS[block.height])} style={{ backgroundColor: block.color }} />;
 }
 
 function FullSection({ block, animate }: { block: AboutBlock; animate: boolean }) {

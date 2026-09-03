@@ -301,6 +301,28 @@ function ColumnCard({
   );
 }
 
+// A to-scale schematic of the row's 12-unit grid — each column rendered as
+// a block sized by its actual span, so its width share is visible at a
+// glance without opening the live preview or reading the "Half"/"Third"
+// select labels one by one. Purely a diagram (not interactive); the
+// ColumnCards below it are where editing actually happens.
+function RowGridMap({ row }: { row: AboutRow }) {
+  return (
+    <div className="mt-2 grid grid-cols-12 gap-1" aria-hidden>
+      {row.columns.map((col) => (
+        <div
+          key={col.id}
+          style={{ gridColumn: `span ${col.span} / span ${col.span}` }}
+          className="flex h-8 items-center justify-center gap-1 overflow-hidden rounded bg-gold/15 px-1 text-[10px] font-medium text-charcoal/60 ring-1 ring-inset ring-gold/30"
+          title={`${BLOCK_LABELS[col.block.type]} — ${col.span}/12`}
+        >
+          <span className="truncate">{BLOCK_LABELS[col.block.type]}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function RowCard({
   row,
   index,
@@ -363,6 +385,7 @@ function RowCard({
           <Trash2 size={15} />
         </button>
       </div>
+      <RowGridMap row={row} />
       <div className="mt-3 flex flex-wrap gap-3">
         {row.columns.map((col, i) => (
           <ColumnCard

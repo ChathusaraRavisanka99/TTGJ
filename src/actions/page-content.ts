@@ -4,12 +4,8 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/rbac";
 import { saveUploadedMedia } from "@/lib/media";
-import {
-  getPageContent,
-  savePageContent,
-  DEFAULT_HOME_CONTENT,
-  DEFAULT_ABOUT_CONTENT,
-} from "@/lib/page-content";
+import { getPageContent, savePageContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";
+import { aboutBlocksSchema, type AboutBlock } from "@/lib/about-blocks";
 import type { ActionResult } from "./auth";
 
 function obj(formData: FormData) {
@@ -139,41 +135,28 @@ export async function removeHeroSlide(index: number): Promise<ActionResult> {
   return { ok: true };
 }
 
-// ---------- About ----------
+// ---------- About (block-based page builder) ----------
 
-const aboutTextSchema = z.object({
-  heroKicker: z.string().max(200),
-  heroHeading: z.string().max(300),
-  introLabel: z.string().max(100),
-  introLead: z.string().max(500),
-  introBody1: z.string().max(2000),
-  introBody2: z.string().max(2000),
-  breakCaptionKicker: z.string().max(100),
-  breakCaptionBody: z.string().max(500),
-  quote: z.string().max(300),
-  quoteHighlight: z.string().max(100),
-  principle1Title: z.string().max(100),
-  principle1Body: z.string().max(600),
-  principle2Title: z.string().max(100),
-  principle2Body: z.string().max(600),
-  principle3Title: z.string().max(100),
-  principle3Body: z.string().max(600),
-  ctaHeading: z.string().max(200),
-  ctaBody: z.string().max(500),
-});
-
-export async function updateAboutText(formData: FormData): Promise<ActionResult> {
+export async function updateAboutBlocks(blocks: AboutBlock[]): Promise<ActionResult> {
   await requireAdmin();
-  const parsed = aboutTextSchema.safeParse(obj(formData));
+  const parsed = aboutBlocksSchema.safeParse(blocks);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid content." };
 
-  const current = await getPageContent("about", DEFAULT_ABOUT_CONTENT);
-  await savePageContent("about", { ...current, ...parsed.data });
+  await savePageContent("about", { blocks: parsed.data } satisfies { blocks: AboutBlock[] });
   revalidatePath("/about");
   revalidatePath("/admin/content/about");
   return { ok: true };
 }
 
-export async function setAboutImage(field: "heroImage" | "breakImage", formData: FormData): Promise<ActionResult> {
-  return saveImageField("about", DEFAULT_ABOUT_CONTENT, field, formData.get("file") as File | null);
+export async function uploadAboutBlockImage(formData: FormData): Promise<ActionResult & { url?: string }> {
+  await requireAdmin();
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) return { ok: false, error: "No file provided." };
+  try {
+    const saved = await saveUploadedMedia(file);
+    if (saved.type !== "IMAGE") return { ok: false, error: "Please upload an image file." };
+    return { ok: true, url: saved.url };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Upload failed." };
+  }
 }

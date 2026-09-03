@@ -33,3 +33,14 @@ const priceFormatter = new Intl.NumberFormat("en-US", {
 export function formatPrice(price: number): string {
   return priceFormatter.format(price);
 }
+
+// Quotes don't get their own sequential number the way invoices do (see
+// nextInvoiceNumber in lib/invoicing.ts) — this derives a short, stable,
+// human-presentable reference straight from the id instead, used both as
+// the on-document reference and (via generateMetadata) as the printable
+// page's title, which is what browsers default a "Save as PDF" filename
+// to — so a saved quote PDF is named "Q-XXXXXXXX.pdf", not "Printable
+// Quote.pdf".
+export function quoteReference(id: string): string {
+  return `Q-${id.slice(-8).toUpperCase()}`;
+}

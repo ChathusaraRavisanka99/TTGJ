@@ -1,10 +1,18 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PrintableDocument } from "@/components/admin/PrintableDocument";
 import { getQuoteGemVisual } from "@/lib/quote-visual";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
 
-export const metadata = { title: "Invoice" };
+// `absolute` bypasses the admin layout's "%s · Ratnavue Admin" title
+// template — the browser's "Save as PDF" filename defaults to the page
+// title, so this keeps a saved invoice named exactly "INV-2026-0001.pdf".
+export async function generateMetadata({ params }: PageProps<"/admin/invoices/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const invoice = await prisma.invoice.findUnique({ where: { id }, select: { invoiceNumber: true } });
+  return { title: { absolute: invoice?.invoiceNumber ?? "Invoice" } };
+}
 
 export default async function InvoicePage({ params }: PageProps<"/admin/invoices/[id]">) {
   const { id } = await params;

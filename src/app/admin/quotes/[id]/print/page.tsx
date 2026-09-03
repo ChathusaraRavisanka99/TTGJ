@@ -1,10 +1,18 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PrintableDocument } from "@/components/admin/PrintableDocument";
 import { getQuoteGemVisual } from "@/lib/quote-visual";
+import { quoteReference } from "@/lib/utils";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
 
-export const metadata = { title: "Printable Quote" };
+// `absolute` bypasses the admin layout's "%s · Ratnavue Admin" title
+// template — the browser's "Save as PDF" filename defaults to the page
+// title, so this keeps a saved quote named exactly "Q-XXXXXXXX.pdf".
+export async function generateMetadata({ params }: PageProps<"/admin/quotes/[id]/print">): Promise<Metadata> {
+  const { id } = await params;
+  return { title: { absolute: quoteReference(id) } };
+}
 
 export default async function PrintableQuotePage({ params }: PageProps<"/admin/quotes/[id]/print">) {
   const { id } = await params;
@@ -35,7 +43,7 @@ export default async function PrintableQuotePage({ params }: PageProps<"/admin/q
   return (
     <PrintableDocument
       kind="Quote"
-      reference={`Q-${quote.id.slice(-8).toUpperCase()}`}
+      reference={quoteReference(quote.id)}
       issuedDate={quote.quotedAt ?? quote.updatedAt}
       validUntil={quote.quoteValidUntil}
       customerName={quote.user.name ?? quote.user.email}

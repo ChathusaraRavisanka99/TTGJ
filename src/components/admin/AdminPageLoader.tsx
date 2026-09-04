@@ -7,7 +7,12 @@
  */
 export function AdminPageLoader() {
   return (
-    <div className="flex min-h-[50vh] w-full flex-col items-center justify-center">
+    // absolute inset-0, not a height/min-height — same reasoning as the
+    // public PageLoader: this renders inside admin/layout.tsx's flex-1
+    // content column (now `relative` for exactly this), and Chromium
+    // doesn't reliably resolve a percentage-height child against a
+    // flex-grown parent's layout size.
+    <div className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto">
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-border-subtle border-t-gold" />
       <p className="mt-4 text-xs uppercase tracking-[0.3em] text-charcoal/40">Loading</p>
     </div>

@@ -29,7 +29,16 @@ export function MainWrapper({ children }: { children: React.ReactNode }) {
   const hasFullBleedHero = FULL_BLEED_HERO_ROUTES.includes(pathname);
   const isAdmin = pathname.startsWith("/admin");
   return (
-    <main key={pathname} className={cn("animate-page-in flex-1", !hasFullBleedHero && !isAdmin && "pt-24")}>
+    // relative: lets PageLoader (the Suspense fallback — see loading.tsx)
+    // cover this box exactly via `absolute inset-0` instead of a
+    // percentage height. flex-1 gives <main> a real *layout* size (via
+    // flex-grow), but that's not the same as a CSS-definite `height` —
+    // Chromium doesn't reliably resolve a percentage-height child (e.g.
+    // min-h-full) against a flex-grown parent, so PageLoader was
+    // rendering short with a gap of bare page background around it
+    // rather than actually filling this box. absolute positioning reads
+    // the parent's real layout box directly, sidestepping that.
+    <main key={pathname} className={cn("animate-page-in relative flex-1", !hasFullBleedHero && !isAdmin && "pt-24")}>
       {children}
     </main>
   );

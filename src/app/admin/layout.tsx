@@ -25,7 +25,11 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     // matching responsive split of its own markup.
     <div className="min-h-[calc(100vh-1px)] bg-ivory-soft print:block print:bg-white lg:flex">
       <AdminSidebar />
-      <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8 print:p-0">{children}</div>
+      {/* relative: lets AdminPageLoader (the Suspense fallback — see
+          admin/loading.tsx) cover this box exactly via `absolute inset-0`
+          — see the matching comment on MainWrapper's <main> for why a
+          percentage height on the loader itself isn't reliable here. */}
+      <div className="relative flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8 print:p-0">{children}</div>
     </div>
   );
 }

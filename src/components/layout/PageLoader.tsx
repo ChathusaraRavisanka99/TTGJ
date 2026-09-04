@@ -24,7 +24,20 @@
  */
 export function PageLoader() {
   return (
-    <div className="flex min-h-[60vh] w-full flex-col items-center justify-center bg-charcoal py-24">
+    // absolute inset-0, not a height/min-height on a normal block child:
+    // this renders inside MainWrapper's <main> (now `relative` for
+    // exactly this), a flex-1 child of the body's flex-col that already
+    // stretches to fill whatever's left of the viewport (the
+    // sticky-footer pattern). A percentage height like min-h-full looked
+    // like the obvious way to match that, but Chromium doesn't reliably
+    // resolve a percentage-height *child* against a flex-grown parent's
+    // layout size — the box rendered short regardless, leaving a bare
+    // strip of the page's own ivory background around it: above it on
+    // routes with top nav-clearance padding, below it on full-bleed
+    // routes with none. Absolute positioning reads <main>'s actual
+    // layout box directly instead of going through that percentage
+    // resolution at all, so it always matches exactly.
+    <div className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto bg-charcoal py-24">
       <div className="animate-loader-in flex flex-col items-center">
         <p className="animate-loader-text-glow mb-4 text-[10px] uppercase tracking-[0.35em] text-gold-soft">
           Ceylon Gemstones

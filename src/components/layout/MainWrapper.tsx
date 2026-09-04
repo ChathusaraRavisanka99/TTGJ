@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 // top of the page (same idea as the homepage hero) — these must NOT get the
 // pt-24 nav-clearance padding below, or a strip of bare background shows up
 // between the fixed Navbar and the top of their hero image.
-const FULL_BLEED_HERO_ROUTES = ["/", "/about", "/sourcing", "/promotions"];
+const FULL_BLEED_HERO_ROUTES = ["/", "/about", "/sourcing", "/promotions", "/promotions/collection"];
 
 /**
  * The Navbar is fixed (not sticky) so it can float transparently over the

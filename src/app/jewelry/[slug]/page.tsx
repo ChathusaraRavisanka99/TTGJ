@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getJewelryBySlug } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
-import { formatPrice } from "@/lib/utils";
+import { getActivePromotion } from "@/lib/promotion-items";
 import { StockBadge } from "@/components/ui/Badge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
+import { ProductPrice } from "@/components/catalog/ProductPrice";
 import { Reveal } from "@/components/layout/Reveal";
 
 const METAL_LABELS: Record<string, string> = {
@@ -30,6 +31,8 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 
   if (!piece || !piece.isPublished) notFound();
 
+  const promotion = await getActivePromotion({ jewelryId: piece.id });
+
   return (
     <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
       <div className="grid gap-12 lg:grid-cols-2">
@@ -45,9 +48,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
             <StockBadge status={piece.stockStatus} />
           </div>
           <h1 className="mt-2 font-serif text-4xl text-charcoal">{piece.name}</h1>
-          {piece.showPrice && piece.price != null && (
-            <p className="mt-2 font-serif text-2xl text-gold">{formatPrice(piece.price)}</p>
-          )}
+          <ProductPrice price={piece.price} showPrice={piece.showPrice} promotion={promotion} />
           {piece.description && <p className="mt-4 leading-relaxed text-charcoal/70">{piece.description}</p>}
 
           <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border-subtle py-6">

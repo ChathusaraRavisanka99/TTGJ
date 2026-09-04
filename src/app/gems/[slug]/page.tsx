@@ -4,10 +4,12 @@ import Image from "next/image";
 import { ShieldCheck, FileText, ExternalLink } from "lucide-react";
 import { getGemstoneBySlug } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
-import { buildCertVerifyUrl, formatPrice } from "@/lib/utils";
+import { getActivePromotion } from "@/lib/promotion-items";
+import { buildCertVerifyUrl } from "@/lib/utils";
 import { StockBadge } from "@/components/ui/Badge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
+import { ProductPrice } from "@/components/catalog/ProductPrice";
 import { Reveal } from "@/components/layout/Reveal";
 
 export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): Promise<Metadata> {
@@ -25,6 +27,8 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
   const [gem, session] = await Promise.all([getGemstoneBySlug(slug), auth()]);
 
   if (!gem || !gem.isPublished) notFound();
+
+  const promotion = await getActivePromotion({ gemstoneId: gem.id });
 
   const dimensions = [gem.lengthMm, gem.widthMm, gem.depthMm].filter(Boolean).join(" x ");
   const verifyUrl = buildCertVerifyUrl(gem.certLab?.verifyUrlTemplate, gem.certReportNumber);
@@ -48,9 +52,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
             {gem.certLab && <CertifiedBadge lab={gem.certLab} />}
           </div>
           <h1 className="mt-2 font-serif text-4xl text-charcoal">{gem.name}</h1>
-          {gem.showPrice && gem.price != null && (
-            <p className="mt-2 font-serif text-2xl text-gold">{formatPrice(gem.price)}</p>
-          )}
+          <ProductPrice price={gem.price} showPrice={gem.showPrice} promotion={promotion} />
           {gem.description && <p className="mt-4 leading-relaxed text-charcoal/70">{gem.description}</p>}
 
           <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border-subtle py-6">

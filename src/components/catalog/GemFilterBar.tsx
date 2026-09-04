@@ -1,5 +1,5 @@
 import { Select, Input, Label } from "@/components/ui/Field";
-import { Button, LinkButton } from "@/components/ui/Button";
+import { Button, HardLinkButton } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 interface GemFilterBarProps {
@@ -101,7 +101,7 @@ export function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origin
       <div className={cn("col-span-2 flex items-end gap-3", hasActiveFilters ? "sm:col-span-2" : "sm:col-span-1")}>
         <Button type="submit" variant="primary" className={hasActiveFilters ? "flex-1" : "w-full"}>Filter</Button>
         {hasActiveFilters && (
-          <LinkButton href="/gems" variant="outline" className="flex-1">Clear Filters</LinkButton>
+          <HardLinkButton href="/gems" variant="outline" className="flex-1">Clear Filters</HardLinkButton>
         )}
       </div>
     </form>

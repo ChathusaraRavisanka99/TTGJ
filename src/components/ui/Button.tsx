@@ -40,3 +40,21 @@ export function LinkButton({
 }: AnchorHTMLAttributes<HTMLAnchorElement> & { variant?: Variant; size?: Size; href: string }) {
   return <Link href={href} className={cn(base, VARIANTS[variant], SIZES[size], className)} {...props} />;
 }
+
+// Same look as LinkButton, but a plain <a> instead of next/link — a real
+// full-page navigation rather than Next's client-side soft nav. For most
+// links the soft nav is strictly better (no flash, no re-fetching shared
+// layout), but a "reset" action needs the opposite guarantee: a plain
+// anchor can't return a stale prefetched/cached response the way a Link
+// visited before the underlying data changed could, and the browser's own
+// navigation gives it an unambiguous loading state — exactly what "reset
+// and reload" should mean.
+export function HardLinkButton({
+  variant = "primary",
+  size = "md",
+  className,
+  href,
+  ...props
+}: AnchorHTMLAttributes<HTMLAnchorElement> & { variant?: Variant; size?: Size; href: string }) {
+  return <a href={href} className={cn(base, VARIANTS[variant], SIZES[size], className)} {...props} />;
+}

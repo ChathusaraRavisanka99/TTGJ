@@ -1,5 +1,5 @@
 import { Select, Input, Label } from "@/components/ui/Field";
-import { Button, LinkButton } from "@/components/ui/Button";
+import { Button, HardLinkButton } from "@/components/ui/Button";
 import { PIECE_TYPES, METAL_TYPES } from "@/lib/gem-constants";
 import { cn } from "@/lib/utils";
 
@@ -56,7 +56,7 @@ export function JewelryFilterBar({ current }: JewelryFilterBarProps) {
       <div className={cn("flex items-end gap-3", hasActiveFilters && "sm:col-span-2")}>
         <Button type="submit" variant="primary" className={hasActiveFilters ? "flex-1" : "w-full"}>Filter</Button>
         {hasActiveFilters && (
-          <LinkButton href="/jewelry" variant="outline" className="flex-1">Clear Filters</LinkButton>
+          <HardLinkButton href="/jewelry" variant="outline" className="flex-1">Clear Filters</HardLinkButton>
         )}
       </div>
     </form>

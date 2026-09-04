@@ -5,17 +5,18 @@ import { PaymentStatusBadge } from "@/components/ui/Badge";
 import { CartPaymentControls } from "@/components/admin/CartPaymentControls";
 import { BackLink } from "@/components/admin/BackLink";
 import { formatPrice } from "@/lib/utils";
+import { cartTotal } from "@/lib/discount-codes";
 
 export default async function AdminCartDetailPage({ params }: PageProps<"/admin/carts/[id]">) {
   const { id } = await params;
   const cart = await prisma.cart.findUnique({
     where: { id },
-    include: { user: true, items: true, invoice: true },
+    include: { user: true, items: true, invoice: true, discountCode: true },
   });
 
   if (!cart) notFound();
 
-  const total = cart.items.reduce((sum, i) => sum + i.amount, 0);
+  const total = cartTotal(cart.items, cart.discountAmount);
 
   return (
     <div className="max-w-4xl">
@@ -45,6 +46,12 @@ export default async function AdminCartDetailPage({ params }: PageProps<"/admin/
                   <p className="whitespace-nowrap font-serif text-charcoal">{formatPrice(item.amount)}</p>
                 </div>
               ))}
+              {cart.discountAmount != null && (
+                <div className="flex items-center justify-between gap-4 py-3">
+                  <p className="text-charcoal/70">Discount ({cart.discountCode?.code})</p>
+                  <p className="whitespace-nowrap font-serif text-charcoal/70">−{formatPrice(cart.discountAmount)}</p>
+                </div>
+              )}
             </div>
             <div className="mt-3 flex items-center justify-between border-t border-gold/30 pt-3">
               <p className="text-sm uppercase tracking-wide text-charcoal/60">Total</p>

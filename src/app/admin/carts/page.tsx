@@ -5,6 +5,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
 import { CartContentForm } from "@/components/admin/CartContentForm";
 import { getPageContent, DEFAULT_CART_CONTENT } from "@/lib/page-content";
+import { cartTotal } from "@/lib/discount-codes";
 import { cn, formatPrice } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -67,7 +68,7 @@ export default async function AdminCartsPage({ searchParams }: PageProps<"/admin
           </thead>
           <tbody>
             {carts.map((cart) => {
-              const total = cart.items.reduce((sum, i) => sum + i.amount, 0);
+              const total = cartTotal(cart.items, cart.discountAmount);
               return (
                 <tr key={cart.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
                   <td className="px-4 py-3">

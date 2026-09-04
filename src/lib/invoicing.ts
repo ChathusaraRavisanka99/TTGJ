@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { cartTotal } from "@/lib/discount-codes";
 
 // Sequential per calendar year (INV-2026-0007, ...) rather than a global
 // running count, so the numbering resets cleanly each year the way paper
@@ -69,7 +70,7 @@ export async function ensureCartInvoice(cartId: string) {
   if (cart.status !== "SUBMITTED") throw new Error("Only a submitted cart can be invoiced.");
   if (cart.items.length === 0) throw new Error("This cart has no items.");
 
-  const amount = cart.items.reduce((sum, item) => sum + item.amount, 0);
+  const amount = cartTotal(cart.items, cart.discountAmount);
   const invoiceNumber = await nextCartInvoiceNumber();
   return prisma.cartInvoice.create({
     data: { invoiceNumber, cartId: cart.id, userId: cart.userId, amount },

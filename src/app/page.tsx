@@ -103,18 +103,28 @@ export default async function HomePage() {
           }}
         />
 
-        <div className="relative mx-auto w-full max-w-[120rem] px-5 pt-16 sm:px-8 lg:px-12 xl:px-16">
+        {/* Mobile sizing (pt-10/text-4xl/mt-4/mt-6, all overridden back to
+            the original values at sm: and up) isn't just cosmetic — a real
+            phone's dvh on first load is smaller than its "full" size (the
+            browser's address bar is visible until the user scrolls), so
+            the full-size stack below could still run into the CTA row on
+            an actual device even once the hero's own min-height stopped
+            forcing it past the viewport (see the sm:min-h-[720px] note
+            above). Measured against a 600px dvh — a realistic small-state
+            height, not just the 667px "full" one — with real headroom to
+            spare, not just barely fitting. */}
+        <div className="relative mx-auto w-full max-w-[120rem] px-5 pt-20 sm:px-8 sm:pt-16 lg:px-12 xl:px-16">
           <div className="max-w-xl">
             <p className="text-xs uppercase tracking-[0.35em] text-gold-soft">{content.heroKicker}</p>
-            <h1 className="mt-5 font-serif text-5xl leading-[1.05] text-ivory sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+            <h1 className="mt-4 font-serif text-4xl leading-[1.05] text-ivory sm:mt-5 sm:text-6xl md:text-7xl lg:text-[5.5rem]">
               {content.heroHeadingLine1}
               <br />
               {content.heroHeadingLine2}
               <br />
               <span className="text-gold-soft">{content.heroHeadingHighlight}</span>
             </h1>
-            <p className="mt-7 max-w-md text-ivory/60">{content.heroSubtext}</p>
-            <div className="mt-10 flex flex-wrap gap-4">
+            <p className="mt-4 max-w-md text-ivory/60 sm:mt-7">{content.heroSubtext}</p>
+            <div className="mt-6 flex flex-wrap gap-4 sm:mt-10">
               <LinkButton href="/configurator" variant="gold" size="lg">Design Your Gem</LinkButton>
               <LinkButton href="/gems" variant="outline-light" size="lg">Shop Gemstones</LinkButton>
             </div>

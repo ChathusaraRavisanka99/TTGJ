@@ -123,6 +123,17 @@ export async function updateHeroSlideAlt(index: number, alt: string): Promise<Ac
   return { ok: true };
 }
 
+export async function updateHeroSlideFocus(index: number, focusX: number): Promise<ActionResult> {
+  await requireAdmin();
+  const current = await getPageContent("home", DEFAULT_HOME_CONTENT);
+  if (index < 0 || index >= current.heroSlides.length) return { ok: false, error: "Slide not found." };
+  const clamped = Math.min(100, Math.max(0, Math.round(focusX)));
+  const heroSlides = current.heroSlides.map((s, i) => (i === index ? { ...s, focusX: clamped } : s));
+  await savePageContent("home", { ...current, heroSlides });
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function removeHeroSlide(index: number): Promise<ActionResult> {
   await requireAdmin();
   const current = await getPageContent("home", DEFAULT_HOME_CONTENT);

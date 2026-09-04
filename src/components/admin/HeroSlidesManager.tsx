@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Trash2 } from "lucide-react";
-import { addHeroSlide, replaceHeroSlideImage, removeHeroSlide, updateHeroSlideAlt } from "@/actions/page-content";
+import { addHeroSlide, replaceHeroSlideImage, removeHeroSlide, updateHeroSlideAlt, updateHeroSlideFocus } from "@/actions/page-content";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, FieldError } from "@/components/ui/Field";
 import type { HeroSlide } from "@/lib/page-content";
@@ -14,7 +14,19 @@ function SlideRow({ slide, index }: { slide: HeroSlide; index: number }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [alt, setAlt] = useState(slide.alt);
+  // Local draft while dragging, so the preview updates instantly; only
+  // persisted (see handleFocusCommit) once the admin releases the
+  // slider — an onChange-per-pixel save would spam the server action.
+  const [focusX, setFocusX] = useState(slide.focusX ?? 50);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  function handleFocusCommit() {
+    if (focusX === (slide.focusX ?? 50)) return;
+    startTransition(async () => {
+      await updateHeroSlideFocus(index, focusX);
+      router.refresh();
+    });
+  }
 
   function handleReplace() {
     const file = fileInput.current?.files?.[0];
@@ -49,8 +61,12 @@ function SlideRow({ slide, index }: { slide: HeroSlide; index: number }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface p-4 sm:flex-row sm:items-center">
-      <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-md bg-ivory-soft sm:w-48">
-        <Image src={slide.src} alt="" fill className="object-cover" />
+      {/* aspect-[9/16]: a portrait crop rather than the thumbnail's own
+          landscape shape, deliberately — it's meant to preview roughly
+          what a phone's h-dvh hero crop looks like (see HeroSlide.focusX),
+          which a landscape-shaped preview box wouldn't demonstrate at all. */}
+      <div className="relative aspect-[9/16] w-24 shrink-0 overflow-hidden rounded-md bg-ivory-soft sm:w-28">
+        <Image src={slide.src} alt="" fill className="object-cover" style={{ objectPosition: `${focusX}% 50%` }} />
       </div>
       <div className="flex-1">
         <Label htmlFor={`slide-alt-${index}`}>Alt text</Label>
@@ -61,7 +77,26 @@ function SlideRow({ slide, index }: { slide: HeroSlide; index: number }) {
           onBlur={handleAltBlur}
           placeholder="Describe the image for screen readers"
         />
-        <div className="mt-2 flex flex-wrap items-center gap-3">
+        <div className="mt-3">
+          <Label htmlFor={`slide-focus-${index}`}>Mobile crop focus ({focusX}%)</Label>
+          <input
+            id={`slide-focus-${index}`}
+            type="range"
+            min={0}
+            max={100}
+            value={focusX}
+            onChange={(e) => setFocusX(Number(e.target.value))}
+            onMouseUp={handleFocusCommit}
+            onTouchEnd={handleFocusCommit}
+            onKeyUp={handleFocusCommit}
+            className="w-full accent-gold"
+          />
+          <p className="mt-1 text-xs text-charcoal/50">
+            Where the subject sits — drag until it&apos;s centered in the tall preview above. Only matters on narrow
+            screens; this photo is much wider than a phone&apos;s hero, so a phone shows only a slice of it.
+          </p>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <input ref={fileInput} type="file" accept="image/*" className="text-xs" />
           <Button type="button" variant="outline" size="sm" onClick={handleReplace} disabled={pending}>
             Replace

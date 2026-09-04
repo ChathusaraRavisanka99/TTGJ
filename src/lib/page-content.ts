@@ -13,6 +13,18 @@ import { prisma } from "@/lib/prisma";
 export interface HeroSlide {
   src: string;
   alt: string;
+  // Horizontal focal point, 0-100 (percent from the left), used as the
+  // image's object-position when object-cover crops it — undefined means
+  // 50 (centered). Matters far more than it would look like at a glance:
+  // every hero photo here is a very wide ~2.23:1 crop, and the hero itself
+  // is object-cover'd into a much taller box on a phone (h-dvh at a
+  // portrait aspect ratio), so mobile ends up showing only roughly the
+  // middle quarter of the image's width. A subject that isn't near
+  // dead-center in the original photo — see 03-sapphire-diamond-ring.jpg,
+  // centered around 65% — gets cropped almost entirely out of frame on a
+  // phone even though it looks fine on a wide desktop viewport, where the
+  // crop is far less aggressive to begin with.
+  focusX?: number;
 }
 
 export interface HomeContent {
@@ -46,13 +58,17 @@ export interface HomeContent {
 }
 
 export const DEFAULT_HOME_CONTENT: HomeContent = {
+  // focusX values measured directly against each source photo (all a
+  // very wide ~1905x855, 2.23:1 crop) — see HeroSlide.focusX. Most
+  // subjects sit close enough to center that the default (50, omitted
+  // below) is fine; 03's ring is the one that's dramatically off-center.
   heroSlides: [
-    { src: "/images/hero/03-sapphire-diamond-ring.jpg", alt: "Oval blue sapphire ring with diamond halo" },
-    { src: "/images/hero/01-loose-ruby-crystals.jpg", alt: "Raw ruby crystals on a dark surface" },
+    { src: "/images/hero/03-sapphire-diamond-ring.jpg", alt: "Oval blue sapphire ring with diamond halo", focusX: 70 },
+    { src: "/images/hero/01-loose-ruby-crystals.jpg", alt: "Raw ruby crystals on a dark surface", focusX: 46 },
     { src: "/images/hero/05-diamond-emerald-necklace.jpg", alt: "Diamond necklace with emerald floral pendant" },
-    { src: "/images/hero/02-raw-emerald-crystal.jpg", alt: "Raw emerald crystal, macro shot" },
+    { src: "/images/hero/02-raw-emerald-crystal.jpg", alt: "Raw emerald crystal, macro shot", focusX: 43 },
     { src: "/images/hero/04-gemstone-ring-on-hand.jpg", alt: "Pear-cut blue gemstone ring worn on hand" },
-    { src: "/images/hero/06-loose-diamonds-arrangement.jpg", alt: "Loose round-cut diamonds arranged in a cluster" },
+    { src: "/images/hero/06-loose-diamonds-arrangement.jpg", alt: "Loose round-cut diamonds arranged in a cluster", focusX: 45 },
   ],
   heroKicker: "Ceylon Gemstones & Fine Jewelry",
   heroHeadingLine1: "Colour, cut, and",

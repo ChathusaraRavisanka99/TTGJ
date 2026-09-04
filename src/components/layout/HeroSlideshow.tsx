@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 export interface SlideshowImage {
   src: string;
   alt: string;
+  // See HeroSlide.focusX in lib/page-content.ts — undefined means centered.
+  focusX?: number;
 }
 
 const SLIDE_MS = 5500;
@@ -48,7 +50,15 @@ export function HeroSlideshow({ images, className }: { images: SlideshowImage[];
               animate={{ scale: 1.08 }}
               transition={{ duration: SLIDE_MS / 1000 + 1.4, ease: "linear" }}
             >
-              <Image src={active.src} alt={active.alt} fill priority={index === 0} className="object-cover opacity-70" />
+              <Image
+                src={active.src}
+                alt={active.alt}
+                fill
+                priority={index === 0}
+                sizes="100vw"
+                className="object-cover opacity-70"
+                style={{ objectPosition: `${active.focusX ?? 50}% 50%` }}
+              />
             </motion.div>
           </motion.div>
         </AnimatePresence>

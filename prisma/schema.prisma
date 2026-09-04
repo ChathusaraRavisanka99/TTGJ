@@ -232,6 +232,7 @@ model Gemstone {
   quoteRequests       QuoteRequest[]
   jewelryGemstoneLink JewelryGemstoneLink[]
   auctions            Auction[]
+  promotionItem       PromotionItem?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -288,6 +289,7 @@ model JewelryPiece {
 
   quoteRequests QuoteRequest[]
   auctions      Auction[]
+  promotionItem PromotionItem?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -701,4 +703,31 @@ model AuctionBid {
 
   @@index([auctionId])
   @@index([userId])
+}
+
+// ---------- Promotional items ----------
+//
+// A curated set of catalog items to feature on the seasonal promotions
+// page (see lib/promotion-items.ts), each carrying its own discounted
+// promoPrice — display-only, same "quote-only, no real checkout" model
+// as the rest of the catalog: a customer still requests a quote from the
+// item's own product page, same as any other item. `@@unique` on each FK
+// (not on the pair) keeps an item from being promoted twice — Postgres
+// treats every NULL as distinct under a unique index, so this only ever
+// constrains the non-null side of whichever column a row actually uses.
+model PromotionItem {
+  id String @id @default(cuid())
+
+  gemstoneId String?       @unique
+  gemstone   Gemstone?     @relation(fields: [gemstoneId], references: [id], onDelete: Cascade)
+  jewelryId  String?       @unique
+  jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
+
+  promoPrice Float
+  sortOrder  Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([gemstoneId])
+  @@index([jewelryId])
 }

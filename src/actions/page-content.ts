@@ -4,9 +4,9 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/rbac";
 import { saveUploadedMedia } from "@/lib/media";
-import { getPageContent, savePageContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";
+import { getPageContent, savePageContent, getSeasonalContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";
 import { aboutRowsSchema, type AboutRow } from "@/lib/about-blocks";
-import { SEASONAL_THEME_KEYS } from "@/lib/seasonal-themes";
+import { SEASONAL_THEME_KEYS, type SeasonalThemeKey } from "@/lib/seasonal-themes";
 import type { ActionResult } from "./auth";
 
 function obj(formData: FormData) {
@@ -189,8 +189,7 @@ export async function updateCartContent(wireTransferInstructions: string): Promi
 
 // ---------- Seasonal promotions page ----------
 
-const seasonalContentSchema = z.object({
-  theme: z.enum(SEASONAL_THEME_KEYS as [string, ...string[]]),
+const seasonalThemeCopySchema = z.object({
   kicker: z.string().max(100),
   heading: z.string().max(200),
   body: z.string().max(1000),
@@ -198,12 +197,32 @@ const seasonalContentSchema = z.object({
   ctaHref: z.string().max(300),
 });
 
-export async function updateSeasonalContent(formData: FormData): Promise<ActionResult> {
+// Each theme is saved independently — an admin editing Winter's copy
+// shouldn't need to also resubmit Spring's, and a stale form for one
+// theme can't clobber another's already-saved edits the way one big
+// "all 5 themes" form would if two admins (or two tabs) saved at once.
+export async function updateSeasonalThemeCopy(theme: SeasonalThemeKey, formData: FormData): Promise<ActionResult> {
   await requireAdmin();
-  const parsed = seasonalContentSchema.safeParse(obj(formData));
+  if (!SEASONAL_THEME_KEYS.includes(theme)) return { ok: false, error: "Unknown theme." };
+  const parsed = seasonalThemeCopySchema.safeParse(obj(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid content." };
 
-  await savePageContent("seasonal", parsed.data);
+  const current = await getSeasonalContent();
+  await savePageContent("seasonal", { ...current, themes: { ...current.themes, [theme]: parsed.data } });
+  revalidatePath("/promotions");
+  revalidatePath("/admin/promotions");
+  return { ok: true };
+}
+
+// Which of the 5 predefined themes is currently showing on the live
+// page — distinct from editing a theme's copy above, same as picking
+// which slide is active versus editing a slide.
+export async function setActiveSeasonalTheme(theme: SeasonalThemeKey): Promise<ActionResult> {
+  await requireAdmin();
+  if (!SEASONAL_THEME_KEYS.includes(theme)) return { ok: false, error: "Unknown theme." };
+
+  const current = await getSeasonalContent();
+  await savePageContent("seasonal", { ...current, activeTheme: theme });
   revalidatePath("/promotions");
   revalidatePath("/admin/promotions");
   return { ok: true };

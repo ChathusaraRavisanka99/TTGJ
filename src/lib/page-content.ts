@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { SeasonalThemeKey } from "@/lib/seasonal-themes";
+import { SEASONAL_THEME_KEYS, type SeasonalThemeKey } from "@/lib/seasonal-themes";
 
 // Marketing copy/images for the Home and About pages, editable by admins at
 // /admin/content/{home,about}. Deliberately NOT the product catalog — item
@@ -111,12 +111,19 @@ export const DEFAULT_CART_CONTENT: CartContent = {
     "Wire transfer details have not been set up yet — an admin needs to add them in Cart Settings before a customer can complete payment.",
 };
 
-// The dedicated seasonal promotions page (/promotions) — its own theme +
-// copy, editable at /admin/promotions. Visibility (hidden/coming-soon/
-// live) is tracked separately via PageVisibility (key "seasonal"), not
-// here — this is just what to say and how to look once it's on.
-export interface SeasonalContent {
-  theme: SeasonalThemeKey;
+// The dedicated seasonal promotions page (/promotions) — editable at
+// /admin/promotions. Visibility (hidden/coming-soon/live) is tracked
+// separately via PageVisibility (key "seasonal"), not here — this is
+// just what to say and how to look once it's on.
+//
+// Each of the 5 themes carries its own kicker/heading/body/button, not
+// one shared set of copy that happens to get restyled — "Shop the
+// Collection" reads fine in autumn, not so much announcing a Halloween
+// edit. Every theme's copy comes predefined (see
+// DEFAULT_SEASONAL_THEME_COPY) and every one is independently editable;
+// `activeTheme` just picks which one is currently live on the page,
+// same as swapping a slide, not which one exists.
+export interface SeasonalThemeCopy {
   kicker: string;
   heading: string;
   body: string;
@@ -124,14 +131,67 @@ export interface SeasonalContent {
   ctaHref: string;
 }
 
-export const DEFAULT_SEASONAL_CONTENT: SeasonalContent = {
-  theme: "autumn",
-  kicker: "Limited Time",
-  heading: "A Season of Colour",
-  body: "Hand-selected Ceylon gemstones and jewelry, curated for the season — browse the collection while it's here.",
-  ctaLabel: "Shop the Collection",
-  ctaHref: "/gems",
+export interface SeasonalContent {
+  activeTheme: SeasonalThemeKey;
+  themes: Record<SeasonalThemeKey, SeasonalThemeCopy>;
+}
+
+export const DEFAULT_SEASONAL_THEME_COPY: Record<SeasonalThemeKey, SeasonalThemeCopy> = {
+  spring: {
+    kicker: "New Arrivals",
+    heading: "Bloom Into the Season",
+    body: "Fresh cuts and soft hues, arriving as the season turns — browse the spring edit while it lasts.",
+    ctaLabel: "Shop Spring Arrivals",
+    ctaHref: "/gems",
+  },
+  summer: {
+    kicker: "Summer Radiance",
+    heading: "Sunlit Stones, Ready to Wear",
+    body: "Bright sapphires and warm gold, made for long summer evenings — a curated edit, here for a limited time.",
+    ctaLabel: "Shop the Summer Edit",
+    ctaHref: "/gems",
+  },
+  autumn: {
+    kicker: "Limited Time",
+    heading: "A Season of Colour",
+    body: "Hand-selected Ceylon gemstones and jewelry, curated for the season — browse the collection while it's here.",
+    ctaLabel: "Shop the Collection",
+    ctaHref: "/gems",
+  },
+  winter: {
+    kicker: "Winter Edit",
+    heading: "Gifts Worth Giving",
+    body: "Cool blues and icy brilliance for the season ahead — a curated selection, ready for gifting.",
+    ctaLabel: "Shop Winter Gifts",
+    ctaHref: "/gems",
+  },
+  halloween: {
+    kicker: "Something Wicked",
+    heading: "A Darker Kind of Sparkle",
+    body: "Deep reds, smoky stones, and after-dark elegance — a limited Halloween edit, here through the season.",
+    ctaLabel: "Shop the Halloween Edit",
+    ctaHref: "/gems",
+  },
 };
+
+export const DEFAULT_SEASONAL_CONTENT: SeasonalContent = {
+  activeTheme: "autumn",
+  themes: DEFAULT_SEASONAL_THEME_COPY,
+};
+
+// getPageContent's shallow merge (below) is right for flat fields but
+// wrong for `themes`: a saved row's `themes` would replace the whole
+// defaults object, not merge key-by-key — a theme nobody's edited yet
+// would lose its predefined copy entirely instead of falling back to it.
+// This does that merge per-theme, so every theme is always fully
+// populated: predefined, then overridden per-field by whatever's saved.
+export async function getSeasonalContent(): Promise<SeasonalContent> {
+  const saved = await getPageContent<Partial<SeasonalContent>>("seasonal", {});
+  const themes = Object.fromEntries(
+    SEASONAL_THEME_KEYS.map((key) => [key, { ...DEFAULT_SEASONAL_THEME_COPY[key], ...saved.themes?.[key] }]),
+  ) as Record<SeasonalThemeKey, SeasonalThemeCopy>;
+  return { activeTheme: saved.activeTheme ?? DEFAULT_SEASONAL_CONTENT.activeTheme, themes };
+}
 
 // The About page moved to a block-based drag-and-drop CMS builder — its
 // content shape (AboutContent = { blocks: AboutBlock[] }) and defaults now

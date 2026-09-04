@@ -216,6 +216,43 @@ h1, h2, h3, h4, .font-serif {
   transform-origin: center;
 }
 
+/* Seasonal promotions page (see components/seasonal) — one generic
+   falling/rising particle drift, parameterized per-particle via CSS
+   custom properties set inline (start position, duration, delay, drift
+   distance, rotation) rather than one keyframe rule per particle. Two
+   directions because a theme's motion should suit its season: autumn
+   leaves and winter snow fall, spring petals and summer sparkles read
+   better drifting up. Linear timing (not ease-*) is deliberate — these
+   loop continuously, so an eased curve would visibly stutter at the seam
+   between one repeat ending and the next beginning. */
+@keyframes particle-fall {
+  0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 0; }
+  10%, 90% { opacity: var(--particle-opacity, 0.85); }
+  100% { transform: translateY(110vh) translateX(var(--particle-drift, 40px)) rotate(var(--particle-spin, 360deg)); opacity: 0; }
+}
+
+.animate-particle-fall {
+  animation-name: particle-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: var(--particle-duration, 10s);
+  animation-delay: var(--particle-delay, 0s);
+}
+
+@keyframes particle-rise {
+  0% { transform: translateY(10vh) translateX(0) rotate(0deg); opacity: 0; }
+  10%, 90% { opacity: var(--particle-opacity, 0.85); }
+  100% { transform: translateY(-110vh) translateX(var(--particle-drift, 40px)) rotate(var(--particle-spin, 180deg)); opacity: 0; }
+}
+
+.animate-particle-rise {
+  animation-name: particle-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: var(--particle-duration, 12s);
+  animation-delay: var(--particle-delay, 0s);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
   .animate-scroll-cue,
@@ -225,7 +262,9 @@ h1, h2, h3, h4, .font-serif {
   .animate-page-in,
   .animate-gem-color-wave,
   .animate-miner-swing,
-  .animate-gem-sparkle {
+  .animate-gem-sparkle,
+  .animate-particle-fall,
+  .animate-particle-rise {
     animation: none;
   }
 }

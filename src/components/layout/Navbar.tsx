@@ -7,7 +7,7 @@ import { motion } from "motion/react";
 import { Menu, X, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const NAV_LINKS = [
+const BASE_NAV_LINKS = [
   { href: "/gems", label: "Gems" },
   { href: "/jewelry", label: "Jewelry" },
   { href: "/configurator", label: "Design Your Gem" },
@@ -15,15 +15,29 @@ const NAV_LINKS = [
   { href: "/about", label: "Our Story" },
 ];
 
+const PROMOTIONS_LINK = { href: "/promotions", label: "Promotions" };
+
 // Solidify almost as soon as the page moves — the hero's own headline sits
 // well within the first ~150px, so a threshold based on viewport height
 // (e.g. "70% scrolled") leaves a wide window where that text scrolls up
 // underneath the still-transparent nav and visibly collides with it.
 const SOLID_THRESHOLD_PX = 24;
 
-export function Navbar({ user }: { user: { name?: string | null; email?: string | null } | null }) {
+export function Navbar({
+  user,
+  showPromotions,
+}: {
+  user: { name?: string | null; email?: string | null } | null;
+  /** True when the seasonal promotions page is Coming Soon or Live (see
+   * PageVisibility, key "seasonal") — Hidden means no link at all,
+   * matching the page itself not existing publicly. */
+  showPromotions: boolean;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const navLinks = showPromotions
+    ? [...BASE_NAV_LINKS.slice(0, 4), PROMOTIONS_LINK, ...BASE_NAV_LINKS.slice(4)]
+    : BASE_NAV_LINKS;
   const isHome = pathname === "/";
   // `pathname` is stable across the server/client render (Next.js resolves
   // it before hydration), so this initial value never mismatches — only the
@@ -94,7 +108,7 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          {NAV_LINKS.map((link) => {
+          {navLinks.map((link) => {
             const active = pathname.startsWith(link.href);
             return (
               <Link
@@ -148,7 +162,7 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
 
       {open && (
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto border-t border-border-subtle bg-ivory px-5 py-4 md:hidden">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}

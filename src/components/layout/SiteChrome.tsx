@@ -19,6 +19,7 @@ interface SiteChromeUser {
 export function SiteChrome({
   user,
   year,
+  showPromotions,
   children,
 }: {
   user: SiteChromeUser | null;
@@ -26,6 +27,11 @@ export function SiteChrome({
    * plain prop — see Footer.tsx for why this can't just call
    * `new Date().getFullYear()` itself. */
   year: number;
+  /** Whether the seasonal promotions page is Coming Soon or Live —
+   * fetched once server-side in RootLayout (see PageVisibility) rather
+   * than Navbar querying it itself, same "compute where it's cheap,
+   * thread down as a plain prop" reasoning as `year`. */
+  showPromotions: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -36,7 +42,7 @@ export function SiteChrome({
   return (
     <>
       <IntroLoader />
-      <Navbar user={user} />
+      <Navbar user={user} showPromotions={showPromotions} />
       {children}
       <Footer year={year} />
     </>

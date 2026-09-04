@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/rbac";
 import { saveUploadedMedia } from "@/lib/media";
 import { getPageContent, savePageContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";
 import { aboutRowsSchema, type AboutRow } from "@/lib/about-blocks";
+import { SEASONAL_THEME_KEYS } from "@/lib/seasonal-themes";
 import type { ActionResult } from "./auth";
 
 function obj(formData: FormData) {
@@ -183,5 +184,27 @@ export async function updateCartContent(wireTransferInstructions: string): Promi
   await savePageContent("cart", { wireTransferInstructions: trimmed });
   revalidatePath("/account/cart");
   revalidatePath("/admin/carts");
+  return { ok: true };
+}
+
+// ---------- Seasonal promotions page ----------
+
+const seasonalContentSchema = z.object({
+  theme: z.enum(SEASONAL_THEME_KEYS as [string, ...string[]]),
+  kicker: z.string().max(100),
+  heading: z.string().max(200),
+  body: z.string().max(1000),
+  ctaLabel: z.string().max(50),
+  ctaHref: z.string().max(300),
+});
+
+export async function updateSeasonalContent(formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = seasonalContentSchema.safeParse(obj(formData));
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid content." };
+
+  await savePageContent("seasonal", parsed.data);
+  revalidatePath("/promotions");
+  revalidatePath("/admin/promotions");
   return { ok: true };
 }

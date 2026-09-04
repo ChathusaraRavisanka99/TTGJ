@@ -32,6 +32,7 @@ const MASTER_DATA = [
 const PAGE_CONTENT = [
   { href: "/admin/content/home", label: "Home Page" },
   { href: "/admin/content/about", label: "About Page" },
+  { href: "/admin/promotions", label: "Seasonal Promotions" },
 ];
 
 // Shared by both the always-visible desktop sidebar and the mobile

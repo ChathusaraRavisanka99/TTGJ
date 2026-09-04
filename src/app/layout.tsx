@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import { auth } from "@/lib/auth";
+import { getPageVisibility } from "@/lib/page-visibility";
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { MainWrapper } from "@/components/layout/MainWrapper";
 
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const session = await auth();
+  const [session, seasonalVisibility] = await Promise.all([auth(), getPageVisibility("seasonal")]);
   // Computed once here (a Server Component, so this only ever runs on the
   // server) and threaded down through SiteChrome to Footer as a plain
   // prop — see Footer.tsx for why Footer can't just compute this itself.
@@ -35,7 +36,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${cormorant.variable} ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-ivory text-charcoal">
-        <SiteChrome user={session?.user ?? null} year={year}>
+        <SiteChrome user={session?.user ?? null} year={year} showPromotions={seasonalVisibility !== "HIDDEN"}>
           <MainWrapper>{children}</MainWrapper>
         </SiteChrome>
       </body>

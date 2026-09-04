@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { SeasonalThemeKey } from "@/lib/seasonal-themes";
 
 // Marketing copy/images for the Home and About pages, editable by admins at
 // /admin/content/{home,about}. Deliberately NOT the product catalog — item
@@ -108,6 +109,28 @@ export interface CartContent {
 export const DEFAULT_CART_CONTENT: CartContent = {
   wireTransferInstructions:
     "Wire transfer details have not been set up yet — an admin needs to add them in Cart Settings before a customer can complete payment.",
+};
+
+// The dedicated seasonal promotions page (/promotions) — its own theme +
+// copy, editable at /admin/promotions. Visibility (hidden/coming-soon/
+// live) is tracked separately via PageVisibility (key "seasonal"), not
+// here — this is just what to say and how to look once it's on.
+export interface SeasonalContent {
+  theme: SeasonalThemeKey;
+  kicker: string;
+  heading: string;
+  body: string;
+  ctaLabel: string;
+  ctaHref: string;
+}
+
+export const DEFAULT_SEASONAL_CONTENT: SeasonalContent = {
+  theme: "autumn",
+  kicker: "Limited Time",
+  heading: "A Season of Colour",
+  body: "Hand-selected Ceylon gemstones and jewelry, curated for the season — browse the collection while it's here.",
+  ctaLabel: "Shop the Collection",
+  ctaHref: "/gems",
 };
 
 // The About page moved to a block-based drag-and-drop CMS builder — its

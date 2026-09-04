@@ -6,6 +6,7 @@ import { addPromotionItem, updatePromotionItemPrice, removePromotionItem } from 
 import { Input, Select, Label, FieldError, FieldHint } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
+import type { SeasonalThemeKey } from "@/lib/seasonal-themes";
 
 interface Option {
   id: string;
@@ -42,7 +43,17 @@ function CurrentPriceAndSpecs({ item }: { item: Option }) {
   );
 }
 
-export function PromotionItemsManager({ gemstones, jewelry, items }: { gemstones: Option[]; jewelry: Option[]; items: PromotedItem[] }) {
+export function PromotionItemsManager({
+  theme,
+  gemstones,
+  jewelry,
+  items,
+}: {
+  theme: SeasonalThemeKey;
+  gemstones: Option[];
+  jewelry: Option[];
+  items: PromotedItem[];
+}) {
   const router = useRouter();
   const [itemType, setItemType] = useState<"gemstone" | "jewelry">("gemstone");
   const [itemId, setItemId] = useState("");
@@ -60,6 +71,7 @@ export function PromotionItemsManager({ gemstones, jewelry, items }: { gemstones
     setError(null);
     startTransition(async () => {
       const result = await addPromotionItem({
+        theme,
         gemstoneId: itemType === "gemstone" ? itemId || null : null,
         jewelryId: itemType === "jewelry" ? itemId || null : null,
         promoPrice: promoPriceNumber,
@@ -139,7 +151,7 @@ export function PromotionItemsManager({ gemstones, jewelry, items }: { gemstones
 
       <div className="mt-4 divide-y divide-border-subtle rounded-xl border border-border-subtle bg-surface">
         {items.map((item) => <PromotionItemRow key={item.id} item={item} />)}
-        {items.length === 0 && <p className="p-4 text-sm text-charcoal/50">No promotional items yet.</p>}
+        {items.length === 0 && <p className="p-4 text-sm text-charcoal/50">No promotional items in this theme&apos;s collection yet.</p>}
       </div>
     </div>
   );

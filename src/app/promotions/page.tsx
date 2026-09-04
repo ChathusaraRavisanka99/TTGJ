@@ -27,11 +27,20 @@ export default async function PromotionsPage() {
   const copy = content.themes[content.activeTheme];
   const theme = SEASONAL_THEMES[content.activeTheme] ?? SEASONAL_THEMES.autumn;
   const isComingSoon = visibility === "COMING_SOON";
-  const items = isComingSoon ? [] : await getPromotionItems();
+  // Scoped to whichever theme is currently active — the same item can
+  // sit in more than one theme's collection at once (see PromotionItem),
+  // but a visitor only ever sees the one collection that matches what's
+  // live right now.
+  const items = isComingSoon ? [] : await getPromotionItems(content.activeTheme);
 
   return (
     <div>
-      <div className={`relative flex min-h-[85dvh] items-center justify-center overflow-hidden ${theme.backgroundClass}`}>
+      {/* min-h-dvh (not a fixed height) — fills exactly one screen on
+          both desktop and mobile with the fixed Navbar overlapping its
+          top edge, same full-bleed treatment as the homepage hero, but
+          grows instead of clipping if an admin's own copy ever runs
+          long on a short viewport. */}
+      <div className={`relative flex min-h-dvh items-center justify-center overflow-hidden ${theme.backgroundClass}`}>
         <FallingParticles theme={theme} seed={theme.key.length} />
 
         {/* Halloween's "other stuff" — a static row of jack-o'-lanterns
@@ -57,9 +66,12 @@ export default async function PromotionsPage() {
           <p className={`mt-5 ${theme.bodyClass}`}>
             {isComingSoon ? "Check back soon for a limited-time collection." : copy.body}
           </p>
-          {!isComingSoon && (
+          {/* Always this theme's own collection, further down this same
+              page — never a link an admin typed by hand — and only shown
+              at all once there's actually something in it to jump to. */}
+          {!isComingSoon && items.length > 0 && (
             <div className="mt-8">
-              <LinkButton href={copy.ctaHref} variant="gold" size="lg">
+              <LinkButton href="#collection" variant="gold" size="lg">
                 {copy.ctaLabel}
               </LinkButton>
             </div>
@@ -75,7 +87,9 @@ export default async function PromotionsPage() {
       </div>
 
       {items.length > 0 && (
-        <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
+        // scroll-mt-24 keeps the heading clear of the fixed Navbar when
+        // the hero's button jumps straight here.
+        <div id="collection" className="mx-auto max-w-6xl scroll-mt-24 px-5 py-16 sm:px-8">
           <p className="text-xs uppercase tracking-[0.35em] text-charcoal/50">Promotional Collection</p>
           <h2 className="mt-3 font-serif text-3xl text-charcoal">Featured at a Special Price</h2>
           <div className="mt-8 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">

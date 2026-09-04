@@ -194,7 +194,6 @@ const seasonalThemeCopySchema = z.object({
   heading: z.string().max(200),
   body: z.string().max(1000),
   ctaLabel: z.string().max(50),
-  ctaHref: z.string().max(300),
 });
 
 // Each theme is saved independently — an admin editing Winter's copy

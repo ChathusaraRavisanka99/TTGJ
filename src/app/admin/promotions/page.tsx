@@ -4,8 +4,8 @@ import { getSeasonalContent } from "@/lib/page-content";
 import { getPageVisibility } from "@/lib/page-visibility";
 import { getPromotionItems, promotionItemLabel } from "@/lib/promotion-items";
 import { METAL_TYPES } from "@/lib/gem-constants";
+import { SEASONAL_THEME_KEYS, type SeasonalThemeKey } from "@/lib/seasonal-themes";
 import { SeasonalContentForm } from "@/components/admin/SeasonalContentForm";
-import { PromotionItemsManager } from "@/components/admin/PromotionItemsManager";
 import { PageVisibilityControl } from "@/components/admin/PageVisibilityControl";
 import { BackLink } from "@/components/admin/BackLink";
 
@@ -37,6 +37,9 @@ export default async function AdminPromotionsPage() {
       select: { id: true, name: true, price: true, showPrice: true, pieceType: true, metalType: true, metalPurity: true },
       orderBy: { name: "asc" },
     }),
+    // Every theme at once — 5 small collections are cheaper to fetch
+    // together and slice per tab client-side than round-trip on every
+    // tab switch, same reasoning the per-theme copy already follows.
     getPromotionItems(),
   ]);
 
@@ -59,15 +62,21 @@ export default async function AdminPromotionsPage() {
     specs: `${pieceTypeLabel(j.pieceType)}, ${metalTypeLabel(j.metalType)}${j.metalPurity ? ` ${j.metalPurity}` : ""}`,
   }));
 
-  const items = promoItems.map((item) => {
+  const itemsByTheme = Object.fromEntries(SEASONAL_THEME_KEYS.map((key) => [key, [] as { id: string; label: string; promoPrice: number; regularPrice: number | null }[]])) as Record<
+    SeasonalThemeKey,
+    { id: string; label: string; promoPrice: number; regularPrice: number | null }[]
+  >;
+  for (const item of promoItems) {
     const product = item.gemstone ?? item.jewelry;
-    return {
+    const theme = item.theme as SeasonalThemeKey;
+    if (!itemsByTheme[theme]) continue; // ignore any row whose theme key no longer exists
+    itemsByTheme[theme].push({
       id: item.id,
       label: promotionItemLabel(item),
       promoPrice: item.promoPrice,
       regularPrice: product?.showPrice ? product.price : null,
-    };
-  });
+    });
+  }
 
   return (
     <div>
@@ -79,9 +88,10 @@ export default async function AdminPromotionsPage() {
         </Link>
       </div>
       <p className="mt-1 text-sm text-charcoal/60">
-        A single themed page at /promotions — each theme has its own predefined kicker, heading, body, and button,
-        all editable. Pick which one is active, add promotional items with their own price, and switch the page
-        Hidden, Coming Soon, or Live.
+        A single themed page at /promotions — each theme has its own predefined kicker, heading, body, button, and
+        promotional item collection, all editable. The same item can headline more than one theme&apos;s collection
+        at once, each at its own price. Pick which theme is active, then switch the page Hidden, Coming Soon, or
+        Live.
       </p>
 
       <div className="mt-8 rounded-xl border border-border-subtle bg-surface p-5">
@@ -89,21 +99,9 @@ export default async function AdminPromotionsPage() {
       </div>
 
       <div className="mt-8 border-t border-border-subtle pt-8">
-        <p className="font-serif text-xl text-charcoal">Theme &amp; Copy</p>
+        <p className="font-serif text-xl text-charcoal">Themes &amp; Collections</p>
         <div className="mt-4">
-          <SeasonalContentForm initial={content} />
-        </div>
-      </div>
-
-      <div className="mt-10 border-t border-border-subtle pt-8">
-        <p className="font-serif text-xl text-charcoal">Promotional Items</p>
-        <p className="mt-1 text-sm text-charcoal/60">
-          Items featured on the promotions page with their own promotional price. Purchasing still goes through the
-          normal Request a Quote flow on the item&apos;s own page — this is what shows here and what a customer sees
-          struck through against the regular price, where one is public.
-        </p>
-        <div className="mt-4">
-          <PromotionItemsManager gemstones={gemstones} jewelry={jewelry} items={items} />
+          <SeasonalContentForm initial={content} gemstones={gemstones} jewelry={jewelry} itemsByTheme={itemsByTheme} />
         </div>
       </div>
     </div>

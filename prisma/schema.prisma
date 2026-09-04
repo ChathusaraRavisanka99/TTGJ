@@ -232,7 +232,7 @@ model Gemstone {
   quoteRequests       QuoteRequest[]
   jewelryGemstoneLink JewelryGemstoneLink[]
   auctions            Auction[]
-  promotionItem       PromotionItem?
+  promotionItems      PromotionItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -287,9 +287,9 @@ model JewelryPiece {
   media     MediaAsset[]
   gemstones JewelryGemstoneLink[]
 
-  quoteRequests QuoteRequest[]
-  auctions      Auction[]
-  promotionItem PromotionItem?
+  quoteRequests  QuoteRequest[]
+  auctions       Auction[]
+  promotionItems PromotionItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -711,16 +711,25 @@ model AuctionBid {
 // page (see lib/promotion-items.ts), each carrying its own discounted
 // promoPrice — display-only, same "quote-only, no real checkout" model
 // as the rest of the catalog: a customer still requests a quote from the
-// item's own product page, same as any other item. `@@unique` on each FK
-// (not on the pair) keeps an item from being promoted twice — Postgres
-// treats every NULL as distinct under a unique index, so this only ever
-// constrains the non-null side of whichever column a row actually uses.
+// item's own product page, same as any other item.
+//
+// Scoped per theme, not global: the same item can be in more than one
+// theme's collection at once (each with its own price — a bigger cut in
+// one season than another is a legitimate choice, not a bug), but only
+// once within a given theme. `theme` is a plain string validated against
+// SEASONAL_THEME_KEYS at the app level (see addPromotionItem), same
+// "no enum, no migration for a future key" convention PageVisibility.key
+// already uses. `@@unique([theme, gemstoneId])` (and the jewelry
+// equivalent) enforces the "once per theme" rule — Postgres treats every
+// NULL as distinct under a unique index, so each constraint only ever
+// binds the non-null side of whichever column a given row actually uses.
 model PromotionItem {
-  id String @id @default(cuid())
+  id    String @id @default(cuid())
+  theme String
 
-  gemstoneId String?       @unique
+  gemstoneId String?
   gemstone   Gemstone?     @relation(fields: [gemstoneId], references: [id], onDelete: Cascade)
-  jewelryId  String?       @unique
+  jewelryId  String?
   jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
 
   promoPrice Float
@@ -728,6 +737,9 @@ model PromotionItem {
 
   createdAt DateTime @default(now())
 
+  @@unique([theme, gemstoneId])
+  @@unique([theme, jewelryId])
   @@index([gemstoneId])
   @@index([jewelryId])
+  @@index([theme])
 }

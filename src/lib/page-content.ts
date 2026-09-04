@@ -123,12 +123,15 @@ export const DEFAULT_CART_CONTENT: CartContent = {
 // DEFAULT_SEASONAL_THEME_COPY) and every one is independently editable;
 // `activeTheme` just picks which one is currently live on the page,
 // same as swapping a slide, not which one exists.
+//
+// No ctaHref field — the button always scrolls to this theme's own
+// promotional collection (#collection on /promotions), never somewhere
+// an admin typed by hand. See PromotionItem for the collection itself.
 export interface SeasonalThemeCopy {
   kicker: string;
   heading: string;
   body: string;
   ctaLabel: string;
-  ctaHref: string;
 }
 
 export interface SeasonalContent {
@@ -142,35 +145,30 @@ export const DEFAULT_SEASONAL_THEME_COPY: Record<SeasonalThemeKey, SeasonalTheme
     heading: "Bloom Into the Season",
     body: "Fresh cuts and soft hues, arriving as the season turns — browse the spring edit while it lasts.",
     ctaLabel: "Shop Spring Arrivals",
-    ctaHref: "/gems",
   },
   summer: {
     kicker: "Summer Radiance",
     heading: "Sunlit Stones, Ready to Wear",
     body: "Bright sapphires and warm gold, made for long summer evenings — a curated edit, here for a limited time.",
     ctaLabel: "Shop the Summer Edit",
-    ctaHref: "/gems",
   },
   autumn: {
     kicker: "Limited Time",
     heading: "A Season of Colour",
     body: "Hand-selected Ceylon gemstones and jewelry, curated for the season — browse the collection while it's here.",
     ctaLabel: "Shop the Collection",
-    ctaHref: "/gems",
   },
   winter: {
     kicker: "Winter Edit",
     heading: "Gifts Worth Giving",
     body: "Cool blues and icy brilliance for the season ahead — a curated selection, ready for gifting.",
     ctaLabel: "Shop Winter Gifts",
-    ctaHref: "/gems",
   },
   halloween: {
     kicker: "Something Wicked",
     heading: "A Darker Kind of Sparkle",
     body: "Deep reds, smoky stones, and after-dark elegance — a limited Halloween edit, here through the season.",
     ctaLabel: "Shop the Halloween Edit",
-    ctaHref: "/gems",
   },
 };
 

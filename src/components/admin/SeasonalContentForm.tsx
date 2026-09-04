@@ -5,16 +5,43 @@ import { useRouter } from "next/navigation";
 import { updateSeasonalThemeCopy, setActiveSeasonalTheme } from "@/actions/page-content";
 import { Input, Textarea, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { PromotionItemsManager } from "@/components/admin/PromotionItemsManager";
 import { SEASONAL_THEMES, SEASONAL_THEME_KEYS, type SeasonalThemeKey } from "@/lib/seasonal-themes";
 import type { SeasonalContent, SeasonalThemeCopy } from "@/lib/page-content";
 import { cn } from "@/lib/utils";
 
-// Every theme's copy is predefined and independently editable — switching
-// tabs never loses an edit, since each tab is its own form with its own
-// Save button. `activeTheme` (which one currently renders on the live
-// page) is a separate concern from editing a theme's copy, same as
-// picking which hero slide shows versus editing a slide.
-export function SeasonalContentForm({ initial }: { initial: SeasonalContent }) {
+interface ItemOption {
+  id: string;
+  name: string;
+  specs: string;
+  price: number | null;
+  showPrice: boolean;
+}
+
+interface PromotedItem {
+  id: string;
+  label: string;
+  promoPrice: number;
+  regularPrice: number | null;
+}
+
+// Every theme's copy AND its own promotional item collection are
+// predefined/empty-but-ready and independently editable — switching tabs
+// never loses an edit, since each tab is its own form with its own Save
+// button. `activeTheme` (which one currently renders on the live page)
+// is a separate concern from editing a theme, same as picking which
+// hero slide shows versus editing a slide.
+export function SeasonalContentForm({
+  initial,
+  gemstones,
+  jewelry,
+  itemsByTheme,
+}: {
+  initial: SeasonalContent;
+  gemstones: ItemOption[];
+  jewelry: ItemOption[];
+  itemsByTheme: Record<SeasonalThemeKey, PromotedItem[]>;
+}) {
   const router = useRouter();
   const [tab, setTab] = useState<SeasonalThemeKey>(initial.activeTheme);
   const [activeTheme, setActiveThemeState] = useState(initial.activeTheme);
@@ -72,10 +99,25 @@ export function SeasonalContentForm({ initial }: { initial: SeasonalContent }) {
       </div>
 
       <div className="mt-6 border-t border-border-subtle pt-6">
-        {/* Remounts on tab change so each theme's uncontrolled inputs
-            reset to that theme's own saved values, not the previous
-            tab's. */}
-        <SeasonalThemeCopyEditor key={tab} theme={tab} initial={initial.themes[tab]} />
+        <p className="font-serif text-lg text-charcoal">Copy</p>
+        <div className="mt-4">
+          {/* Remounts on tab change so each theme's uncontrolled inputs
+              reset to that theme's own saved values, not the previous
+              tab's. */}
+          <SeasonalThemeCopyEditor key={tab} theme={tab} initial={initial.themes[tab]} />
+        </div>
+      </div>
+
+      <div className="mt-10 border-t border-border-subtle pt-8">
+        <p className="font-serif text-lg text-charcoal">{SEASONAL_THEMES[tab].label} Collection</p>
+        <p className="mt-1 text-sm text-charcoal/60">
+          Items featured in this theme&apos;s promotional collection, each with its own price — the same item can
+          also be added to other themes&apos; collections. The hero button on /promotions jumps straight down to
+          whichever collection is currently active.
+        </p>
+        <div className="mt-4">
+          <PromotionItemsManager key={tab} theme={tab} gemstones={gemstones} jewelry={jewelry} items={itemsByTheme[tab]} />
+        </div>
       </div>
     </div>
   );
@@ -115,15 +157,12 @@ function SeasonalThemeCopyEditor({ theme, initial }: { theme: SeasonalThemeKey; 
         <Label htmlFor="body">Body</Label>
         <Textarea id="body" name="body" defaultValue={initial.body} />
       </div>
-      <div className="flex flex-wrap gap-4">
-        <div>
-          <Label htmlFor="ctaLabel">Button Label</Label>
-          <Input id="ctaLabel" name="ctaLabel" defaultValue={initial.ctaLabel} className="w-48" />
-        </div>
-        <div>
-          <Label htmlFor="ctaHref">Button Link</Label>
-          <Input id="ctaHref" name="ctaHref" defaultValue={initial.ctaHref} placeholder="/gems" className="w-48" />
-        </div>
+      <div>
+        <Label htmlFor="ctaLabel">Button Label</Label>
+        <Input id="ctaLabel" name="ctaLabel" defaultValue={initial.ctaLabel} className="w-48" />
+        <p className="mt-1 text-xs text-charcoal/45">
+          Always jumps to this theme&apos;s own collection below — not a link you set by hand.
+        </p>
       </div>
       <div className="flex items-center gap-3">
         <Button type="submit" variant="gold" size="sm" disabled={pending}>

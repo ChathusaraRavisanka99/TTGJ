@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
 import { registerSchema } from "@/lib/validation/auth";
+import { safeCallbackPath } from "@/lib/utils";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -45,7 +46,13 @@ export async function registerCustomer(formData: FormData): Promise<ActionResult
 }
 
 export async function authenticateWithCredentials(formData: FormData): Promise<ActionResult> {
-  const callbackUrl = (formData.get("callbackUrl") as string) || "/account";
+  // callbackUrl always comes from a URL query param (see login/register
+  // page.tsx) — never trust it as-is. This redirect() call is Next's own,
+  // not NextAuth's (redirect: false below opts out of NextAuth's built-in
+  // same-origin redirect sanitization on purpose, since sign-in itself
+  // reports success/failure back to the form instead of redirecting), so
+  // nothing upstream is sanitizing this value unless it happens here.
+  const callbackUrl = safeCallbackPath(formData.get("callbackUrl"));
 
   try {
     await signIn("credentials", {
@@ -64,7 +71,13 @@ export async function authenticateWithCredentials(formData: FormData): Promise<A
 }
 
 export async function signInWithGoogle(formData: FormData) {
-  const callbackUrl = (formData.get("callbackUrl") as string) || "/account";
+  // NextAuth's own redirectTo already gets same-origin-checked by its
+  // default redirect callback, but sanitizing here too means that
+  // protection isn't the only thing standing between this value and a
+  // redirect — consistent with authenticateWithCredentials above rather
+  // than relying on two different code paths staying safe for two
+  // different reasons.
+  const callbackUrl = safeCallbackPath(formData.get("callbackUrl"));
   await signIn("google", { redirectTo: callbackUrl });
 }
 

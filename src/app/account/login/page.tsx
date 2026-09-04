@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/quote/LoginForm";
+import { safeCallbackPath } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Sign In" };
 
 export default async function LoginPage({ searchParams }: PageProps<"/account/login">) {
   const sp = await searchParams;
-  const callbackUrl = typeof sp.callbackUrl === "string" ? sp.callbackUrl : "/account";
+  // Sanitized here too (the server action sanitizes it again before
+  // actually redirecting — see authenticateWithCredentials) so the hidden
+  // form field never carries an attacker-supplied absolute URL in the
+  // first place, in case anything else ever reads this prop later.
+  const callbackUrl = safeCallbackPath(sp.callbackUrl);
   const googleEnabled = !!(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
 
   return (

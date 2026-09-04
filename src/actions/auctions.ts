@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { requireAdmin } from "@/lib/rbac";
 import { ensureCartItemForAuction } from "@/lib/cart";
 import { getAuctionDisplayState, minimumNextBid } from "@/lib/auctions";
+import { getPageVisibility } from "@/lib/page-visibility";
 import type { ActionResult } from "./auth";
 
 interface AuctionInput {
@@ -157,6 +158,15 @@ export async function placeBid(auctionId: string, amount: number): Promise<Actio
   const session = await auth();
   if (!session?.user) return { ok: false, error: "Sign in to bid." };
   if (!Number.isFinite(amount)) return { ok: false, error: "Enter a bid amount." };
+
+  // The public /auction page itself already refuses to render a bid form
+  // unless this is Live, but that's a UI-layer check only — this action
+  // is reachable directly with nothing but an auction's id, which isn't a
+  // secret (it's in the page URL once an admin shares one). Hidden or
+  // Coming Soon means the feature isn't meant to be live yet at all, so
+  // that has to be enforced here too, not just by what the page renders.
+  const visibility = await getPageVisibility("auction");
+  if (visibility !== "LIVE") return { ok: false, error: "Auctions aren't open right now." };
 
   const auction = await prisma.auction.findUnique({ where: { id: auctionId }, include: { bids: true } });
   if (!auction) return { ok: false, error: "Auction not found." };

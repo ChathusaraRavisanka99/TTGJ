@@ -5,6 +5,26 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Sanitizes a `callbackUrl`-style redirect target — a value that always
+// originates from a URL query param (login/register links built by
+// middleware, or crafted by anyone), never something the server itself
+// generated. Only a root-relative, same-origin path is ever returned;
+// anything else falls back. Without this, a link like
+// /account/login?callbackUrl=https://evil.example would send a customer
+// straight to a phishing site immediately after a real, successful sign-in
+// (CWE-601 open redirect) — the browser trusts the address bar during
+// login, so landing on this domain first makes the handoff far more
+// convincing than a cold phishing link would be on its own.
+//
+// "//evil.example" and "/\evil.example" are rejected too — browsers
+// resolve a leading "//" (and, historically, "/\") as protocol-relative,
+// i.e. still an absolute URL to another host, not a path on this one.
+export function safeCallbackPath(raw: unknown, fallback = "/account"): string {
+  if (typeof raw !== "string" || raw.length === 0) return fallback;
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return fallback;
+  return raw;
+}
+
 export function slugify(input: string): string {
   return input
     .toLowerCase()

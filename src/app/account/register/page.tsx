@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { RegisterForm } from "@/components/quote/RegisterForm";
+import { safeCallbackPath } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Create Account" };
 
 export default async function RegisterPage({ searchParams }: PageProps<"/account/register">) {
   const sp = await searchParams;
-  const callbackUrl = typeof sp.callbackUrl === "string" ? sp.callbackUrl : "/account";
+  // See login/page.tsx — same open-redirect sanitization, same reasoning.
+  const callbackUrl = safeCallbackPath(sp.callbackUrl);
 
   return (
     <div className="mx-auto max-w-md px-5 py-20 sm:px-8">

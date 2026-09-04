@@ -62,15 +62,26 @@ export async function applyDiscountCode(rawCode: string): Promise<ActionResult> 
   if (!discount) return { ok: false, error: "That code doesn't exist." };
   if (discount.usedAt || discount.cartId) return { ok: false, error: "That code has already been used." };
 
-  // Both writes together: the code is claimed by this cart, and the cart
-  // records the amount, atomically — a second, concurrent apply of the
-  // same code can't succeed once this transaction commits (the code's
-  // cartId is no longer null), and a failure partway through can't leave
-  // the code claimed with no cart to show for it.
-  await prisma.$transaction([
-    prisma.discountCode.update({ where: { id: discount.id }, data: { cartId: cart.id, usedAt: new Date() } }),
-    prisma.cart.update({ where: { id: cart.id }, data: { discountAmount: discount.amountOff } }),
-  ]);
+  // This check just above isn't itself the guard against a code being
+  // spent twice — two concurrent requests for the same still-unused code
+  // can both pass it before either has written anything. The actual claim
+  // has to be the conditional write below: updateMany's WHERE re-checks
+  // cartId/usedAt inside the transaction, so only one of two racing
+  // requests can ever match and claim the code — the loser's count is 0
+  // and it rolls back instead of silently granting the same discount to a
+  // second cart.
+  try {
+    await prisma.$transaction(async (tx) => {
+      const claim = await tx.discountCode.updateMany({
+        where: { id: discount.id, cartId: null, usedAt: null },
+        data: { cartId: cart.id, usedAt: new Date() },
+      });
+      if (claim.count === 0) throw new Error("That code has already been used.");
+      await tx.cart.update({ where: { id: cart.id }, data: { discountAmount: discount.amountOff } });
+    });
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Couldn't apply that code." };
+  }
 
   revalidatePath("/account/cart");
   return { ok: true };

@@ -81,8 +81,19 @@ export default async function HomePage() {
         the hero ballooning on ultra-tall displays, not to clip it on
         ordinary ~900-1100px desktop viewport heights, which a lower cap
         here was doing.
+
+        `min-h-[720px]` is scoped to `sm:` and up, not applied on narrow
+        phones: it exists to keep the hero from looking cramped on a short
+        landscape/small-window viewport, but on an actual portrait phone
+        (an iPhone SE's 375×667 dvh, say) it does the opposite — 720 is
+        taller than the real viewport, so `items-center` centers the
+        content around the section's own midpoint rather than the
+        viewport's, and the second CTA button ends up partly below the
+        fold. The hero's own content (~520px stacked) already fits a
+        667px dvh comfortably on its own; the floor just isn't needed
+        there.
       */}
-      <section id="hero" className="relative flex h-dvh min-h-[720px] w-full snap-start items-center overflow-hidden bg-charcoal lg:max-h-[1100px]">
+      <section id="hero" className="relative flex h-dvh w-full snap-start items-center overflow-hidden bg-charcoal sm:min-h-[720px] lg:max-h-[1100px]">
         <HeroSlideshow images={content.heroSlides} />
         <div
           className="pointer-events-none absolute inset-0"

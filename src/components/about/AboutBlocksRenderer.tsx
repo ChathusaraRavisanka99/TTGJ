@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Reveal } from "@/components/layout/Reveal";
 import { LinkButton } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import type { AboutBlock, AboutRow, ColumnSpan, SpacerHeight } from "@/lib/about-blocks";
+import { SPACER_HEIGHT_LABELS, type AboutBlock, type AboutRow, type ColumnSpan, type SpacerHeight } from "@/lib/about-blocks";
 
 // The single source of truth for how About-page rows/blocks render —
 // shared by the real /about page (server-rendered from saved content) and
@@ -161,8 +161,26 @@ const SPACER_HEIGHTS: Record<SpacerHeight, string> = {
   xl: "h-32 sm:h-48",
 };
 
-function SpacerSection({ block }: { block: Extract<AboutBlock, { type: "spacer" }> }) {
-  return <div className={cn("w-full", SPACER_HEIGHTS[block.height])} style={{ backgroundColor: block.color }} />;
+function SpacerSection({ block, animate }: { block: Extract<AboutBlock, { type: "spacer" }>; animate: boolean }) {
+  return (
+    <div className={cn("relative w-full", SPACER_HEIGHTS[block.height])} style={{ backgroundColor: block.color }}>
+      {/* Admin preview only (animate=false uniquely identifies that
+          context — see AboutBlocksRenderer's animate prop). A Spacer set
+          to its default colour is deliberately invisible on the real
+          page — that's the whole feature — but that leaves the admin with
+          no way to confirm one is actually there while editing, which
+          reads as "the spacer isn't appearing." A quiet dashed outline +
+          label, admin-only, fixes that without touching what visitors
+          ever see. */}
+      {!animate && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center border border-dashed border-charcoal/20">
+          <span className="rounded bg-charcoal/70 px-2 py-0.5 text-[10px] uppercase tracking-wide text-ivory">
+            Spacer · {SPACER_HEIGHT_LABELS[block.height]}
+          </span>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function FullSection({ block, animate }: { block: AboutBlock; animate: boolean }) {
@@ -182,7 +200,7 @@ function FullSection({ block, animate }: { block: AboutBlock; animate: boolean }
     case "cta":
       return <CtaSection block={block} animate={animate} />;
     case "spacer":
-      return <SpacerSection block={block} />;
+      return <SpacerSection block={block} animate={animate} />;
     default:
       return null;
   }
@@ -247,7 +265,7 @@ function BoxedQuote({ block }: { block: Extract<AboutBlock, { type: "quote" }> }
   );
 }
 
-function BoxedBlock({ block }: { block: AboutBlock }) {
+function BoxedBlock({ block, animate }: { block: AboutBlock; animate: boolean }) {
   switch (block.type) {
     case "hero":
       return <BoxedHero block={block} />;
@@ -264,7 +282,10 @@ function BoxedBlock({ block }: { block: AboutBlock }) {
     case "cta":
       return <CtaSection block={block} animate={false} />;
     case "spacer":
-      return <SpacerSection block={block} />;
+      // The real `animate` (not the hardcoded false above) — a boxed
+      // spacer still needs to tell an admin-preview render from a real
+      // one, same as FullSection's.
+      return <SpacerSection block={block} animate={animate} />;
     default:
       return null;
   }
@@ -276,7 +297,7 @@ function MultiColumnRow({ row, animate }: { row: AboutRow; animate: boolean }) {
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-12 sm:gap-10 lg:gap-14">
         {row.columns.map((col, i) => (
           <Wrap animate={animate} delay={i * 0.06} key={col.id} className={cn("col-span-1", SPAN_CLASSES[col.span])}>
-            <BoxedBlock block={col.block} />
+            <BoxedBlock block={col.block} animate={animate} />
           </Wrap>
         ))}
       </div>

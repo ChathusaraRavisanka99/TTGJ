@@ -76,6 +76,17 @@ export type SpacerHeight = "sm" | "md" | "lg" | "xl";
 // match visually, not stay wired to the CSS variable.
 export const SPACER_DEFAULT_COLOR = "#faf7f1";
 
+// Shared between the admin builder's height <select> and the live
+// preview's admin-only "Spacer · Medium" label overlay (see
+// AboutBlocksRenderer's SpacerSection) — one source of truth for the
+// display text of each SpacerHeight value.
+export const SPACER_HEIGHT_LABELS: Record<SpacerHeight, string> = {
+  sm: "Small",
+  md: "Medium",
+  lg: "Large",
+  xl: "Extra large",
+};
+
 export interface SpacerBlock {
   id: string;
   type: "spacer";

@@ -8,9 +8,8 @@ import { updateAboutRows, uploadAboutBlockImage } from "@/actions/page-content";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select, Label, FieldError, FieldHint } from "@/components/ui/Field";
 import { AboutBlocksRenderer } from "@/components/about/AboutBlocksRenderer";
-import { BLOCK_TYPES, SPAN_PRESETS, SPACER_DEFAULT_COLOR, type AboutBlock, type AboutRow, type AboutColumn, type ColumnSpan, type SpacerHeight } from "@/lib/about-blocks";
-
-const SPACER_HEIGHT_LABELS: Record<SpacerHeight, string> = { sm: "Small", md: "Medium", lg: "Large", xl: "Extra large" };
+import { BLOCK_TYPES, SPAN_PRESETS, SPACER_DEFAULT_COLOR, SPACER_HEIGHT_LABELS, type AboutBlock, type AboutRow, type AboutColumn, type ColumnSpan, type SpacerHeight } from "@/lib/about-blocks";
+import { cn } from "@/lib/utils";
 
 // Full drag-and-drop page builder for the About page, laid out as rows of
 // side-by-side columns (a 12-unit grid, like a normal page builder) rather
@@ -182,6 +181,18 @@ function BlockFields({ block, onChange }: { block: AboutBlock; onChange: (block:
               <Input
                 value={block.color}
                 onChange={(e) => onChange({ ...block, color: e.target.value })}
+                onBlur={(e) => {
+                  // A half-typed hex value (e.g. "#fa", left over from
+                  // changing your mind mid-edit) fails the server's
+                  // validation and blocks the *entire* Save with no
+                  // indication of which row is the problem — snapping back
+                  // to the last valid value as soon as you leave the field
+                  // means an incomplete edit can never survive to Save in
+                  // the first place.
+                  if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(e.target.value)) {
+                    onChange({ ...block, color: SPACER_DEFAULT_COLOR });
+                  }
+                }}
                 placeholder={SPACER_DEFAULT_COLOR}
                 className="w-32"
               />
@@ -611,13 +622,23 @@ export function AboutBuilder({ initialRows }: { initialRows: AboutRow[] }) {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-3 rounded-lg border border-border-subtle bg-surface px-4 py-3">
+        {/* Red wash + a real sentence (not just small FieldError text
+            tacked onto the end of the row) when a save fails — a rejected
+            save used to be nearly silent: a few pixels of red text after
+            "Unsaved changes," easy to miss if you'd already scrolled down
+            to a different row than the one that's actually invalid. */}
+        <div
+          className={cn(
+            "mt-4 flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3",
+            error ? "border-red-200 bg-red-50" : "border-border-subtle bg-surface",
+          )}
+        >
           <Button type="button" variant="gold" size="sm" onClick={handleSave} disabled={pending || !dirty}>
             {pending ? "Saving..." : "Save Changes"}
           </Button>
           {!dirty && saved && <span className="text-sm text-green-700">Saved.</span>}
-          {dirty && <span className="text-sm text-charcoal/50">Unsaved changes</span>}
-          <FieldError>{error ?? undefined}</FieldError>
+          {dirty && !error && <span className="text-sm text-charcoal/50">Unsaved changes</span>}
+          {error && <p className="text-sm font-medium text-red-700">Couldn&apos;t save: {error}</p>}
         </div>
 
         <Reorder.Group axis="y" values={rows} onReorder={(next) => { setRows(next); setSaved(false); }} className="mt-4 space-y-3">

@@ -1,5 +1,6 @@
 import { Select, Input, Label } from "@/components/ui/Field";
-import { Button } from "@/components/ui/Button";
+import { Button, LinkButton } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
 
 interface GemFilterBarProps {
   minerals: { slug: string; name: string }[];
@@ -11,6 +12,11 @@ interface GemFilterBarProps {
 }
 
 export function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origins, current }: GemFilterBarProps) {
+  // `page` alone (no real filter set) shouldn't count as "something to
+  // clear" — it'd make the button appear just from paging through an
+  // unfiltered catalog, which has nothing to do with what it's for.
+  const hasActiveFilters = Object.entries(current).some(([key, value]) => key !== "page" && !!value);
+
   return (
     <form method="get" className="grid grid-cols-2 gap-4 rounded-xl border border-border-subtle bg-surface p-5 sm:grid-cols-3 lg:grid-cols-5">
       <div className="col-span-2 sm:col-span-3 lg:col-span-5">
@@ -92,8 +98,11 @@ export function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origin
         In stock only
       </label>
 
-      <div className="col-span-2 flex items-end gap-3 sm:col-span-1">
-        <Button type="submit" variant="primary" className="w-full">Filter</Button>
+      <div className={cn("col-span-2 flex items-end gap-3", hasActiveFilters ? "sm:col-span-2" : "sm:col-span-1")}>
+        <Button type="submit" variant="primary" className={hasActiveFilters ? "flex-1" : "w-full"}>Filter</Button>
+        {hasActiveFilters && (
+          <LinkButton href="/gems" variant="outline" className="flex-1">Clear Filters</LinkButton>
+        )}
       </div>
     </form>
   );

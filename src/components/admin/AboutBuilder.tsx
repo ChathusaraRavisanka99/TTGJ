@@ -590,7 +590,15 @@ export function AboutBuilder({ initialRows }: { initialRows: AboutRow[] }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,560px)_1fr]">
-      <div>
+      {/* min-w-0: grid items default to min-width:auto, which refuses to
+          shrink below the item's own content's intrinsic width — normally
+          invisible, but the live preview's zoomed 1440px-wide inner div
+          (clipped fine visually by its own overflow-hidden wrapper) still
+          counts toward that intrinsic width for track-sizing purposes, so
+          without this override the grid track — and the whole page on
+          mobile, where this is the only column — was forced wider than
+          the viewport despite nothing actually being visible out there. */}
+      <div className="min-w-0">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-medium uppercase tracking-wide text-charcoal/50">
             {rows.length} row{rows.length === 1 ? "" : "s"}
@@ -636,7 +644,7 @@ export function AboutBuilder({ initialRows }: { initialRows: AboutRow[] }) {
           scrolling down to reach a field also scrolls the whole preview,
           including whatever row it just auto-scrolled to, off the top of
           the browser window. */}
-      <div className="lg:sticky lg:top-6 lg:self-start">
+      <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-charcoal/50">Live preview</p>
         <LivePreview rows={rows} focusedRowId={focus?.rowId ?? null} focusNonce={focus?.nonce ?? null} />
       </div>

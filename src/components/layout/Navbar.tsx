@@ -29,6 +29,16 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
   // it before hydration), so this initial value never mismatches — only the
   // home page's actual scroll position is genuinely client-only.
   const [scrolled, setScrolled] = useState(!isHome);
+  // Close on navigation (covers back/forward too, not just link clicks —
+  // those already call setOpen(false) directly). Adjusted during render
+  // (React's documented pattern for "reset state when a prop changes")
+  // rather than in an effect, which would set state synchronously right
+  // after the first render and trigger an extra one.
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
+    if (open) setOpen(false);
+  }
 
   const transparent = isHome && !scrolled && !open;
 
@@ -40,6 +50,20 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
     return () => window.removeEventListener("scroll", onScroll);
   }, [isHome]);
 
+  // The open menu is a full-screen takeover (below), so background
+  // content must not scroll underneath it — otherwise a swipe against the
+  // menu can scroll the page behind it (most noticeable as iOS Safari
+  // rubber-banding), and the CTA buttons peeking out from under a
+  // non-full-screen menu would otherwise stay tappable through it.
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
   return (
     <motion.header
       initial={false}
@@ -48,9 +72,17 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
         boxShadow: transparent ? "0 1px 0 rgba(255,255,255,0)" : "0 1px 0 rgba(33,29,26,0.08)",
       }}
       transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
-      className={cn("fixed top-0 z-50 w-full backdrop-blur-sm", transparent && "backdrop-blur-0")}
+      className={cn(
+        "fixed top-0 z-50 w-full backdrop-blur-sm",
+        transparent && !open && "backdrop-blur-0",
+        // Full-viewport-height flex column while open, so the dropdown
+        // below can fill "the rest of the screen" (flex-1) without a
+        // hardcoded height that would need to match the row's own height
+        // by hand.
+        open && "flex h-dvh flex-col overflow-hidden bg-ivory",
+      )}
     >
-      <div className="mx-auto flex max-w-[120rem] items-center justify-between px-5 py-5 sm:px-8 lg:px-12 xl:px-16">
+      <div className="mx-auto flex w-full max-w-[120rem] shrink-0 items-center justify-between px-5 py-5 sm:px-8 lg:px-12 xl:px-16">
         <Link
           href="/"
           className={cn(
@@ -115,7 +147,7 @@ export function Navbar({ user }: { user: { name?: string | null; email?: string 
       </div>
 
       {open && (
-        <nav className="flex flex-col gap-1 border-t border-border-subtle bg-ivory px-5 py-4 md:hidden">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto border-t border-border-subtle bg-ivory px-5 py-4 md:hidden">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}

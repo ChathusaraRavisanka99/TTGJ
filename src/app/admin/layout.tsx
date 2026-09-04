@@ -9,8 +9,14 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const session = await auth();
   // Defense in depth: middleware already gates /admin, but every server
   // entry point re-checks so nothing depends solely on the edge layer.
-  if (!session?.user || session.user.role !== "ADMIN") {
+  // Same split as middleware.ts: no session at all -> prompt sign-in;
+  // signed in but the wrong role -> the themed access-denied page, not a
+  // login prompt they can't do anything useful with.
+  if (!session?.user) {
     redirect("/account/login?callbackUrl=/admin");
+  }
+  if (session.user.role !== "ADMIN") {
+    redirect("/unauthorized");
   }
 
   return (

@@ -22,7 +22,7 @@ export default auth((req) => {
       return NextResponse.redirect(loginUrl);
     }
     if (role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/", req.nextUrl.origin));
+      return NextResponse.redirect(new URL("/unauthorized", req.nextUrl.origin));
     }
   }
 

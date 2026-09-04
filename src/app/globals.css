@@ -187,6 +187,35 @@ h1, h2, h3, h4, .font-serif {
   animation: gem-color-wave 9s ease-in-out infinite;
 }
 
+/* GemMinerScene (not-found/unauthorized pages) — the pickaxe arm swings
+   gently around the shoulder, set as the SVG group's transform-origin.
+   Small amplitude and an easing curve that lingers at each end (rather
+   than a linear back-and-forth) is what keeps this read as an idle
+   animation loop rather than a repeating, distracting tic. */
+@keyframes miner-swing {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(10deg); }
+}
+
+.animate-miner-swing {
+  animation: miner-swing 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  transform-box: fill-box;
+}
+
+/* Same scene's gem-cluster sparkles — a soft, staggered twinkle (each
+   sparkle gets its own animation-delay inline) rather than all pulsing in
+   unison, which read as one flashing light instead of a scatter of them. */
+@keyframes gem-sparkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+.animate-gem-sparkle {
+  animation: gem-sparkle 2.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
   .animate-scroll-cue,
@@ -194,7 +223,9 @@ h1, h2, h3, h4, .font-serif {
   .animate-loader-text-glow,
   .animate-loader-line-glow,
   .animate-page-in,
-  .animate-gem-color-wave {
+  .animate-gem-color-wave,
+  .animate-miner-swing,
+  .animate-gem-sparkle {
     animation: none;
   }
 }

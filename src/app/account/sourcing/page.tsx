@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getUnreadCount } from "@/lib/chat";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { formatPrice } from "@/lib/utils";
 
@@ -15,6 +17,7 @@ export default async function AccountSourcingPage() {
     where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
   });
+  const unreadCounts = await Promise.all(requests.map((r) => getUnreadCount("sourcing", r.id, "CUSTOMER")));
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
@@ -27,37 +30,51 @@ export default async function AccountSourcingPage() {
         </p>
       ) : (
         <div className="mt-8 space-y-4">
-          {requests.map((r) => (
-            <div key={r.id} className="rounded-xl border border-border-subtle bg-surface p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="font-serif text-lg text-charcoal">{r.mineralDescription}</p>
-                  <p className="mt-1 text-xs text-charcoal/50">Submitted {r.createdAt.toLocaleDateString()}</p>
+          {requests.map((r, i) => {
+            const unread = unreadCounts[i];
+            return (
+              <Link
+                key={r.id}
+                href={`/account/sourcing/${r.id}`}
+                className="block rounded-xl border border-border-subtle bg-surface p-5 transition-colors hover:border-gold/40"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-serif text-lg text-charcoal">{r.mineralDescription}</p>
+                    <p className="mt-1 text-xs text-charcoal/50">Submitted {r.createdAt.toLocaleDateString()}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {unread > 0 && (
+                      <span className="flex items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-[11px] font-medium text-charcoal">
+                        <MessageCircle size={11} /> {unread}
+                      </span>
+                    )}
+                    <QuoteStatusBadge status={r.status} />
+                  </div>
                 </div>
-                <QuoteStatusBadge status={r.status} />
-              </div>
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-charcoal/65">
-                {r.approxSize && <span>Size: {r.approxSize}</span>}
-                {r.approxCut && <span>Cut: {r.approxCut}</span>}
-                {r.approxColor && <span>Colour: {r.approxColor}</span>}
-              </div>
-              {r.quotedPrice != null && (
-                <div className="mt-3 flex items-baseline justify-between border-t border-border-subtle pt-3">
-                  <p className="font-serif text-xl text-charcoal">{formatPrice(r.quotedPrice)}</p>
-                  {r.quoteValidUntil && (
-                    <p className="text-xs text-charcoal/45">Valid until {r.quoteValidUntil.toLocaleDateString()}</p>
-                  )}
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-charcoal/65">
+                  {r.approxSize && <span>Size: {r.approxSize}</span>}
+                  {r.approxCut && <span>Cut: {r.approxCut}</span>}
+                  {r.approxColor && <span>Colour: {r.approxColor}</span>}
                 </div>
-              )}
-              {r.notes && <p className="mt-3 text-sm text-charcoal/70">&ldquo;{r.notes}&rdquo;</p>}
-              {r.adminNotes && (
-                <div className="mt-3 rounded-lg bg-ivory-soft p-3 text-sm text-charcoal/75">
-                  <p className="text-xs uppercase tracking-wide text-charcoal/45">From Ratnavue</p>
-                  <p className="mt-1">{r.adminNotes}</p>
-                </div>
-              )}
-            </div>
-          ))}
+                {r.quotedPrice != null && (
+                  <div className="mt-3 flex items-baseline justify-between border-t border-border-subtle pt-3">
+                    <p className="font-serif text-xl text-charcoal">{formatPrice(r.quotedPrice)}</p>
+                    {r.quoteValidUntil && (
+                      <p className="text-xs text-charcoal/45">Valid until {r.quoteValidUntil.toLocaleDateString()}</p>
+                    )}
+                  </div>
+                )}
+                {r.notes && <p className="mt-3 text-sm text-charcoal/70">&ldquo;{r.notes}&rdquo;</p>}
+                {r.adminNotes && (
+                  <div className="mt-3 rounded-lg bg-ivory-soft p-3 text-sm text-charcoal/75">
+                    <p className="text-xs uppercase tracking-wide text-charcoal/45">From Ratnavue</p>
+                    <p className="mt-1">{r.adminNotes}</p>
+                  </div>
+                )}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

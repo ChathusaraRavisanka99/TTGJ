@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getUnreadCount } from "@/lib/chat";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { cn } from "@/lib/utils";
@@ -25,6 +27,7 @@ export default async function AdminSourcingPage({ searchParams }: PageProps<"/ad
     prisma.sourcingRequest.count({ where }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const unreadCounts = await Promise.all(requests.map((r) => getUnreadCount("sourcing", r.id, "ADMIN")));
 
   return (
     <div>
@@ -58,17 +61,27 @@ export default async function AdminSourcingPage({ searchParams }: PageProps<"/ad
             </tr>
           </thead>
           <tbody>
-            {requests.map((r) => (
+            {requests.map((r, i) => {
+              const unread = unreadCounts[i];
+              return (
               <tr key={r.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
                 <td className="px-4 py-3">
-                  <Link href={`/admin/sourcing/${r.id}`} className="text-charcoal hover:text-gold">{r.mineralDescription}</Link>
+                  <Link href={`/admin/sourcing/${r.id}`} className="flex items-center gap-2 text-charcoal hover:text-gold">
+                    {r.mineralDescription}
+                    {unread > 0 && (
+                      <span className="flex items-center gap-1 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-medium text-charcoal">
+                        <MessageCircle size={10} /> {unread}
+                      </span>
+                    )}
+                  </Link>
                 </td>
                 <td className="px-4 py-3 text-charcoal/70">{r.user.email}</td>
                 <td className="px-4 py-3 text-charcoal/70">{r.createdAt.toLocaleDateString()}</td>
                 <td className="px-4 py-3">{r.noteFlaggedForPrice ? <span className="text-amber-700">⚠ Price?</span> : "—"}</td>
                 <td className="px-4 py-3"><QuoteStatusBadge status={r.status} /></td>
               </tr>
-            ))}
+              );
+            })}
             {requests.length === 0 && (
               <tr><td colSpan={5} className="px-4 py-8 text-center text-charcoal/50">No sourcing requests found.</td></tr>
             )}

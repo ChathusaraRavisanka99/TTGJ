@@ -38,6 +38,7 @@ model User {
   carts           Cart[]
   cartInvoices    CartInvoice[]
   auctionBids     AuctionBid[]
+  chatMessages    ChatMessage[]
 }
 
 model Account {
@@ -233,6 +234,7 @@ model Gemstone {
   jewelryGemstoneLink JewelryGemstoneLink[]
   auctions            Auction[]
   promotionItems      PromotionItem[]
+  taggedInChatMessages ChatMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -290,6 +292,7 @@ model JewelryPiece {
   quoteRequests  QuoteRequest[]
   auctions       Auction[]
   promotionItems PromotionItem[]
+  taggedInChatMessages ChatMessage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -409,6 +412,10 @@ model QuoteRequest {
   // and submitted for payment together.
   cartItem CartItem?
 
+  // One chat thread per request, created lazily on first message (see
+  // getOrCreateChatThread) — not eagerly for every request.
+  chatThread ChatThread?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -466,11 +473,87 @@ model SourcingRequest {
   // ACCEPTED — see ensureCartItemForSourcing.
   cartItem CartItem?
 
+  // See QuoteRequest.chatThread — same lazy-create convention.
+  chatThread ChatThread?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
+}
+
+// ---------- Chat ----------
+//
+// One thread per quote/sourcing request — created lazily on the first
+// message (see getOrCreateChatThread in lib/chat.ts), not eagerly for
+// every request. A message can optionally tag a catalog item (any
+// gemstone/jewelry, not just the one the request itself is about — "what
+// about this ring instead?" is a legitimate thing to ask) or the
+// request's customer's cart. The cart tag is a snapshot (taggedCartSnapshot),
+// not a live reference — same "historical record, doesn't silently change
+// later" rule every other amount field in this schema already follows,
+// since by the time a message is read the cart it referenced may have
+// changed or been submitted entirely.
+//
+// No live push — see lib/chat.ts and ChatPanel for why (bridging this
+// app's NextAuth sessions to Supabase Realtime's RLS-based channel
+// authorization would mean running a second, parallel auth system just
+// for this). The chat panel polls on a short interval instead, which
+// reads as "live" for this use case without that architectural cost.
+model ChatThread {
+  id String @id @default(cuid())
+
+  quoteRequestId String?       @unique
+  quoteRequest   QuoteRequest? @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+  sourcingRequestId String?          @unique
+  sourcingRequest   SourcingRequest? @relation(fields: [sourcingRequestId], references: [id], onDelete: Cascade)
+
+  // Last time each side actually opened this thread — an unread count is
+  // derived at read time ("messages from the other side created after
+  // this"), not tracked per-message, so marking a thread read is one
+  // write instead of updating every message row in it.
+  lastReadByCustomerAt DateTime?
+  lastReadByAdminAt    DateTime?
+
+  messages ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([quoteRequestId])
+  @@index([sourcingRequestId])
+}
+
+model ChatMessage {
+  id       String     @id @default(cuid())
+  threadId String
+  thread   ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User     @relation(fields: [senderId], references: [id])
+  // Snapshotted at send time — which "side" of the conversation this is,
+  // independent of the sender's role ever changing later, and cheaper to
+  // render from than joining sender.role on every message every time.
+  senderRole UserRole
+
+  // Optional — a message can be pure text, a pure attachment (an empty
+  // body with a tag), or both. Exactly one of the three tag fields below
+  // is ever set (validated in sendChatMessage, not a DB constraint — same
+  // convention CartItem's "exactly one of" origin fields already use).
+  body String? @db.Text
+
+  taggedGemstoneId String?
+  taggedGemstone   Gemstone?     @relation(fields: [taggedGemstoneId], references: [id], onDelete: SetNull)
+  taggedJewelryId  String?
+  taggedJewelry    JewelryPiece? @relation(fields: [taggedJewelryId], references: [id], onDelete: SetNull)
+  // { items: [{ label: string, amount: number }], total: number }
+  taggedCartSnapshot Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([threadId])
+  @@index([senderId])
 }
 
 // ---------- Cart & payment ----------

@@ -1,16 +1,27 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { pollChatMessages } from "@/actions/chat";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { QuoteStatusForm } from "@/components/admin/QuoteStatusForm";
+import { ChatPanel } from "@/components/chat/ChatPanel";
 import { BackLink } from "@/components/admin/BackLink";
 import { formatPrice } from "@/lib/utils";
 
 export default async function AdminSourcingDetailPage({ params }: PageProps<"/admin/sourcing/[id]">) {
   const { id } = await params;
-  const request = await prisma.sourcingRequest.findUnique({ where: { id }, include: { user: true } });
+  const [request, session] = await Promise.all([
+    prisma.sourcingRequest.findUnique({ where: { id }, include: { user: true } }),
+    auth(),
+  ]);
 
   if (!request) notFound();
+
+  const [openCart, initialMessages] = await Promise.all([
+    prisma.cart.findFirst({ where: { userId: request.userId, status: "OPEN" }, include: { items: true } }),
+    pollChatMessages("sourcing", id),
+  ]);
 
   return (
     <div className="max-w-6xl">
@@ -51,6 +62,16 @@ export default async function AdminSourcingDetailPage({ params }: PageProps<"/ad
               </div>
               <p className="mt-2 text-sm text-charcoal">{request.notes}</p>
             </div>
+          )}
+
+          {session?.user && (
+            <ChatPanel
+              requestType="sourcing"
+              requestId={request.id}
+              currentUserId={session.user.id}
+              initialMessages={initialMessages}
+              hasOpenCart={!!openCart && openCart.items.length > 0}
+            />
           )}
         </div>
 

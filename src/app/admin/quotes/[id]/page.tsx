@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { pollChatMessages } from "@/actions/chat";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { QuoteStatusForm } from "@/components/admin/QuoteStatusForm";
 import { QuoteGemPreview } from "@/components/admin/QuoteGemPreview";
+import { ChatPanel } from "@/components/chat/ChatPanel";
 import { getQuoteGemVisual } from "@/lib/quote-visual";
 import { formatPrice } from "@/lib/utils";
 import { BackLink } from "@/components/admin/BackLink";
@@ -11,17 +14,25 @@ import type { ConfiguredSpec } from "@/lib/validation/quote";
 
 export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin/quotes/[id]">) {
   const { id } = await params;
-  const quote = await prisma.quoteRequest.findUnique({
-    where: { id },
-    include: {
-      user: true,
-      gemstone: { include: { cut: true, mineral: true, clarityGrade: true } },
-      jewelry: true,
-      invoice: true,
-    },
-  });
+  const [quote, session] = await Promise.all([
+    prisma.quoteRequest.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        gemstone: { include: { cut: true, mineral: true, clarityGrade: true } },
+        jewelry: true,
+        invoice: true,
+      },
+    }),
+    auth(),
+  ]);
 
   if (!quote) notFound();
+
+  const [openCart, initialMessages] = await Promise.all([
+    prisma.cart.findFirst({ where: { userId: quote.userId, status: "OPEN" }, include: { items: true } }),
+    pollChatMessages("quote", id),
+  ]);
 
   const spec = quote.configuredSpec as ConfiguredSpec | null;
   const gemVisual = getQuoteGemVisual(quote);
@@ -83,6 +94,16 @@ export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin
               </div>
               <p className="mt-2 text-sm text-charcoal">{quote.note}</p>
             </div>
+          )}
+
+          {session?.user && (
+            <ChatPanel
+              requestType="quote"
+              requestId={quote.id}
+              currentUserId={session.user.id}
+              initialMessages={initialMessages}
+              hasOpenCart={!!openCart && openCart.items.length > 0}
+            />
           )}
         </div>
 

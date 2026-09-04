@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Printer, Receipt } from "lucide-react";
+import { Printer, Receipt, MessageCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getUnreadCount } from "@/lib/chat";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { cn, formatPrice } from "@/lib/utils";
@@ -33,6 +34,7 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
     prisma.quoteRequest.count({ where }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const unreadCounts = await Promise.all(quotes.map((q) => getUnreadCount("quote", q.id, "ADMIN")));
 
   return (
     <div>
@@ -69,8 +71,9 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
             </tr>
           </thead>
           <tbody>
-            {quotes.map((q) => {
+            {quotes.map((q, i) => {
               const visual = getQuoteGemVisual(q);
+              const unread = unreadCounts[i];
               return (
               <tr key={q.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
                 <td className="px-4 py-3">
@@ -84,6 +87,11 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
                       />
                     )}
                     {q.gemstone?.name ?? q.jewelry?.name ?? "Configured gem"}
+                    {unread > 0 && (
+                      <span className="flex items-center gap-1 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-medium text-charcoal">
+                        <MessageCircle size={10} /> {unread}
+                      </span>
+                    )}
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-charcoal/70">{q.user.email}</td>

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getUnreadCount } from "@/lib/chat";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { formatPrice } from "@/lib/utils";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
@@ -17,6 +19,7 @@ export default async function AccountQuotesPage() {
     orderBy: { createdAt: "desc" },
     include: { gemstone: true, jewelry: true },
   });
+  const unreadCounts = await Promise.all(quotes.map((q) => getUnreadCount("quote", q.id, "CUSTOMER")));
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
@@ -31,11 +34,16 @@ export default async function AccountQuotesPage() {
         </p>
       ) : (
         <div className="mt-8 space-y-4">
-          {quotes.map((q) => {
+          {quotes.map((q, i) => {
             const spec = q.configuredSpec as ConfiguredSpec | null;
             const label = q.gemstone?.name ?? q.jewelry?.name ?? (spec ? `Configured ${spec.mineralName} (${spec.cutName})` : "Item");
+            const unread = unreadCounts[i];
             return (
-              <div key={q.id} className="rounded-xl border border-border-subtle bg-surface p-5">
+              <Link
+                key={q.id}
+                href={`/account/quotes/${q.id}`}
+                className="block rounded-xl border border-border-subtle bg-surface p-5 transition-colors hover:border-gold/40"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-serif text-lg text-charcoal">{label}</p>
@@ -43,7 +51,14 @@ export default async function AccountQuotesPage() {
                       Submitted {q.createdAt.toLocaleDateString()} · Qty {q.quantity}
                     </p>
                   </div>
-                  <QuoteStatusBadge status={q.status} />
+                  <div className="flex items-center gap-2">
+                    {unread > 0 && (
+                      <span className="flex items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-[11px] font-medium text-charcoal">
+                        <MessageCircle size={11} /> {unread}
+                      </span>
+                    )}
+                    <QuoteStatusBadge status={q.status} />
+                  </div>
                 </div>
                 {q.quotedPrice != null && (
                   <div className="mt-3 flex items-baseline justify-between border-t border-border-subtle pt-3">
@@ -60,7 +75,7 @@ export default async function AccountQuotesPage() {
                     <p className="mt-1">{q.adminNotes}</p>
                   </div>
                 )}
-              </div>
+              </Link>
             );
           })}
         </div>

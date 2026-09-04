@@ -4,9 +4,11 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPageContent, DEFAULT_CART_CONTENT } from "@/lib/page-content";
 import { cartTotal } from "@/lib/discount-codes";
+import { cartItemMediaInclude, cartItemVisual } from "@/lib/cart";
 import { PaymentStatusBadge } from "@/components/ui/Badge";
 import { SubmitCartButton } from "@/components/quote/SubmitCartButton";
 import { DiscountCodeControl } from "@/components/quote/DiscountCodeControl";
+import { CartItemThumbnail } from "@/components/quote/CartItemThumbnail";
 import { formatPrice } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "My Cart" };
@@ -15,12 +17,14 @@ export default async function AccountCartPage() {
   const session = await auth();
   if (!session?.user) return null;
 
+  const itemsInclude = { items: { include: cartItemMediaInclude } };
+
   const [openCart, submittedCarts, cartContent] = await Promise.all([
-    prisma.cart.findFirst({ where: { userId: session.user.id, status: "OPEN" }, include: { items: true, discountCode: true } }),
+    prisma.cart.findFirst({ where: { userId: session.user.id, status: "OPEN" }, include: { ...itemsInclude, discountCode: true } }),
     prisma.cart.findMany({
       where: { userId: session.user.id, status: "SUBMITTED" },
       orderBy: { submittedAt: "desc" },
-      include: { items: true, invoice: true, discountCode: true },
+      include: { ...itemsInclude, invoice: true, discountCode: true },
     }),
     getPageContent("cart", DEFAULT_CART_CONTENT),
   ]);
@@ -50,12 +54,18 @@ export default async function AccountCartPage() {
         ) : (
           <div className="mt-3 rounded-xl border border-border-subtle bg-surface p-5">
             <div className="divide-y divide-border-subtle">
-              {openCart.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                  <p className="text-charcoal">{item.label}</p>
-                  <p className="whitespace-nowrap font-serif text-charcoal">{formatPrice(item.amount)}</p>
-                </div>
-              ))}
+              {openCart.items.map((item) => {
+                const visual = cartItemVisual(item);
+                return (
+                  <div key={item.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <CartItemThumbnail media={visual.media} gemVisual={visual.gemVisual} seedKey={item.id} href={visual.href} />
+                      <p className="truncate text-charcoal">{item.label}</p>
+                    </div>
+                    <p className="whitespace-nowrap font-serif text-charcoal">{formatPrice(item.amount)}</p>
+                  </div>
+                );
+              })}
               {openCart.discountAmount != null && (
                 <div className="flex items-center justify-between gap-4 py-3">
                   <p className="text-charcoal/70">Discount ({openCart.discountCode?.code})</p>
@@ -106,13 +116,19 @@ export default async function AccountCartPage() {
                     </div>
                     <PaymentStatusBadge status={cart.paymentStatus} />
                   </div>
-                  <ul className="mt-3 space-y-1 text-sm text-charcoal/70">
-                    {cart.items.map((item) => (
-                      <li key={item.id} className="flex items-center justify-between gap-4">
-                        <span>{item.label}</span>
-                        <span className="whitespace-nowrap">{formatPrice(item.amount)}</span>
-                      </li>
-                    ))}
+                  <ul className="mt-3 space-y-3 text-sm text-charcoal/70">
+                    {cart.items.map((item) => {
+                      const visual = cartItemVisual(item);
+                      return (
+                        <li key={item.id} className="flex items-center justify-between gap-4">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <CartItemThumbnail media={visual.media} gemVisual={visual.gemVisual} seedKey={item.id} href={visual.href} />
+                            <span className="truncate">{item.label}</span>
+                          </div>
+                          <span className="whitespace-nowrap">{formatPrice(item.amount)}</span>
+                        </li>
+                      );
+                    })}
                     {cart.discountAmount != null && (
                       <li className="flex items-center justify-between gap-4">
                         <span>Discount ({cart.discountCode?.code})</span>

@@ -3,15 +3,17 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PaymentStatusBadge } from "@/components/ui/Badge";
 import { CartPaymentControls } from "@/components/admin/CartPaymentControls";
+import { CartItemThumbnail } from "@/components/quote/CartItemThumbnail";
 import { BackLink } from "@/components/admin/BackLink";
 import { formatPrice } from "@/lib/utils";
 import { cartTotal } from "@/lib/discount-codes";
+import { cartItemMediaInclude, cartItemVisual } from "@/lib/cart";
 
 export default async function AdminCartDetailPage({ params }: PageProps<"/admin/carts/[id]">) {
   const { id } = await params;
   const cart = await prisma.cart.findUnique({
     where: { id },
-    include: { user: true, items: true, invoice: true, discountCode: true },
+    include: { user: true, items: { include: cartItemMediaInclude }, invoice: true, discountCode: true },
   });
 
   if (!cart) notFound();
@@ -31,21 +33,27 @@ export default async function AdminCartDetailPage({ params }: PageProps<"/admin/
           <div className="rounded-xl border border-border-subtle bg-surface p-5">
             <p className="text-xs uppercase tracking-wide text-charcoal/45">Items</p>
             <div className="mt-3 divide-y divide-border-subtle">
-              {cart.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                  <div>
-                    <p className="text-charcoal">{item.label}</p>
-                    <p className="text-xs text-charcoal/45">
-                      {item.quoteRequestId ? (
-                        <Link href={`/admin/quotes/${item.quoteRequestId}`} className="underline hover:text-gold">View quote</Link>
-                      ) : (
-                        <Link href={`/admin/sourcing/${item.sourcingRequestId}`} className="underline hover:text-gold">View sourcing request</Link>
-                      )}
-                    </p>
+              {cart.items.map((item) => {
+                const visual = cartItemVisual(item);
+                return (
+                  <div key={item.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <CartItemThumbnail media={visual.media} gemVisual={visual.gemVisual} seedKey={item.id} href={visual.href} />
+                      <div className="min-w-0">
+                        <p className="truncate text-charcoal">{item.label}</p>
+                        <p className="text-xs text-charcoal/45">
+                          {item.quoteRequestId ? (
+                            <Link href={`/admin/quotes/${item.quoteRequestId}`} className="underline hover:text-gold">View quote</Link>
+                          ) : (
+                            <Link href={`/admin/sourcing/${item.sourcingRequestId}`} className="underline hover:text-gold">View sourcing request</Link>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="whitespace-nowrap font-serif text-charcoal">{formatPrice(item.amount)}</p>
                   </div>
-                  <p className="whitespace-nowrap font-serif text-charcoal">{formatPrice(item.amount)}</p>
-                </div>
-              ))}
+                );
+              })}
               {cart.discountAmount != null && (
                 <div className="flex items-center justify-between gap-4 py-3">
                   <p className="text-charcoal/70">Discount ({cart.discountCode?.code})</p>

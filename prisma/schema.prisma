@@ -596,3 +596,26 @@ model DiscountCode {
 
   @@index([code])
 }
+
+// ---------- Page visibility ----------
+//
+// A generic, reusable on/off/teaser switch for pages that don't always
+// exist publicly — the seasonal promotions page today, the auction page
+// next. `key` is a plain string (not its own enum) rather than adding a
+// column per gated page, so a future page just picks a new key with no
+// migration. HIDDEN: the route 404s, as if it didn't exist. COMING_SOON:
+// the route renders a themed teaser instead of the real content. LIVE:
+// the real page. See lib/page-visibility.ts.
+enum PageVisibilityState {
+  HIDDEN
+  COMING_SOON
+  LIVE
+}
+
+model PageVisibility {
+  id    String              @id @default(cuid())
+  key   String              @unique
+  state PageVisibilityState @default(HIDDEN)
+
+  updatedAt DateTime @updatedAt
+}

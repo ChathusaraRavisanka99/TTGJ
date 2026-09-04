@@ -30,3 +30,17 @@ export function StockBadge({ status }: { status: string }) {
 export function QuoteStatusBadge({ status }: { status: string }) {
   return <Badge className={QUOTE_STATUS_STYLES[status] ?? ""}>{status.replaceAll("_", " ")}</Badge>;
 }
+
+const PAYMENT_STATUS_STYLES: Record<string, string> = {
+  AWAITING_PAYMENT: "bg-amber-50 text-amber-800 border-amber-200",
+  PAID: "bg-emerald-50 text-emerald-800 border-emerald-200",
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  AWAITING_PAYMENT: "Awaiting Payment",
+  PAID: "Paid",
+};
+
+export function PaymentStatusBadge({ status }: { status: string }) {
+  return <Badge className={PAYMENT_STATUS_STYLES[status] ?? ""}>{PAYMENT_STATUS_LABELS[status] ?? status}</Badge>;
+}

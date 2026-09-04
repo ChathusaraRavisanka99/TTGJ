@@ -96,6 +96,20 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
   showFeaturedJewelry: true,
 };
 
+// Shown to a customer on /account/cart once they submit it, and reused
+// as-is on the printed CartInvoice — a plain admin-editable paragraph
+// rather than structured bank-detail fields, since exactly what to say
+// (which bank, which currency, whether it varies by amount) is entirely
+// up to the business and not this app's concern to model.
+export interface CartContent {
+  wireTransferInstructions: string;
+}
+
+export const DEFAULT_CART_CONTENT: CartContent = {
+  wireTransferInstructions:
+    "Wire transfer details have not been set up yet — an admin needs to add them in Cart Settings before a customer can complete payment.",
+};
+
 // The About page moved to a block-based drag-and-drop CMS builder — its
 // content shape (AboutContent = { blocks: AboutBlock[] }) and defaults now
 // live in about-blocks.ts, re-exported here so callers only need one import

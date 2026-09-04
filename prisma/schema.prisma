@@ -35,6 +35,8 @@ model User {
   quoteRequests   QuoteRequest[]
   sourcingRequest SourcingRequest[]
   invoices        Invoice[]
+  carts           Cart[]
+  cartInvoices    CartInvoice[]
 }
 
 model Account {
@@ -395,6 +397,13 @@ model QuoteRequest {
   // one invoice.
   invoice Invoice?
 
+  // Same moment an Invoice is created — also added as a line item to the
+  // customer's open Cart (see ensureCartItemForQuote). The two aren't
+  // redundant: Invoice is a per-quote historical record; CartItem is what
+  // actually lets several accepted quotes/sourcing requests be reviewed
+  // and submitted for payment together.
+  cartItem CartItem?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -441,9 +450,113 @@ model SourcingRequest {
 
   status QuoteStatus @default(SUBMITTED)
 
+  // Mirrors QuoteRequest's own pricing fields — a sourcing request becomes
+  // priceable the same way a quote does, so it can generate a CartItem the
+  // same way once accepted (see updateSourcingRequest).
+  quotedPrice     Float?
+  quoteValidUntil DateTime?
+  quotedAt        DateTime?
+
+  // Added to the customer's open Cart the moment status is set to
+  // ACCEPTED — see ensureCartItemForSourcing.
+  cartItem CartItem?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
+}
+
+// ---------- Cart & payment ----------
+//
+// A customer has at most one OPEN cart at a time (enforced in
+// lib/cart.ts's getOrCreateOpenCart, not by a DB constraint — Prisma has
+// no partial/conditional unique index, and this app has no concurrent-
+// request risk worth one). Accepting a quote or sourcing request (see
+// updateQuoteRequest/updateSourcingRequest in actions/admin-requests.ts)
+// adds a CartItem to that open cart automatically. The customer reviews
+// their cart and submits it (OPEN -> SUBMITTED) when ready to pay by wire
+// transfer; submitting starts a fresh OPEN cart for anything accepted
+// afterward. Payment itself happens outside the app (a bank wire) — an
+// admin flips paymentStatus to PAID once it's confirmed received.
+
+enum CartStatus {
+  OPEN
+  SUBMITTED
+}
+
+enum PaymentStatus {
+  AWAITING_PAYMENT
+  PAID
+}
+
+model Cart {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  status        CartStatus    @default(OPEN)
+  paymentStatus PaymentStatus @default(AWAITING_PAYMENT)
+
+  submittedAt DateTime?
+  // Set when an admin marks paymentStatus PAID — see markCartPaid.
+  paidAt      DateTime?
+
+  items   CartItem[]
+  invoice CartInvoice?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model CartItem {
+  id     String @id @default(cuid())
+  cartId String
+  cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  // Exactly one of these two is set — a cart item always originates from
+  // an accepted QuoteRequest or an accepted SourcingRequest, never both
+  // and never neither.
+  quoteRequestId String?       @unique
+  quoteRequest   QuoteRequest? @relation(fields: [quoteRequestId], references: [id])
+
+  sourcingRequestId String?          @unique
+  sourcingRequest   SourcingRequest? @relation(fields: [sourcingRequestId], references: [id])
+
+  // Snapshotted at the moment the item was added — same "historical
+  // record, doesn't silently change later" reasoning Invoice.amount
+  // already uses.
+  label  String
+  amount Float
+
+  createdAt DateTime @default(now())
+
+  @@index([cartId])
+}
+
+model CartInvoice {
+  id            String @id @default(cuid())
+  // Sequential per calendar year, distinct prefix from the older
+  // per-quote Invoice ("INV-2026-...") so the two are never visually
+  // confusable — this document can cover several quotes/sourcing
+  // requests at once, that one never does.
+  invoiceNumber String @unique
+
+  cartId String @unique
+  cart   Cart   @relation(fields: [cartId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Snapshotted sum of the cart's items at generation time.
+  amount   Float
+  issuedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

@@ -171,3 +171,17 @@ export async function uploadAboutBlockImage(formData: FormData): Promise<ActionR
     return { ok: false, error: error instanceof Error ? error.message : "Upload failed." };
   }
 }
+
+// ---------- Cart (wire transfer instructions) ----------
+
+export async function updateCartContent(wireTransferInstructions: string): Promise<ActionResult> {
+  await requireAdmin();
+  const trimmed = wireTransferInstructions.trim();
+  if (!trimmed) return { ok: false, error: "Instructions can't be empty." };
+  if (trimmed.length > 2000) return { ok: false, error: "Keep it under 2000 characters." };
+
+  await savePageContent("cart", { wireTransferInstructions: trimmed });
+  revalidatePath("/account/cart");
+  revalidatePath("/admin/carts");
+  return { ok: true };
+}

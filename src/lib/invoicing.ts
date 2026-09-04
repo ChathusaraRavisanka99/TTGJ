@@ -39,3 +39,39 @@ export async function ensureInvoiceForQuote(quoteId: string): Promise<void> {
     },
   });
 }
+
+// Distinct counter/prefix from nextInvoiceNumber above — a CartInvoice can
+// cover several quotes/sourcing requests submitted together, the older
+// per-quote Invoice never does, so "CART-2026-0003" vs "INV-2026-0003"
+// keeps the two kinds of document visually unambiguous on paper.
+async function nextCartInvoiceNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const prefix = `CART-${year}-`;
+  const count = await prisma.cartInvoice.count({ where: { invoiceNumber: { startsWith: prefix } } });
+  return `${prefix}${String(count + 1).padStart(4, "0")}`;
+}
+
+/**
+ * Generates the one invoice a submitted cart can have, covering every item
+ * in it at once — called by an admin action from the Submitted Carts view,
+ * never automatically (unlike ensureInvoiceForQuote, which fires the
+ * moment a quote is accepted). Idempotent: returns the existing invoice
+ * rather than creating a second one if called again. Throws if the cart
+ * isn't submitted yet or has no items — both should already be true by
+ * the time an admin can reach this action.
+ */
+export async function ensureCartInvoice(cartId: string) {
+  const existing = await prisma.cartInvoice.findUnique({ where: { cartId } });
+  if (existing) return existing;
+
+  const cart = await prisma.cart.findUnique({ where: { id: cartId }, include: { items: true } });
+  if (!cart) throw new Error("Cart not found.");
+  if (cart.status !== "SUBMITTED") throw new Error("Only a submitted cart can be invoiced.");
+  if (cart.items.length === 0) throw new Error("This cart has no items.");
+
+  const amount = cart.items.reduce((sum, item) => sum + item.amount, 0);
+  const invoiceNumber = await nextCartInvoiceNumber();
+  return prisma.cartInvoice.create({
+    data: { invoiceNumber, cartId: cart.id, userId: cart.userId, amount },
+  });
+}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
+import { formatPrice } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "My Sourcing Requests" };
 
@@ -40,6 +41,14 @@ export default async function AccountSourcingPage() {
                 {r.approxCut && <span>Cut: {r.approxCut}</span>}
                 {r.approxColor && <span>Colour: {r.approxColor}</span>}
               </div>
+              {r.quotedPrice != null && (
+                <div className="mt-3 flex items-baseline justify-between border-t border-border-subtle pt-3">
+                  <p className="font-serif text-xl text-charcoal">{formatPrice(r.quotedPrice)}</p>
+                  {r.quoteValidUntil && (
+                    <p className="text-xs text-charcoal/45">Valid until {r.quoteValidUntil.toLocaleDateString()}</p>
+                  )}
+                </div>
+              )}
               {r.notes && <p className="mt-3 text-sm text-charcoal/70">&ldquo;{r.notes}&rdquo;</p>}
               {r.adminNotes && (
                 <div className="mt-3 rounded-lg bg-ivory-soft p-3 text-sm text-charcoal/75">

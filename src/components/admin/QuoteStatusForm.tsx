@@ -26,7 +26,6 @@ export function QuoteStatusForm({
   kind: "quote" | "sourcing";
   currentStatus: string;
   currentAdminNotes: string;
-  /** Quote-only — ignored for sourcing requests. */
   currentQuotedPrice?: number | null;
   currentQuoteValidUntil?: string | null;
 }) {
@@ -41,16 +40,12 @@ export function QuoteStatusForm({
   function handleSave() {
     setError(null);
     startTransition(async () => {
+      const priceArg = price.trim() === "" ? undefined : Number(price);
+      const validUntilArg = validUntil === toDateInputValue(currentQuoteValidUntil) ? undefined : validUntil || null;
       const result =
         kind === "quote"
-          ? await updateQuoteRequest(
-              id,
-              status as never,
-              adminNotes,
-              price.trim() === "" ? undefined : Number(price),
-              validUntil === toDateInputValue(currentQuoteValidUntil) ? undefined : validUntil || null,
-            )
-          : await updateSourcingRequest(id, status as never, adminNotes);
+          ? await updateQuoteRequest(id, status as never, adminNotes, priceArg, validUntilArg)
+          : await updateSourcingRequest(id, status as never, adminNotes, priceArg, validUntilArg);
       if (result && !result.ok) {
         setError(result.error);
         return;
@@ -69,30 +64,26 @@ export function QuoteStatusForm({
         </Select>
       </div>
 
-      {kind === "quote" && (
-        <>
-          <div className="mt-4">
-            <Label htmlFor="quotedPrice">Quoted Price (USD)</Label>
-            <Input
-              id="quotedPrice"
-              type="number"
-              step="0.01"
-              min="0"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="E.g. 4200"
-            />
-            <p className="mt-1 text-xs text-charcoal/45">
-              Required before this can be marked Quoted or Accepted — it&apos;s what the printable quote and any
-              resulting invoice show.
-            </p>
-          </div>
-          <div className="mt-4">
-            <Label htmlFor="quoteValidUntil">Valid Until (optional)</Label>
-            <Input id="quoteValidUntil" type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
-          </div>
-        </>
-      )}
+      <div className="mt-4">
+        <Label htmlFor="quotedPrice">Quoted Price (USD)</Label>
+        <Input
+          id="quotedPrice"
+          type="number"
+          step="0.01"
+          min="0"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          placeholder="E.g. 4200"
+        />
+        <p className="mt-1 text-xs text-charcoal/45">
+          Required before this can be marked Quoted or Accepted — it&apos;s what the printable
+          {kind === "quote" ? " quote and any resulting invoice show" : " cart line item shows once accepted"}.
+        </p>
+      </div>
+      <div className="mt-4">
+        <Label htmlFor="quoteValidUntil">Valid Until (optional)</Label>
+        <Input id="quoteValidUntil" type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
+      </div>
 
       <div className="mt-4">
         <Label htmlFor="adminNotes">Notes to Customer (shown on their account as &quot;From Ratnavue&quot;)</Label>

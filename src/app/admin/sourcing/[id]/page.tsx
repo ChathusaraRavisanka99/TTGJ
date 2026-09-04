@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { QuoteStatusForm } from "@/components/admin/QuoteStatusForm";
 import { BackLink } from "@/components/admin/BackLink";
+import { formatPrice } from "@/lib/utils";
 
 export default async function AdminSourcingDetailPage({ params }: PageProps<"/admin/sourcing/[id]">) {
   const { id } = await params;
@@ -30,6 +31,14 @@ export default async function AdminSourcingDetailPage({ params }: PageProps<"/ad
               {request.approxColor && <span>Colour: {request.approxColor}</span>}
             </div>
             <p className="mt-2 text-xs text-charcoal/45">Submitted {request.createdAt.toLocaleString()}</p>
+            {request.quotedPrice != null && (
+              <div className="mt-3 flex items-baseline justify-between border-t border-border-subtle pt-3">
+                <p className="font-serif text-lg text-charcoal">{formatPrice(request.quotedPrice)}</p>
+                {request.quoteValidUntil && (
+                  <p className="text-xs text-charcoal/45">Valid until {request.quoteValidUntil.toLocaleDateString()}</p>
+                )}
+              </div>
+            )}
           </div>
 
           {request.notes && (
@@ -56,7 +65,14 @@ export default async function AdminSourcingDetailPage({ params }: PageProps<"/ad
             </Link>
           </div>
 
-          <QuoteStatusForm id={request.id} kind="sourcing" currentStatus={request.status} currentAdminNotes={request.adminNotes ?? ""} />
+          <QuoteStatusForm
+            id={request.id}
+            kind="sourcing"
+            currentStatus={request.status}
+            currentAdminNotes={request.adminNotes ?? ""}
+            currentQuotedPrice={request.quotedPrice}
+            currentQuoteValidUntil={request.quoteValidUntil?.toISOString() ?? null}
+          />
         </div>
       </div>
     </div>

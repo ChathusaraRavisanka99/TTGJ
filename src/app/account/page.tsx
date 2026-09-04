@@ -11,9 +11,10 @@ export default async function AccountPage() {
   const session = await auth();
   if (!session?.user) return null; // middleware guards this route
 
-  const [quoteCount, sourcingCount] = await Promise.all([
+  const [quoteCount, sourcingCount, openCartItemCount] = await Promise.all([
     prisma.quoteRequest.count({ where: { userId: session.user.id } }),
     prisma.sourcingRequest.count({ where: { userId: session.user.id } }),
+    prisma.cartItem.count({ where: { cart: { userId: session.user.id, status: "OPEN" } } }),
   ]);
 
   return (
@@ -22,7 +23,7 @@ export default async function AccountPage() {
       <h1 className="mt-2 font-serif text-4xl text-charcoal">Welcome back, {session.user.name?.split(" ")[0] ?? "there"}</h1>
       <p className="mt-2 text-sm text-charcoal/60">{session.user.email}</p>
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2">
+      <div className="mt-10 grid gap-4 sm:grid-cols-3">
         <Link href="/account/quotes" className="rounded-xl border border-border-subtle bg-surface p-6 hover:border-gold">
           <p className="font-serif text-2xl text-charcoal">{quoteCount}</p>
           <p className="mt-1 text-sm text-charcoal/60">Quote requests</p>
@@ -30,6 +31,10 @@ export default async function AccountPage() {
         <Link href="/account/sourcing" className="rounded-xl border border-border-subtle bg-surface p-6 hover:border-gold">
           <p className="font-serif text-2xl text-charcoal">{sourcingCount}</p>
           <p className="mt-1 text-sm text-charcoal/60">Sourcing requests</p>
+        </Link>
+        <Link href="/account/cart" className="rounded-xl border border-border-subtle bg-surface p-6 hover:border-gold">
+          <p className="font-serif text-2xl text-charcoal">{openCartItemCount}</p>
+          <p className="mt-1 text-sm text-charcoal/60">In your cart</p>
         </Link>
       </div>
 

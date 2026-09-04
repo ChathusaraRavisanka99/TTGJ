@@ -49,9 +49,7 @@ export default async function PrintableQuotePage({ params }: PageProps<"/admin/q
       customerName={quote.user.name ?? quote.user.email}
       customerEmail={quote.user.email}
       customerPhone={quote.user.phone}
-      itemLabel={itemLabel}
-      itemSpecLine={itemSpecLine}
-      quantity={quote.quantity}
+      items={[{ label: itemLabel, specLine: itemSpecLine, quantity: quote.quantity, amount: quote.quotedPrice }]}
       amount={quote.quotedPrice}
       footerNote="This is a quotation, not a binding invoice. Pricing is subject to confirmation of stone/piece availability at the time of acceptance."
       backHref={`/admin/quotes/${quote.id}`}

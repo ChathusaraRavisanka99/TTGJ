@@ -50,9 +50,7 @@ export default async function InvoicePage({ params }: PageProps<"/admin/invoices
       customerName={invoice.user.name ?? invoice.user.email}
       customerEmail={invoice.user.email}
       customerPhone={invoice.user.phone}
-      itemLabel={itemLabel}
-      itemSpecLine={itemSpecLine}
-      quantity={quote.quantity}
+      items={[{ label: itemLabel, specLine: itemSpecLine, quantity: quote.quantity, amount: invoice.amount }]}
       amount={invoice.amount}
       footerNote="Thank you for your business. This invoice reflects a price agreed directly with Ratnavue's gemological team."
       backHref={`/admin/quotes/${quote.id}`}

@@ -16,6 +16,13 @@ const dateFormat: Intl.DateTimeFormatOptions = { year: "numeric", month: "long",
  * by default unless told otherwise, which would otherwise flatten this
  * back to plain grayscale exactly when it matters most.
  */
+export interface PrintableLineItem {
+  label: string;
+  specLine?: string | null;
+  quantity: number;
+  amount: number;
+}
+
 export function PrintableDocument({
   kind,
   reference,
@@ -24,9 +31,7 @@ export function PrintableDocument({
   customerName,
   customerEmail,
   customerPhone,
-  itemLabel,
-  itemSpecLine,
-  quantity,
+  items,
   amount,
   footerNote,
   backHref,
@@ -39,9 +44,13 @@ export function PrintableDocument({
   customerName: string;
   customerEmail: string;
   customerPhone?: string | null;
-  itemLabel: string;
-  itemSpecLine?: string | null;
-  quantity: number;
+  /** One row per accepted quote/sourcing request — a plain per-quote Quote
+   * or Invoice always has exactly one; a cart invoice can have several,
+   * which is the whole reason this is an array rather than flat props. */
+  items: PrintableLineItem[];
+  /** The document's total — always the sum of items' own amounts, but
+   * passed explicitly rather than derived so callers don't each redo that
+   * arithmetic (and floating-point summation) themselves. */
   amount: number;
   footerNote?: string;
   backHref: string;
@@ -97,14 +106,16 @@ export function PrintableDocument({
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-border-subtle">
-                <td className="py-5 align-top text-charcoal">
-                  {itemLabel}
-                  {itemSpecLine && <span className="mt-1 block text-xs text-charcoal/55">{itemSpecLine}</span>}
-                </td>
-                <td className="py-5 text-right align-top text-charcoal/70">{quantity}</td>
-                <td className="py-5 text-right align-top text-charcoal">{formatPrice(amount)}</td>
-              </tr>
+              {items.map((item, i) => (
+                <tr key={i} className="border-b border-border-subtle">
+                  <td className="py-5 align-top text-charcoal">
+                    {item.label}
+                    {item.specLine && <span className="mt-1 block text-xs text-charcoal/55">{item.specLine}</span>}
+                  </td>
+                  <td className="py-5 text-right align-top text-charcoal/70">{item.quantity}</td>
+                  <td className="py-5 text-right align-top text-charcoal">{formatPrice(item.amount)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
 

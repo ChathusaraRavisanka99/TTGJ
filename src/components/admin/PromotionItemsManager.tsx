@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addPromotionItem, updatePromotionItemPrice, removePromotionItem } from "@/actions/promotion-items";
-import { Input, Select, Label, FieldError } from "@/components/ui/Field";
+import { Input, Select, Label, FieldError, FieldHint } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
 
 interface Option {
   id: string;
   name: string;
+  specs: string;
+  price: number | null;
+  showPrice: boolean;
 }
 
 interface PromotedItem {
@@ -17,6 +20,26 @@ interface PromotedItem {
   label: string;
   promoPrice: number;
   regularPrice: number | null;
+}
+
+// The line an admin sees for whichever item is currently selected in the
+// picker, before they've typed a promotional price — specs and the
+// current price, exactly what they'd otherwise have to open the item's
+// own edit page to check.
+function CurrentPriceAndSpecs({ item }: { item: Option }) {
+  return (
+    <div className="rounded-lg border border-border-subtle bg-ivory-soft px-4 py-3 text-sm">
+      <p className="text-charcoal">{item.specs}</p>
+      <p className="mt-0.5 text-charcoal/60">
+        Current price:{" "}
+        {item.price == null
+          ? "not set"
+          : item.showPrice
+            ? <span className="text-charcoal">{formatPrice(item.price)} (shown publicly)</span>
+            : <span>{formatPrice(item.price)} (internal reference only — not shown publicly)</span>}
+      </p>
+    </div>
+  );
 }
 
 export function PromotionItemsManager({ gemstones, jewelry, items }: { gemstones: Option[]; jewelry: Option[]; items: PromotedItem[] }) {
@@ -27,13 +50,19 @@ export function PromotionItemsManager({ gemstones, jewelry, items }: { gemstones
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const options = itemType === "gemstone" ? gemstones : jewelry;
+  const selected = useMemo(() => options.find((o) => o.id === itemId) ?? null, [options, itemId]);
+  const promoPriceNumber = Number(promoPrice);
+  const showsHigherOrEqualWarning =
+    selected?.price != null && promoPrice !== "" && Number.isFinite(promoPriceNumber) && promoPriceNumber >= selected.price;
+
   function handleAdd() {
     setError(null);
     startTransition(async () => {
       const result = await addPromotionItem({
         gemstoneId: itemType === "gemstone" ? itemId || null : null,
         jewelryId: itemType === "jewelry" ? itemId || null : null,
-        promoPrice: Number(promoPrice),
+        promoPrice: promoPriceNumber,
       });
       if (!result.ok) {
         setError(result.error);
@@ -67,11 +96,23 @@ export function PromotionItemsManager({ gemstones, jewelry, items }: { gemstones
           <Label htmlFor="promoItem">Item</Label>
           <Select id="promoItem" value={itemId} onChange={(e) => setItemId(e.target.value)} className="w-64">
             <option value="">Select {itemType === "gemstone" ? "a gemstone" : "a jewelry piece"}...</option>
-            {(itemType === "gemstone" ? gemstones : jewelry).map((o) => (
+            {options.map((o) => (
               <option key={o.id} value={o.id}>{o.name}</option>
             ))}
           </Select>
         </div>
+      </div>
+
+      {/* Specs + current price for whatever's picked above — shown before
+          the promotional price field so there's something to price
+          against, rather than typing a number blind. */}
+      {selected && (
+        <div className="mt-3 max-w-md">
+          <CurrentPriceAndSpecs item={selected} />
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-end gap-3">
         <div>
           <Label htmlFor="promoPrice">Promotional Price (USD)</Label>
           <Input
@@ -89,6 +130,11 @@ export function PromotionItemsManager({ gemstones, jewelry, items }: { gemstones
           {pending ? "Adding..." : "Add to Collection"}
         </Button>
       </div>
+      {showsHigherOrEqualWarning && (
+        <FieldHint>
+          That&apos;s not below the current price ({formatPrice(selected!.price!)}) — double-check before adding.
+        </FieldHint>
+      )}
       <FieldError>{error ?? undefined}</FieldError>
 
       <div className="mt-4 divide-y divide-border-subtle rounded-xl border border-border-subtle bg-surface">

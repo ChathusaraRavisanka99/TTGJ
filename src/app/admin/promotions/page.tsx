@@ -3,19 +3,61 @@ import { prisma } from "@/lib/prisma";
 import { getSeasonalContent } from "@/lib/page-content";
 import { getPageVisibility } from "@/lib/page-visibility";
 import { getPromotionItems, promotionItemLabel } from "@/lib/promotion-items";
+import { METAL_TYPES } from "@/lib/gem-constants";
 import { SeasonalContentForm } from "@/components/admin/SeasonalContentForm";
 import { PromotionItemsManager } from "@/components/admin/PromotionItemsManager";
 import { PageVisibilityControl } from "@/components/admin/PageVisibilityControl";
 import { BackLink } from "@/components/admin/BackLink";
 
+function pieceTypeLabel(pieceType: string): string {
+  return pieceType.charAt(0) + pieceType.slice(1).toLowerCase();
+}
+
+function metalTypeLabel(metalType: string): string {
+  return METAL_TYPES.find((m) => m.value === metalType)?.label ?? metalType;
+}
+
 export default async function AdminPromotionsPage() {
-  const [content, visibility, gemstones, jewelry, promoItems] = await Promise.all([
+  const [content, visibility, gemstoneRows, jewelryRows, promoItems] = await Promise.all([
     getSeasonalContent(),
     getPageVisibility("seasonal"),
-    prisma.gemstone.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
-    prisma.jewelryPiece.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.gemstone.findMany({
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        showPrice: true,
+        caratWeight: true,
+        mineral: { select: { name: true } },
+        cut: { select: { name: true } },
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.jewelryPiece.findMany({
+      select: { id: true, name: true, price: true, showPrice: true, pieceType: true, metalType: true, metalPurity: true },
+      orderBy: { name: "asc" },
+    }),
     getPromotionItems(),
   ]);
+
+  // Current price + a one-line spec summary for each item, so an admin
+  // picking one to promote can see what it already costs (and what it
+  // is) right there in the picker, before typing in a promotional price
+  // — rather than having to open the item's own edit page first to check.
+  const gemstones = gemstoneRows.map((g) => ({
+    id: g.id,
+    name: g.name,
+    price: g.price,
+    showPrice: g.showPrice,
+    specs: `${g.caratWeight}ct ${g.mineral.name}, ${g.cut.name}`,
+  }));
+  const jewelry = jewelryRows.map((j) => ({
+    id: j.id,
+    name: j.name,
+    price: j.price,
+    showPrice: j.showPrice,
+    specs: `${pieceTypeLabel(j.pieceType)}, ${metalTypeLabel(j.metalType)}${j.metalPurity ? ` ${j.metalPurity}` : ""}`,
+  }));
 
   const items = promoItems.map((item) => {
     const product = item.gemstone ?? item.jewelry;

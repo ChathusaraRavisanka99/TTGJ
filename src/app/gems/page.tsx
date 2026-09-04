@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getGemstones, getMasterData } from "@/lib/catalog";
-import { GemCard } from "@/components/catalog/GemCard";
+import { getActivePromotionMaps } from "@/lib/promotion-items";
 import { GemFilterBar } from "@/components/catalog/GemFilterBar";
-import { RevealGroup, RevealItem } from "@/components/layout/Reveal";
+import { GemResults } from "@/components/catalog/GemResults";
 import { Pagination } from "@/components/ui/Pagination";
 
 export const metadata: Metadata = { title: "Shop Gemstones" };
@@ -21,11 +21,19 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
     minCarat: get("minCarat") ? Number(get("minCarat")) : undefined,
     maxCarat: get("maxCarat") ? Number(get("maxCarat")) : undefined,
     inStockOnly: get("inStockOnly") === "1",
+    promotionalOnly: get("promotional") === "1",
     sort: (get("sort") as "newest" | "carat" | "az" | undefined) ?? "newest",
     page: get("page") ? Number(get("page")) : undefined,
   };
 
-  const [{ items: gems, page, totalPages }, masterData] = await Promise.all([getGemstones(filters), getMasterData()]);
+  const [{ items: gems, page, totalPages }, masterData, promotions] = await Promise.all([
+    getGemstones(filters),
+    getMasterData(),
+    // Fetched regardless of the filter above — every card needs to know
+    // whether *it* is on promotion to show its badge/discounted price,
+    // not just the subset a customer happens to have filtered down to.
+    getActivePromotionMaps(),
+  ]);
 
   return (
     <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
@@ -52,30 +60,7 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
       {gems.length === 0 ? (
         <p className="py-20 text-center text-charcoal/50">No gemstones match your filters yet.</p>
       ) : (
-        <RevealGroup className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {gems.map((gem) => (
-            <RevealItem key={gem.id}>
-              <GemCard
-                slug={gem.slug}
-                name={gem.name}
-                mineralName={gem.mineral.name}
-                cutSlug={gem.cut.slug}
-                cutName={gem.cut.name}
-                caratWeight={gem.caratWeight}
-                colorHue={gem.colorHue}
-                colorLightness={gem.colorLightness}
-                claritySlug={gem.clarityGrade.slug}
-                clarityName={gem.clarityGrade.name}
-                treatmentName={gem.treatment.name}
-                isCeylon={gem.origin.isCeylon}
-                stockStatus={gem.stockStatus}
-                primaryImageUrl={gem.media.find((m) => m.isPrimary)?.url ?? gem.media[0]?.url}
-                price={gem.price}
-                showPrice={gem.showPrice}
-              />
-            </RevealItem>
-          ))}
-        </RevealGroup>
+        <GemResults gems={gems.map((gem) => ({ ...gem, promoPrice: promotions.gemstonePrices.get(gem.id) ?? null }))} />
       )}
 
       <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getJewelry } from "@/lib/catalog";
-import { JewelryCard } from "@/components/catalog/JewelryCard";
+import { getActivePromotionMaps } from "@/lib/promotion-items";
 import { JewelryFilterBar } from "@/components/catalog/JewelryFilterBar";
-import { RevealGroup, RevealItem } from "@/components/layout/Reveal";
+import { JewelryResults } from "@/components/catalog/JewelryResults";
 import { Pagination } from "@/components/ui/Pagination";
 
 export const metadata: Metadata = { title: "Shop Jewelry" };
@@ -16,11 +16,18 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
     pieceType: get("pieceType"),
     metalType: get("metalType"),
     inStockOnly: get("inStockOnly") === "1",
+    promotionalOnly: get("promotional") === "1",
     sort: (get("sort") as "newest" | "az" | undefined) ?? "newest",
     page: get("page") ? Number(get("page")) : undefined,
   };
 
-  const { items: pieces, page, totalPages } = await getJewelry(filters);
+  const [{ items: pieces, page, totalPages }, promotions] = await Promise.all([
+    getJewelry(filters),
+    // Fetched regardless of the filter above — every card needs to know
+    // whether *it* is on promotion to show its badge/discounted price,
+    // not just the subset a customer happens to have filtered down to.
+    getActivePromotionMaps(),
+  ]);
 
   return (
     <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
@@ -40,22 +47,7 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
       {pieces.length === 0 ? (
         <p className="py-20 text-center text-charcoal/50">No jewelry pieces match your filters yet.</p>
       ) : (
-        <RevealGroup className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {pieces.map((piece) => (
-            <RevealItem key={piece.id}>
-              <JewelryCard
-                slug={piece.slug}
-                name={piece.name}
-                pieceType={piece.pieceType}
-                metalType={piece.metalType}
-                stockStatus={piece.stockStatus}
-                primaryImageUrl={piece.media.find((m) => m.isPrimary)?.url ?? piece.media[0]?.url}
-                price={piece.price}
-                showPrice={piece.showPrice}
-              />
-            </RevealItem>
-          ))}
-        </RevealGroup>
+        <JewelryResults pieces={pieces.map((piece) => ({ ...piece, promoPrice: promotions.jewelryPrices.get(piece.id) ?? null }))} />
       )}
 
       <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />

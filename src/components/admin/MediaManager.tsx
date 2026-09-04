@@ -52,7 +52,7 @@ export function MediaManager({ media, gemstoneId, jewelryId }: { media: MediaIte
                 <Video size={24} className="text-charcoal/50" />
               </div>
             ) : (
-              <Image src={item.url} alt={item.altText ?? ""} fill className="object-cover" />
+              <Image src={item.url} alt={item.altText ?? ""} fill sizes="(min-width: 640px) 25vw, 33vw" className="object-cover" />
             )}
             <div className="absolute inset-x-0 bottom-0 flex justify-between bg-black/50 p-1">
               <button

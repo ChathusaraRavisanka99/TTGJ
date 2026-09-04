@@ -66,7 +66,7 @@ function SlideRow({ slide, index }: { slide: HeroSlide; index: number }) {
           what a phone's h-dvh hero crop looks like (see HeroSlide.focusX),
           which a landscape-shaped preview box wouldn't demonstrate at all. */}
       <div className="relative aspect-[9/16] w-24 shrink-0 overflow-hidden rounded-md bg-ivory-soft sm:w-28">
-        <Image src={slide.src} alt="" fill className="object-cover" style={{ objectPosition: `${focusX}% 50%` }} />
+        <Image src={slide.src} alt="" fill sizes="112px" className="object-cover" style={{ objectPosition: `${focusX}% 50%` }} />
       </div>
       <div className="flex-1">
         <Label htmlFor={`slide-alt-${index}`}>Alt text</Label>

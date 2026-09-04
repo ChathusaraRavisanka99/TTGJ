@@ -28,6 +28,7 @@ export default async function SourcingPage() {
           alt="Trays of loose faceted gemstones at a gem trading table in Sri Lanka"
           fill
           priority
+          sizes="(min-width: 1024px) 50vw, 100vw"
           className="object-cover"
         />
         <div

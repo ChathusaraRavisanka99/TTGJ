@@ -27,11 +27,15 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const session = await auth();
+  // Computed once here (a Server Component, so this only ever runs on the
+  // server) and threaded down through SiteChrome to Footer as a plain
+  // prop — see Footer.tsx for why Footer can't just compute this itself.
+  const year = new Date().getFullYear();
 
   return (
     <html lang="en" className={`${cormorant.variable} ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-ivory text-charcoal">
-        <SiteChrome user={session?.user ?? null}>
+        <SiteChrome user={session?.user ?? null} year={year}>
           <MainWrapper>{children}</MainWrapper>
         </SiteChrome>
       </body>

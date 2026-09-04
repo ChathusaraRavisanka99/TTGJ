@@ -30,7 +30,14 @@ export function MediaGallery({ media, fallbackLabel }: { media: MediaItem[]; fal
         {active.type === "VIDEO" ? (
           <video src={active.url} controls className="h-full w-full object-cover" />
         ) : (
-          <Image src={active.url} alt={active.altText ?? fallbackLabel} fill className="object-cover" priority />
+          <Image
+            src={active.url}
+            alt={active.altText ?? fallbackLabel}
+            fill
+            className="object-cover"
+            priority
+            sizes="(min-width: 1024px) 50vw, 100vw"
+          />
         )}
       </div>
       {media.length > 1 && (
@@ -47,7 +54,7 @@ export function MediaGallery({ media, fallbackLabel }: { media: MediaItem[]; fal
               {item.type === "VIDEO" ? (
                 <video src={item.url} className="h-full w-full object-cover" />
               ) : (
-                <Image src={item.url} alt="" fill className="object-cover" />
+                <Image src={item.url} alt="" fill className="object-cover" sizes="64px" />
               )}
             </button>
           ))}

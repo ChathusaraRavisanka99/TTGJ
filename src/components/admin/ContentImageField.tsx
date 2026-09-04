@@ -39,7 +39,7 @@ export function ContentImageField({
     <div>
       <Label>{label}</Label>
       <div className="relative aspect-video w-full max-w-sm overflow-hidden rounded-lg border border-border-subtle bg-ivory-soft">
-        <Image src={currentSrc} alt="" fill className="object-cover" />
+        <Image src={currentSrc} alt="" fill sizes="384px" className="object-cover" />
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <input ref={fileInput} type="file" accept="image/*" className="text-sm" />

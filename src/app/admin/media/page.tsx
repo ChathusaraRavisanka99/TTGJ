@@ -31,7 +31,7 @@ export default async function AdminMediaPage({ searchParams }: PageProps<"/admin
       </p>
 
       <div className="mt-6 grid grid-cols-3 gap-4 sm:grid-cols-4 lg:grid-cols-6">
-        {media.map((item) => {
+        {media.map((item, i) => {
           const product = item.gemstone ?? item.jewelry;
           const href = item.gemstone ? `/admin/gems/${item.gemstone.id}` : item.jewelry ? `/admin/jewelry/${item.jewelry.id}` : "#";
           return (
@@ -42,7 +42,18 @@ export default async function AdminMediaPage({ searchParams }: PageProps<"/admin
                     <Video size={24} className="text-charcoal/40" />
                   </div>
                 ) : (
-                  <Image src={item.url} alt={item.altText ?? ""} fill className="object-cover transition-transform group-hover:scale-105" />
+                  <Image
+                    src={item.url}
+                    alt={item.altText ?? ""}
+                    fill
+                    sizes="(min-width: 1024px) 17vw, (min-width: 640px) 25vw, 33vw"
+                    // First two rows (this grid's cells are small enough
+                    // that more than one row fits above the fold) load
+                    // eagerly — Next was flagging one of these as the
+                    // page's Largest Contentful Paint element.
+                    priority={i < 12}
+                    className="object-cover transition-transform group-hover:scale-105"
+                  />
                 )}
               </div>
               <p className="mt-1.5 truncate text-xs text-charcoal/60">{product?.name ?? "Unlinked"}</p>

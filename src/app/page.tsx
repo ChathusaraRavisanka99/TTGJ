@@ -260,7 +260,7 @@ export default async function HomePage() {
           recognize as a stop. */}
       <section id="heritage-sourcing" className="relative snap-start lg:grid lg:grid-cols-2">
         <Reveal className="relative h-dvh min-h-[520px] w-full overflow-hidden bg-charcoal lg:max-h-[1100px]">
-          <Image src={content.heritageImage} alt={content.heritageHeading} fill className="object-cover" />
+          <Image src={content.heritageImage} alt={content.heritageHeading} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
           <div
             className="pointer-events-none absolute inset-0"
             style={{ background: "linear-gradient(0deg, rgba(20,17,14,0.92) 10%, rgba(20,17,14,0.15) 65%, transparent 100%)" }}
@@ -279,7 +279,7 @@ export default async function HomePage() {
         </Reveal>
 
         <Reveal delay={0.1} className="relative h-dvh min-h-[520px] w-full overflow-hidden bg-charcoal lg:max-h-[1100px]">
-          <Image src={content.sourcingImage} alt={content.sourcingHeading} fill className="object-cover" />
+          <Image src={content.sourcingImage} alt={content.sourcingHeading} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
           <div
             className="pointer-events-none absolute inset-0"
             style={{ background: "linear-gradient(0deg, rgba(20,17,14,0.92) 10%, rgba(20,17,14,0.15) 65%, transparent 100%)" }}

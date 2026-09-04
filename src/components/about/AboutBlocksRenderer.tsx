@@ -44,7 +44,7 @@ const SPAN_CLASSES: Record<ColumnSpan, string> = {
 function HeroSection({ block, animate }: { block: Extract<AboutBlock, { type: "hero" }>; animate: boolean }) {
   return (
     <section className="relative flex h-dvh min-h-[520px] w-full items-center overflow-hidden bg-charcoal lg:max-h-[1100px]">
-      {block.image && <Image src={block.image} alt={block.heading} fill priority className="object-cover" />}
+      {block.image && <Image src={block.image} alt={block.heading} fill priority sizes="100vw" className="object-cover" />}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -87,7 +87,7 @@ function ImageCaptionSection({ block, animate }: { block: Extract<AboutBlock, { 
     <section className="mx-auto max-w-[120rem] px-5 sm:px-8 lg:px-12 xl:px-16">
       <Wrap animate={animate} className="grid gap-8 lg:grid-cols-[2fr_1fr] lg:items-end lg:gap-14">
         <div className="relative aspect-[16/10] overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10">
-          {block.image && <Image src={block.image} alt={block.kicker} fill className="object-cover" />}
+          {block.image && <Image src={block.image} alt={block.kicker} fill sizes="(min-width: 1024px) 66vw, 100vw" className="object-cover" />}
         </div>
         <div className="lg:pb-4">
           <p className="text-xs uppercase tracking-[0.25em] text-gold">{block.kicker}</p>
@@ -103,7 +103,7 @@ function ImageBlockSection({ block, animate }: { block: Extract<AboutBlock, { ty
     <section className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
       <Wrap animate={animate}>
         <div className="relative aspect-[21/9] w-full overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10">
-          {block.image && <Image src={block.image} alt={block.caption || "About Ratnavue"} fill className="object-cover" />}
+          {block.image && <Image src={block.image} alt={block.caption || "About Ratnavue"} fill sizes="100vw" className="object-cover" />}
         </div>
         {block.caption && <p className="mt-4 text-center text-sm text-charcoal/60">{block.caption}</p>}
       </Wrap>
@@ -200,7 +200,7 @@ function FullSection({ block, animate }: { block: AboutBlock; animate: boolean }
 function BoxedHero({ block }: { block: Extract<AboutBlock, { type: "hero" }> }) {
   return (
     <div className="relative flex aspect-[4/3] w-full items-end overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10">
-      {block.image && <Image src={block.image} alt={block.heading} fill className="object-cover" />}
+      {block.image && <Image src={block.image} alt={block.heading} fill sizes="100vw" className="object-cover" />}
       <div
         className="pointer-events-none absolute inset-0"
         style={{ background: "linear-gradient(180deg, transparent 40%, rgba(33,29,26,0.85) 100%)" }}
@@ -229,7 +229,7 @@ function BoxedImageCaption({ block }: { block: Extract<AboutBlock, { type: "imag
   return (
     <div>
       <div className="relative aspect-[16/10] overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10">
-        {block.image && <Image src={block.image} alt={block.kicker} fill className="object-cover" />}
+        {block.image && <Image src={block.image} alt={block.kicker} fill sizes="100vw" className="object-cover" />}
       </div>
       <p className="mt-4 text-xs uppercase tracking-[0.25em] text-gold">{block.kicker}</p>
       <p className="mt-2 leading-relaxed text-charcoal/70">{block.body}</p>

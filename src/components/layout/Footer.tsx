@@ -1,6 +1,15 @@
 import Link from "next/link";
 
-export function Footer() {
+// `year` comes in as a prop computed once on the server (see RootLayout),
+// rather than calling `new Date().getFullYear()` here — Footer has no "use
+// client" of its own, but it's imported and rendered directly by
+// SiteChrome, which does, so its code ships to and re-runs on the client
+// during hydration. Computing the year there risked React's hydration
+// diff genuinely disagreeing with the server's render (different
+// timezones, or a request landing right on a New Year's boundary) and
+// throwing the "server/client text didn't match" warning on this exact
+// line. A plain number prop can't disagree with itself.
+export function Footer({ year }: { year: number }) {
   return (
     <footer className="border-t border-border-subtle bg-ivory-soft">
       <div className="mx-auto max-w-[120rem] px-5 py-14 sm:px-8 lg:px-12 xl:px-16">
@@ -35,7 +44,7 @@ export function Footer() {
             </p>
           </div>
         </div>
-        <p className="mt-12 text-xs text-charcoal/40">© {new Date().getFullYear()} Ratnavue. All rights reserved.</p>
+        <p className="mt-12 text-xs text-charcoal/40">© {year} Ratnavue. All rights reserved.</p>
       </div>
     </footer>
   );

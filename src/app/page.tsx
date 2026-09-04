@@ -103,7 +103,8 @@ export default async function HomePage() {
           }}
         />
 
-        {/* Mobile sizing (pt-10/text-4xl/mt-4/mt-6, all overridden back to
+        {/* Mobile sizing (pt-10/text-4xl/mt-4/mt-6, and the two CTA
+            buttons' own shrunk padding/text below, all overridden back to
             the original values at sm: and up) isn't just cosmetic — a real
             phone's dvh on first load is smaller than its "full" size (the
             browser's address bar is visible until the user scrolls), so
@@ -112,8 +113,13 @@ export default async function HomePage() {
             forcing it past the viewport (see the sm:min-h-[720px] note
             above). Measured against a 600px dvh — a realistic small-state
             height, not just the 667px "full" one — with real headroom to
-            spare, not just barely fitting. */}
-        <div className="relative mx-auto w-full max-w-[120rem] px-5 pt-20 sm:px-8 sm:pt-16 lg:px-12 xl:px-16">
+            spare, not just barely fitting. The buttons specifically: at
+            their default `lg` size, "Design Your Gem" and "Shop
+            Gemstones" together don't fit a ~375px phone's width side by
+            side, so flex-wrap drops the second one to its own line —
+            harmless on its own, but that's ~75px of extra height the
+            short-viewport math above doesn't have to spare. */}
+        <div className="relative mx-auto w-full max-w-[120rem] px-5 pt-10 sm:px-8 sm:pt-16 lg:px-12 xl:px-16">
           <div className="max-w-xl">
             <p className="text-xs uppercase tracking-[0.35em] text-gold-soft">{content.heroKicker}</p>
             <h1 className="mt-4 font-serif text-4xl leading-[1.05] text-ivory sm:mt-5 sm:text-6xl md:text-7xl lg:text-[5.5rem]">
@@ -124,9 +130,13 @@ export default async function HomePage() {
               <span className="text-gold-soft">{content.heroHeadingHighlight}</span>
             </h1>
             <p className="mt-4 max-w-md text-ivory/60 sm:mt-7">{content.heroSubtext}</p>
-            <div className="mt-6 flex flex-wrap gap-4 sm:mt-10">
-              <LinkButton href="/configurator" variant="gold" size="lg">Design Your Gem</LinkButton>
-              <LinkButton href="/gems" variant="outline-light" size="lg">Shop Gemstones</LinkButton>
+            <div className="mt-6 flex flex-wrap gap-3 sm:mt-10 sm:gap-4">
+              <LinkButton href="/configurator" variant="gold" size="lg" className="px-5 py-2.5 text-sm sm:px-8 sm:py-4 sm:text-base">
+                Design Your Gem
+              </LinkButton>
+              <LinkButton href="/gems" variant="outline-light" size="lg" className="px-5 py-2.5 text-sm sm:px-8 sm:py-4 sm:text-base">
+                Shop Gemstones
+              </LinkButton>
             </div>
           </div>
         </div>

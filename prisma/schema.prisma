@@ -37,6 +37,7 @@ model User {
   invoices        Invoice[]
   carts           Cart[]
   cartInvoices    CartInvoice[]
+  auctionBids     AuctionBid[]
 }
 
 model Account {
@@ -230,6 +231,7 @@ model Gemstone {
 
   quoteRequests       QuoteRequest[]
   jewelryGemstoneLink JewelryGemstoneLink[]
+  auctions            Auction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -285,6 +287,7 @@ model JewelryPiece {
   gemstones JewelryGemstoneLink[]
 
   quoteRequests QuoteRequest[]
+  auctions      Auction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -527,14 +530,17 @@ model CartItem {
   cartId String
   cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
-  // Exactly one of these two is set — a cart item always originates from
-  // an accepted QuoteRequest or an accepted SourcingRequest, never both
-  // and never neither.
+  // Exactly one of these three is set — a cart item always originates
+  // from an accepted QuoteRequest, an accepted SourcingRequest, or an
+  // admin-confirmed Auction win, never more than one and never none.
   quoteRequestId String?       @unique
   quoteRequest   QuoteRequest? @relation(fields: [quoteRequestId], references: [id])
 
   sourcingRequestId String?          @unique
   sourcingRequest   SourcingRequest? @relation(fields: [sourcingRequestId], references: [id])
+
+  auctionId String?  @unique
+  auction   Auction? @relation(fields: [auctionId], references: [id])
 
   // Snapshotted at the moment the item was added — same "historical
   // record, doesn't silently change later" reasoning Invoice.amount
@@ -618,4 +624,81 @@ model PageVisibility {
   state PageVisibilityState @default(HIDDEN)
 
   updatedAt DateTime @updatedAt
+}
+
+// ---------- Auctions ----------
+//
+// Highest bid wins, gated by a hidden reserve price — an auction that
+// closes without a bid meeting the reserve has no winner. Bidding is
+// provisional: the customer with the highest bid at close doesn't
+// automatically get anything — an admin reviews and confirms the winner
+// (see confirmAuctionWinner in actions/auctions.ts), the same "admin has
+// the final say" shape as quote acceptance. Confirming a winner drops a
+// CartItem into their open cart — from there the existing cart/wire-
+// transfer/invoice pipeline (lib/cart.ts, lib/invoicing.ts) handles the
+// rest untouched; an auction win is just a third way a CartItem gets
+// created, alongside an accepted QuoteRequest or SourcingRequest.
+//
+// Timing is computed, not stored or cron'd — see lib/auctions.ts's
+// getAuctionState. `status` here only tracks admin-driven transitions
+// (Draft -> Active, or Cancelled/Won); whether an Active auction is
+// currently open for bids, closed and awaiting confirmation, or closed
+// with no winner is derived from startsAt/endsAt/reservePrice/bids at
+// read time, same "don't need a job just to flip a flag on a schedule"
+// reasoning PageVisibility and quoteValidUntil already follow.
+enum AuctionStatus {
+  DRAFT
+  ACTIVE
+  CANCELLED
+  WON
+}
+
+model Auction {
+  id String @id @default(cuid())
+
+  // Exactly one of these two — same convention as CartItem's
+  // quoteRequestId/sourcingRequestId pair.
+  gemstoneId String?
+  gemstone   Gemstone?     @relation(fields: [gemstoneId], references: [id])
+  jewelryId  String?
+  jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id])
+
+  startingPrice Float
+  // Never rendered on the public auction page — only the admin sees it.
+  // A bid at or above this is what turns "highest bid at close" into an
+  // eligible winner; below it, the auction closes with no winner.
+  reservePrice Float
+  // Minimum amount a new bid must clear the current highest by (or clear
+  // startingPrice by, for the first bid).
+  bidIncrement Float @default(50)
+
+  startsAt DateTime
+  endsAt   DateTime
+
+  status AuctionStatus @default(DRAFT)
+
+  bids     AuctionBid[]
+  cartItem CartItem?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gemstoneId])
+  @@index([jewelryId])
+  @@index([status])
+}
+
+model AuctionBid {
+  id        String  @id @default(cuid())
+  auctionId String
+  auction   Auction @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+
+  amount Float
+
+  createdAt DateTime @default(now())
+
+  @@index([auctionId])
+  @@index([userId])
 }

@@ -16,6 +16,7 @@ const BASE_NAV_LINKS = [
 ];
 
 const PROMOTIONS_LINK = { href: "/promotions", label: "Promotions" };
+const AUCTION_LINK = { href: "/auction", label: "Auctions" };
 
 // Solidify almost as soon as the page moves — the hero's own headline sits
 // well within the first ~150px, so a threshold based on viewport height
@@ -26,18 +27,25 @@ const SOLID_THRESHOLD_PX = 24;
 export function Navbar({
   user,
   showPromotions,
+  showAuction,
 }: {
   user: { name?: string | null; email?: string | null } | null;
   /** True when the seasonal promotions page is Coming Soon or Live (see
    * PageVisibility, key "seasonal") — Hidden means no link at all,
    * matching the page itself not existing publicly. */
   showPromotions: boolean;
+  /** Same idea as showPromotions, for the /auction page (PageVisibility
+   * key "auction"). */
+  showAuction: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const navLinks = showPromotions
-    ? [...BASE_NAV_LINKS.slice(0, 4), PROMOTIONS_LINK, ...BASE_NAV_LINKS.slice(4)]
-    : BASE_NAV_LINKS;
+  const navLinks = [
+    ...BASE_NAV_LINKS.slice(0, 4),
+    ...(showAuction ? [AUCTION_LINK] : []),
+    ...(showPromotions ? [PROMOTIONS_LINK] : []),
+    ...BASE_NAV_LINKS.slice(4),
+  ];
   const isHome = pathname === "/";
   // `pathname` is stable across the server/client render (Next.js resolves
   // it before hydration), so this initial value never mismatches — only the

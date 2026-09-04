@@ -20,6 +20,7 @@ export function SiteChrome({
   user,
   year,
   showPromotions,
+  showAuction,
   children,
 }: {
   user: SiteChromeUser | null;
@@ -32,6 +33,8 @@ export function SiteChrome({
    * than Navbar querying it itself, same "compute where it's cheap,
    * thread down as a plain prop" reasoning as `year`. */
   showPromotions: boolean;
+  /** Same idea as showPromotions, for the /auction page's visibility. */
+  showAuction: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -42,7 +45,7 @@ export function SiteChrome({
   return (
     <>
       <IntroLoader />
-      <Navbar user={user} showPromotions={showPromotions} />
+      <Navbar user={user} showPromotions={showPromotions} showAuction={showAuction} />
       {children}
       <Footer year={year} />
     </>

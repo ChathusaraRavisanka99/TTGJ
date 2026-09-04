@@ -44,8 +44,10 @@ export default async function AdminCartDetailPage({ params }: PageProps<"/admin/
                         <p className="text-xs text-charcoal/45">
                           {item.quoteRequestId ? (
                             <Link href={`/admin/quotes/${item.quoteRequestId}`} className="underline hover:text-gold">View quote</Link>
-                          ) : (
+                          ) : item.sourcingRequestId ? (
                             <Link href={`/admin/sourcing/${item.sourcingRequestId}`} className="underline hover:text-gold">View sourcing request</Link>
+                          ) : (
+                            <Link href={`/admin/auctions/${item.auctionId}`} className="underline hover:text-gold">View auction</Link>
                           )}
                         </p>
                       </div>

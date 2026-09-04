@@ -16,6 +16,14 @@ export const cartItemMediaInclude = {
       jewelry: { include: { media: { orderBy: { sortOrder: "asc" as const } } } },
     },
   },
+  // An auction-won item never has a quoteRequest — its product lives on
+  // the Auction itself (see ensureCartItemForAuction below).
+  auction: {
+    include: {
+      gemstone: { include: { media: { orderBy: { sortOrder: "asc" as const } } } },
+      jewelry: { include: { media: { orderBy: { sortOrder: "asc" as const } } } },
+    },
+  },
 } as const;
 
 export interface CartItemVisual {
@@ -41,29 +49,51 @@ type CartItemWithMedia = {
     } | null;
     jewelry: { slug: string; media: { id: string; url: string; type: string }[] } | null;
   } | null;
+  auction: {
+    gemstone: { slug: string; media: { id: string; url: string; type: string }[] } | null;
+    jewelry: { slug: string; media: { id: string; url: string; type: string }[] } | null;
+  } | null;
 };
 
 /** Derives what CartItemThumbnail needs to render from a cart item fetched
- * with cartItemMediaInclude — a sourcing-originated item (no quoteRequest)
- * always resolves to "nothing to show," there's no product yet. */
+ * with cartItemMediaInclude — a sourcing-originated item (no quoteRequest
+ * and no auction) always resolves to "nothing to show," there's no
+ * product yet. */
 export function cartItemVisual(item: CartItemWithMedia): CartItemVisual {
   const quote = item.quoteRequest;
-  if (!quote) return { media: [], gemVisual: null, href: null };
+  if (quote) {
+    if (quote.gemstone && quote.gemstone.media.length > 0) {
+      return { media: quote.gemstone.media, gemVisual: null, href: `/gems/${quote.gemstone.slug}` };
+    }
+    if (quote.jewelry && quote.jewelry.media.length > 0) {
+      return { media: quote.jewelry.media, gemVisual: null, href: `/jewelry/${quote.jewelry.slug}` };
+    }
 
-  if (quote.gemstone && quote.gemstone.media.length > 0) {
-    return { media: quote.gemstone.media, gemVisual: null, href: `/gems/${quote.gemstone.slug}` };
-  }
-  if (quote.jewelry && quote.jewelry.media.length > 0) {
-    return { media: quote.jewelry.media, gemVisual: null, href: `/jewelry/${quote.jewelry.slug}` };
+    // Neither has photos yet (or this is a standalone configurator spec
+    // with no catalog item at all) — fall back to the same procedural gem
+    // preview product pages already use, still linking to the real
+    // catalog page when one exists.
+    const gemVisual = getQuoteGemVisual({ gemstone: quote.gemstone, configuredSpec: quote.configuredSpec });
+    const href = quote.gemstone ? `/gems/${quote.gemstone.slug}` : quote.jewelry ? `/jewelry/${quote.jewelry.slug}` : null;
+    return { media: [], gemVisual, href };
   }
 
-  // Neither has photos yet (or this is a standalone configurator spec with
-  // no catalog item at all) — fall back to the same procedural gem
-  // preview product pages already use, still linking to the real catalog
-  // page when one exists.
-  const gemVisual = getQuoteGemVisual({ gemstone: quote.gemstone, configuredSpec: quote.configuredSpec });
-  const href = quote.gemstone ? `/gems/${quote.gemstone.slug}` : quote.jewelry ? `/jewelry/${quote.jewelry.slug}` : null;
-  return { media: [], gemVisual, href };
+  const auction = item.auction;
+  if (auction) {
+    // Auctions are always for a real catalog item (never a configurator
+    // spec — see the Auction admin form), so there's always photos or, at
+    // worst, a real slug to link to; no procedural-preview fallback needed.
+    if (auction.gemstone && auction.gemstone.media.length > 0) {
+      return { media: auction.gemstone.media, gemVisual: null, href: `/gems/${auction.gemstone.slug}` };
+    }
+    if (auction.jewelry && auction.jewelry.media.length > 0) {
+      return { media: auction.jewelry.media, gemVisual: null, href: `/jewelry/${auction.jewelry.slug}` };
+    }
+    const href = auction.gemstone ? `/gems/${auction.gemstone.slug}` : auction.jewelry ? `/jewelry/${auction.jewelry.slug}` : null;
+    return { media: [], gemVisual: null, href };
+  }
+
+  return { media: [], gemVisual: null, href: null };
 }
 
 // A customer has at most one OPEN cart at a time — enforced here (not by a
@@ -131,6 +161,37 @@ export async function ensureCartItemForSourcing(sourcingId: string): Promise<voi
       sourcingRequestId: request.id,
       label: `Sourcing: ${request.mineralDescription}`,
       amount: request.quotedPrice,
+    },
+  });
+}
+
+/**
+ * Called when an admin confirms the current highest bidder on an auction
+ * as the winner (see confirmAuctionWinner in actions/auctions.ts) —
+ * mirrors ensureCartItemForQuote/ensureCartItemForSourcing exactly, just
+ * fed by the winning bid instead of a quoted price. Idempotent, and a
+ * no-op if the auction has no bids at all (nothing to confirm).
+ */
+export async function ensureCartItemForAuction(auctionId: string): Promise<void> {
+  const existing = await prisma.cartItem.findUnique({ where: { auctionId } });
+  if (existing) return;
+
+  const auction = await prisma.auction.findUnique({
+    where: { id: auctionId },
+    include: { gemstone: true, jewelry: true, bids: { orderBy: { amount: "desc" }, take: 1 } },
+  });
+  if (!auction || auction.bids.length === 0) return;
+
+  const winningBid = auction.bids[0];
+  const label = auction.gemstone?.name ?? auction.jewelry?.name ?? "Auction item";
+
+  const cart = await getOrCreateOpenCart(winningBid.userId);
+  await prisma.cartItem.create({
+    data: {
+      cartId: cart.id,
+      auctionId: auction.id,
+      label: `Auction win: ${label}`,
+      amount: winningBid.amount,
     },
   });
 }

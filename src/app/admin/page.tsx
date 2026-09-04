@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getAuctionDisplayState } from "@/lib/auctions";
 
 export default async function AdminDashboardPage() {
   const [
@@ -11,6 +12,7 @@ export default async function AdminDashboardPage() {
     customerCount,
     recentQuotes,
     recentSourcing,
+    closedActiveAuctions,
   ] = await Promise.all([
     prisma.gemstone.count(),
     prisma.jewelryPiece.count(),
@@ -20,7 +22,13 @@ export default async function AdminDashboardPage() {
     prisma.user.count({ where: { role: "CUSTOMER" } }),
     prisma.quoteRequest.findMany({ orderBy: { createdAt: "desc" }, take: 5, include: { user: true, gemstone: true, jewelry: true } }),
     prisma.sourcingRequest.findMany({ orderBy: { createdAt: "desc" }, take: 5, include: { user: true } }),
+    // Effective state is computed, not stored (see lib/auctions.ts), so
+    // "awaiting confirmation" can't be a plain `where` filter — pull every
+    // closed-but-still-Active auction and count in JS. Cheap at this
+    // site's expected auction volume.
+    prisma.auction.findMany({ where: { status: "ACTIVE", endsAt: { lt: new Date() } }, include: { bids: true } }),
   ]);
+  const awaitingConfirmation = closedActiveAuctions.filter((a) => getAuctionDisplayState(a) === "AWAITING_CONFIRMATION").length;
 
   return (
     <div>
@@ -29,6 +37,7 @@ export default async function AdminDashboardPage() {
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="New Quote Requests" value={newQuotes} href="/admin/quotes?status=SUBMITTED" highlight />
         <StatCard label="New Sourcing Requests" value={newSourcing} href="/admin/sourcing?status=SUBMITTED" highlight />
+        <StatCard label="Auctions Awaiting Confirmation" value={awaitingConfirmation} href="/admin/auctions" highlight />
         <StatCard label="Gemstones in Catalog" value={gemCount} href="/admin/gems" />
         <StatCard label="Jewelry in Catalog" value={jewelryCount} href="/admin/jewelry" />
         <StatCard label="Sold Gemstones (cleanup)" value={soldGems} href="/admin/gems?stockStatus=SOLD" />

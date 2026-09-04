@@ -53,6 +53,11 @@ export function JewelryFilterBar({ current }: JewelryFilterBarProps) {
         In stock only
       </label>
 
+      <label className="flex items-end gap-2 pb-2.5 text-sm text-charcoal/75">
+        <input type="checkbox" name="promotional" value="1" defaultChecked={current.promotional === "1"} className="accent-gold" />
+        On promotion
+      </label>
+
       <div className={cn("flex items-end gap-3", hasActiveFilters && "sm:col-span-2")}>
         <Button type="submit" variant="primary" className={hasActiveFilters ? "flex-1" : "w-full"}>Filter</Button>
         {hasActiveFilters && (

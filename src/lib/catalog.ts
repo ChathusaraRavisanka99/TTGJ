@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getActivePromotionMaps } from "@/lib/promotion-items";
 
 const GEMS_PAGE_SIZE = 24;
 const JEWELRY_PAGE_SIZE = 24;
@@ -22,6 +23,10 @@ export interface GemFilters {
   minCarat?: number;
   maxCarat?: number;
   inStockOnly?: boolean;
+  /** Only items in the currently *live* promotional collection — see
+   * getActivePromotionMaps. Off (or nothing live right now) means no
+   * filtering by this at all, same as every other optional filter here. */
+  promotionalOnly?: boolean;
   sort?: "newest" | "carat" | "az";
   page?: number;
 }
@@ -49,6 +54,13 @@ export async function getGemstones(filters: GemFilters) {
     };
   }
   if (filters.inStockOnly) where.stockStatus = "AVAILABLE";
+  if (filters.promotionalOnly) {
+    const { gemstonePrices } = await getActivePromotionMaps();
+    // `in: []` correctly matches nothing rather than being ignored, so
+    // this still filters down to zero results when nothing's live —
+    // same as any other filter that happens to match nothing.
+    where.id = { in: [...gemstonePrices.keys()] };
+  }
 
   const orderBy: Prisma.GemstoneOrderByWithRelationInput =
     filters.sort === "carat" ? { caratWeight: "desc" } : filters.sort === "az" ? { name: "asc" } : { createdAt: "desc" };
@@ -96,6 +108,8 @@ export interface JewelryFilters {
   pieceType?: string;
   metalType?: string;
   inStockOnly?: boolean;
+  /** See GemFilters.promotionalOnly — same rule, the jewelry side. */
+  promotionalOnly?: boolean;
   sort?: "newest" | "az";
   page?: number;
 }
@@ -112,6 +126,10 @@ export async function getJewelry(filters: JewelryFilters) {
   if (filters.pieceType) where.pieceType = filters.pieceType as never;
   if (filters.metalType) where.metalType = filters.metalType as never;
   if (filters.inStockOnly) where.stockStatus = "AVAILABLE";
+  if (filters.promotionalOnly) {
+    const { jewelryPrices } = await getActivePromotionMaps();
+    where.id = { in: [...jewelryPrices.keys()] };
+  }
 
   const orderBy: Prisma.JewelryPieceOrderByWithRelationInput = filters.sort === "az" ? { name: "asc" } : { createdAt: "desc" };
 

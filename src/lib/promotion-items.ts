@@ -39,27 +39,53 @@ export interface ActivePromotion {
   themeLabel: string;
 }
 
+export interface ActivePromotionMaps {
+  /** null when nothing is actually live right now (Hidden/Coming Soon) —
+   * distinct from "Live, but this particular theme's collection happens
+   * to be empty," which is a live promotion with empty maps. */
+  themeLabel: string | null;
+  gemstonePrices: Map<string, number>;
+  jewelryPrices: Map<string, number>;
+}
+
 /**
- * Called from a product's own detail page to check whether it's part of
- * the *currently live* promotional collection — not just any theme's
- * collection, only the one a customer could actually be sent to right
- * now. Requires the seasonal page itself to be Live (Hidden or Coming
- * Soon means nothing is really "on sale" yet, even if an admin has
- * already staged items into a collection behind the scenes), and the
- * item to be in that specific active theme's collection.
+ * The one place that decides "what's actually on promotion right now" —
+ * used for the catalog's "Promotional" filter, for badging/pricing
+ * individual catalog cards, and (via getActivePromotion below) a single
+ * product's own detail page. Requires the seasonal page itself to be
+ * Live (Hidden or Coming Soon means nothing is really "on sale" yet,
+ * even if an admin has already staged items into some theme's
+ * collection behind the scenes) and only ever reflects the *active*
+ * theme's collection — never a different theme's, even if that one also
+ * happens to include the same item.
  */
-export async function getActivePromotion(input: { gemstoneId?: string; jewelryId?: string }): Promise<ActivePromotion | null> {
+export async function getActivePromotionMaps(): Promise<ActivePromotionMaps> {
   const visibility = await getPageVisibility("seasonal");
-  if (visibility !== "LIVE") return null;
+  if (visibility !== "LIVE") return { themeLabel: null, gemstonePrices: new Map(), jewelryPrices: new Map() };
 
   const content = await getSeasonalContent();
-  const item = await prisma.promotionItem.findFirst({
-    where: input.gemstoneId
-      ? { theme: content.activeTheme, gemstoneId: input.gemstoneId }
-      : { theme: content.activeTheme, jewelryId: input.jewelryId },
-    select: { promoPrice: true },
+  const items = await prisma.promotionItem.findMany({
+    where: { theme: content.activeTheme },
+    select: { gemstoneId: true, jewelryId: true, promoPrice: true },
   });
-  if (!item) return null;
 
-  return { promoPrice: item.promoPrice, themeLabel: SEASONAL_THEMES[content.activeTheme].label };
+  const gemstonePrices = new Map<string, number>();
+  const jewelryPrices = new Map<string, number>();
+  for (const item of items) {
+    if (item.gemstoneId) gemstonePrices.set(item.gemstoneId, item.promoPrice);
+    if (item.jewelryId) jewelryPrices.set(item.jewelryId, item.promoPrice);
+  }
+  return { themeLabel: SEASONAL_THEMES[content.activeTheme]?.label ?? null, gemstonePrices, jewelryPrices };
+}
+
+/** Called from a single product's own detail page — see
+ * getActivePromotionMaps for what "active" actually means here. */
+export async function getActivePromotion(input: { gemstoneId?: string; jewelryId?: string }): Promise<ActivePromotion | null> {
+  const maps = await getActivePromotionMaps();
+  if (!maps.themeLabel) return null;
+
+  const promoPrice = input.gemstoneId ? maps.gemstonePrices.get(input.gemstoneId) : maps.jewelryPrices.get(input.jewelryId!);
+  if (promoPrice == null) return null;
+
+  return { promoPrice, themeLabel: maps.themeLabel };
 }

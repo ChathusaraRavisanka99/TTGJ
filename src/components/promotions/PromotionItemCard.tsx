@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Gem } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { PromotionBadge } from "@/components/catalog/CardPrice";
 
 interface PromotionItemCardProps {
   name: string;
@@ -36,9 +37,7 @@ export function PromotionItemCard({ name, href, imageUrl, promoPrice, regularPri
             <Gem size={48} strokeWidth={1} />
           </div>
         )}
-        <span className="absolute left-3 top-3 rounded-full bg-gold px-2.5 py-1 text-[11px] uppercase tracking-wide text-charcoal">
-          Promotion
-        </span>
+        <PromotionBadge className="absolute left-3 top-3" />
       </div>
       <div className="p-4">
         <p className="truncate font-serif text-lg text-charcoal">{name}</p>

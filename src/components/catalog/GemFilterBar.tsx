@@ -98,6 +98,11 @@ export function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origin
         In stock only
       </label>
 
+      <label className="flex items-end gap-2 pb-2.5 text-sm text-charcoal/75">
+        <input type="checkbox" name="promotional" value="1" defaultChecked={current.promotional === "1"} className="accent-gold" />
+        On promotion
+      </label>
+
       <div className={cn("col-span-2 flex items-end gap-3", hasActiveFilters ? "sm:col-span-2" : "sm:col-span-1")}>
         <Button type="submit" variant="primary" className={hasActiveFilters ? "flex-1" : "w-full"}>Filter</Button>
         {hasActiveFilters && (

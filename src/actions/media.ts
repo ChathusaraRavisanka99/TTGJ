@@ -1,11 +1,9 @@
 "use server";
 
-import { unlink } from "fs/promises";
-import path from "path";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
-import { saveUploadedMedia, UPLOAD_DIR } from "@/lib/media";
+import { saveUploadedMedia, deleteUploadedFile } from "@/lib/media";
 import type { ActionResult } from "./auth";
 
 export async function uploadProductMedia(formData: FormData): Promise<ActionResult> {
@@ -55,12 +53,10 @@ export async function deleteProductMedia(mediaId: string): Promise<ActionResult>
 
   await prisma.mediaAsset.delete({ where: { id: mediaId } });
 
-  try {
-    const filename = media.url.split("/").pop();
-    if (filename) await unlink(path.join(UPLOAD_DIR, filename));
-  } catch {
-    // File already gone — safe to ignore.
-  }
+  // Best-effort: some MediaAsset rows point at seeded /images/... static
+  // assets rather than an uploaded file, so there's nothing to remove from
+  // the bucket for those — deleteUploadedFile no-ops harmlessly either way.
+  await deleteUploadedFile(media.url).catch(() => {});
 
   revalidatePath("/admin/media");
   return { ok: true };

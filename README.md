@@ -9,8 +9,8 @@ and request management.
 
 Next.js (App Router, TypeScript) · Tailwind CSS v4 · Prisma + PostgreSQL
 (Supabase) · NextAuth (Auth.js v5, credentials + optional Google) ·
-`motion` for scroll/entrance animation · local-disk media storage with
-`sharp`.
+`motion` for scroll/entrance animation · Supabase Storage for uploaded
+media (processed with `sharp` before upload).
 
 ## First-time setup
 
@@ -68,7 +68,6 @@ src/actions/                 Server Actions (auth, quotes, catalog CRUD, media, 
 src/lib/                     Prisma client, auth config, RBAC helpers, validation schemas
 public/images/                Seed/demo photography (hero banners + catalog/heritage shots)
                               — see ATTRIBUTION.md for sources and licensing
-storage/uploads/             Local media storage (gitignored), served via /api/media/*
 ```
 
 ## Notes
@@ -80,8 +79,10 @@ storage/uploads/             Local media storage (gitignored), served via /api/m
 - **Cuts are a closed list**: the 18 standard cuts are fixed in
   `src/lib/gem-constants.ts`. The admin cuts page can only activate/
   deactivate them, not add new ones — this is intentional.
-- **Media storage** is local disk for this MVP (see `src/lib/media.ts`).
-  Swapping to S3/Cloudinary later just means changing that one file.
+- **Media storage** is Supabase Storage (a `media` bucket, public read) —
+  see `src/lib/media.ts` and `src/lib/supabase.ts`. Requires `SUPABASE_URL`
+  and `SUPABASE_SERVICE_ROLE_KEY` (documented in `.env.example`); the
+  service role key is server-only and must never be exposed to the client.
 - **Database**: Prisma connects to Supabase via two URLs —
   `DATABASE_URL` (the pooled/PgBouncer connection the running app uses)
   and `DIRECT_URL` (a non-pooled connection Prisma Migrate needs for

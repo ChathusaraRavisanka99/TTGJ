@@ -1,13 +1,11 @@
 "use server";
 
-import { unlink } from "fs/promises";
-import path from "path";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { slugify } from "@/lib/utils";
-import { saveLabLogo, UPLOAD_DIR } from "@/lib/media";
+import { saveLabLogo, deleteUploadedFile } from "@/lib/media";
 import { mineralSchema, clarityGradeSchema, simpleMasterDataSchema, certLabSchema } from "@/lib/validation/catalog";
 import type { ActionResult } from "./auth";
 
@@ -189,11 +187,8 @@ export async function createCertLab(formData: FormData): Promise<ActionResult> {
     });
   } catch (err) {
     // The lab row didn't get created, so an already-saved logo file would
-    // otherwise be orphaned on disk.
-    if (logoUrl) {
-      const filename = logoUrl.split("/").pop();
-      if (filename) await unlink(path.join(UPLOAD_DIR, filename)).catch(() => {});
-    }
+    // otherwise be orphaned in storage.
+    if (logoUrl) await deleteUploadedFile(logoUrl).catch(() => {});
     const message = uniqueConstraintMessage(err, "certification lab");
     if (message) return { ok: false, error: message };
     throw err;
@@ -235,10 +230,7 @@ export async function uploadCertLabLogo(id: string, formData: FormData): Promise
     const saved = await saveLabLogo(file);
     await prisma.certificationLab.update({ where: { id }, data: { logoUrl: saved.url } });
 
-    if (lab.logoUrl) {
-      const oldFilename = lab.logoUrl.split("/").pop();
-      if (oldFilename) await unlink(path.join(UPLOAD_DIR, oldFilename)).catch(() => {});
-    }
+    if (lab.logoUrl) await deleteUploadedFile(lab.logoUrl).catch(() => {});
 
     revalidatePath("/admin/master-data/certification-labs");
     revalidatePath("/admin/gems");
@@ -257,10 +249,7 @@ export async function removeCertLabLogo(id: string): Promise<ActionResult> {
 
   await prisma.certificationLab.update({ where: { id }, data: { logoUrl: null } });
 
-  if (lab.logoUrl) {
-    const filename = lab.logoUrl.split("/").pop();
-    if (filename) await unlink(path.join(UPLOAD_DIR, filename)).catch(() => {});
-  }
+  if (lab.logoUrl) await deleteUploadedFile(lab.logoUrl).catch(() => {});
 
   revalidatePath("/admin/master-data/certification-labs");
   revalidatePath("/admin/gems");

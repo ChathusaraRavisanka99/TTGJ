@@ -1,13 +1,11 @@
 "use server";
 
-import { unlink } from "fs/promises";
-import path from "path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { slugify } from "@/lib/utils";
-import { saveCertificateFile, UPLOAD_DIR } from "@/lib/media";
+import { saveCertificateFile, deleteUploadedFile } from "@/lib/media";
 import { gemstoneSchema, jewelrySchema } from "@/lib/validation/catalog";
 import type { ActionResult } from "./auth";
 
@@ -150,11 +148,8 @@ export async function uploadCertificateFile(gemstoneId: string, formData: FormDa
     const saved = await saveCertificateFile(file);
     await prisma.gemstone.update({ where: { id: gemstoneId }, data: { certFileUrl: saved.url } });
 
-    // Replacing an existing attachment — clean up the old file on disk.
-    if (gem.certFileUrl) {
-      const oldFilename = gem.certFileUrl.split("/").pop();
-      if (oldFilename) await unlink(path.join(UPLOAD_DIR, oldFilename)).catch(() => {});
-    }
+    // Replacing an existing attachment — clean up the old file in storage.
+    if (gem.certFileUrl) await deleteUploadedFile(gem.certFileUrl).catch(() => {});
 
     revalidatePath(`/admin/gems/${gemstoneId}`);
     revalidatePath("/admin/gems");
@@ -172,10 +167,7 @@ export async function removeCertificateFile(gemstoneId: string): Promise<ActionR
 
   await prisma.gemstone.update({ where: { id: gemstoneId }, data: { certFileUrl: null } });
 
-  if (gem.certFileUrl) {
-    const filename = gem.certFileUrl.split("/").pop();
-    if (filename) await unlink(path.join(UPLOAD_DIR, filename)).catch(() => {});
-  }
+  if (gem.certFileUrl) await deleteUploadedFile(gem.certFileUrl).catch(() => {});
 
   revalidatePath(`/admin/gems/${gemstoneId}`);
   revalidatePath("/admin/gems");

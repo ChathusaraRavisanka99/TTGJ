@@ -148,9 +148,9 @@ model CertificationLab {
   // labs with no public lookup tool.
   verifyUrlTemplate String?
   websiteUrl        String?
-  // Uploaded via the same local-disk storage as everything else in
-  // src/lib/media.ts (an /api/media/... URL), not a MediaAsset row —
-  // it belongs to the lab itself, not to any one gemstone's gallery.
+  // Uploaded via the same Supabase Storage upload path as everything else
+  // in src/lib/media.ts, not a MediaAsset row — it belongs to the lab
+  // itself, not to any one gemstone's gallery.
   logoUrl           String?
 
   active    Boolean @default(true)

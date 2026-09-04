@@ -34,6 +34,10 @@ yarn-error.log*
 .env*
 !.env.example
 
+# local mirror of uploaded media (Supabase Storage is the source of truth
+# — see src/lib/media-cache.ts)
+/.media-cache
+
 # vercel
 .vercel
 

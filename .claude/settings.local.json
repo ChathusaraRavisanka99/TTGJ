@@ -83,7 +83,8 @@
       "Bash(curl -s -X POST https://sandbox.payhere.lk/pay/checkout -d merchant_id=1237884 -d order_id=CURLTEST1788610365701 -d items=Test+Item -d currency=USD -d amount=5.00 -d first_name=Test -d last_name=User -d email=test@example.com -d phone=0771234567 -d address=123+Test -d city=Colombo -d country=Sri+Lanka -d return_url=http://localhost:3000/checkout/return -d cancel_url=http://localhost:3000/checkout/cancel -d notify_url=http://localhost:3000/api/payhere/notify -d hash=202E57449BE281B16975F0911418C776 -w '\\\\nHTTP_STATUS:%{http_code}\\\\n' -o /tmp/payhere-response2.html)",
       "Bash(rm -f /tmp/payhere-response.html /tmp/payhere-response2.html)",
       "Bash(rm -rf /tmp/mobile-shots)",
-      "Bash(powershell -Command \"Stop-Process -Id 28612 -Force\")"
+      "Bash(powershell -Command \"Stop-Process -Id 28612 -Force\")",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "G:\\Project\\TTGJ Webapp\\src\\app\\api\\auth",

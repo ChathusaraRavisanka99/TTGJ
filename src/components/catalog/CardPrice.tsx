@@ -3,6 +3,13 @@ import { cn, formatPrice } from "@/lib/utils";
 interface CardPriceProps {
   price?: number | null;
   showPrice?: boolean;
+  /** The retail direct-purchase price (Gemstone/JewelryPiece.retailPrice)
+   * — additive to price/showPrice above, not a replacement (see the field
+   * comment in schema.prisma): once an admin sets it, it's always shown
+   * and preferred over price/showPrice, but an item that still doesn't
+   * have one falls back to exactly the old price/showPrice/Request-a-Quote
+   * behaviour, unchanged. */
+  retailPrice?: number | null;
   /** Set only when this item is in the *currently live* promotional
    * collection — see getActivePromotionMaps. */
   promoPrice?: number | null;
@@ -17,19 +24,22 @@ interface CardPriceProps {
 // public pricing and that price is higher (nothing honest to compare
 // against otherwise), falling back to the existing price/Request-a-Quote
 // behaviour when there's no active promotion at all.
-export function CardPrice({ price, showPrice, promoPrice, priceClassName, quoteClassName }: CardPriceProps) {
+export function CardPrice({ price, showPrice, retailPrice, promoPrice, priceClassName, quoteClassName }: CardPriceProps) {
+  const displayPrice = retailPrice ?? price;
+  const displayable = retailPrice != null || !!showPrice;
+
   if (promoPrice != null) {
-    const showRegular = showPrice && price != null && price > promoPrice;
+    const showRegular = displayable && displayPrice != null && displayPrice > promoPrice;
     return (
       <div className={cn("flex flex-wrap items-baseline gap-x-2", priceClassName)}>
         <span className="font-serif text-gold">{formatPrice(promoPrice)}</span>
-        {showRegular && <span className="text-[0.85em] text-charcoal/40 line-through">{formatPrice(price!)}</span>}
+        {showRegular && <span className="text-[0.85em] text-charcoal/40 line-through">{formatPrice(displayPrice!)}</span>}
       </div>
     );
   }
 
-  if (showPrice && price != null) {
-    return <p className={cn("font-serif text-charcoal", priceClassName)}>{formatPrice(price)}</p>;
+  if (displayable && displayPrice != null) {
+    return <p className={cn("font-serif text-charcoal", priceClassName)}>{formatPrice(displayPrice)}</p>;
   }
 
   return (

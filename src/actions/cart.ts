@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { requireAdmin } from "@/lib/rbac";
 import { ensureCartInvoice } from "@/lib/invoicing";
+import { finalizeDiscountRedemption } from "@/lib/discount-codes";
 import type { ActionResult } from "./auth";
 
 /**
@@ -24,6 +25,16 @@ export async function submitCart(): Promise<ActionResult> {
   });
   if (!cart) return { ok: false, error: "You don't have an open cart." };
   if (cart.items.length === 0) return { ok: false, error: "Your cart is empty — accept a quote or sourcing request first." };
+
+  // A code applied earlier was only ever previewed (see applyDiscountCode)
+  // — this is the actual redemption, re-validated fresh (it may have
+  // expired, been disabled, or hit its use limit via a race with another
+  // customer since it was applied) and only now counted against its
+  // usesCount/expiry.
+  if (cart.discountCodeId) {
+    const result = await finalizeDiscountRedemption({ discountCodeId: cart.discountCodeId, userId: session.user.id, cartId: cart.id });
+    if (!result.ok) return { ok: false, error: `${result.error} Remove it from your cart and try again.` };
+  }
 
   await prisma.cart.update({ where: { id: cart.id }, data: { status: "SUBMITTED", submittedAt: new Date() } });
 

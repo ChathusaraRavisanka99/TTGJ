@@ -4,8 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AccountMenu } from "@/components/layout/AccountMenu";
+import { signOutAction } from "@/actions/auth";
 
 const BASE_NAV_LINKS = [
   { href: "/gems", label: "Gems" },
@@ -28,6 +30,7 @@ export function Navbar({
   user,
   showPromotions,
   showAuction,
+  cartItemCount,
 }: {
   user: { name?: string | null; email?: string | null } | null;
   /** True when the seasonal promotions page is Coming Soon or Live (see
@@ -37,6 +40,9 @@ export function Navbar({
   /** Same idea as showPromotions, for the /auction page (PageVisibility
    * key "auction"). */
   showAuction: boolean;
+  /** Retail (shopping) cart item count — 0 when signed out, in which
+   * case the icon itself is still shown (it just links to sign in). */
+  cartItemCount: number;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -146,26 +152,59 @@ export function Navbar({
           })}
         </nav>
 
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden items-center gap-5 md:flex">
           <Link
-            href={user ? "/account" : "/account/login"}
+            href={user ? "/account/retail-cart" : "/account/login?callbackUrl=%2Faccount%2Fretail-cart"}
+            aria-label="Cart"
             className={cn(
-              "flex items-center gap-2 text-sm transition-colors duration-300",
+              "relative transition-colors duration-300",
               transparent ? "text-ivory/85 hover:text-ivory" : "text-charcoal/80 hover:text-charcoal"
             )}
           >
-            <User size={16} />
-            {user ? user.name?.split(" ")[0] ?? "Account" : "Sign in"}
+            <ShoppingBag size={19} />
+            {cartItemCount > 0 && (
+              <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium text-charcoal">
+                {cartItemCount > 99 ? "99+" : cartItemCount}
+              </span>
+            )}
           </Link>
+          {user ? (
+            <AccountMenu user={user} transparent={transparent} />
+          ) : (
+            <Link
+              href="/account/login"
+              className={cn(
+                "flex items-center gap-2 text-sm transition-colors duration-300",
+                transparent ? "text-ivory/85 hover:text-ivory" : "text-charcoal/80 hover:text-charcoal"
+              )}
+            >
+              <User size={16} />
+              Sign in
+            </Link>
+          )}
         </div>
 
-        <button
-          className={cn("md:hidden transition-colors duration-300", transparent ? "text-ivory" : "text-charcoal")}
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Toggle menu"
-        >
-          {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        <div className="flex items-center gap-4 md:hidden">
+          <Link
+            href={user ? "/account/retail-cart" : "/account/login?callbackUrl=%2Faccount%2Fretail-cart"}
+            aria-label="Cart"
+            className={cn("relative transition-colors duration-300", transparent ? "text-ivory" : "text-charcoal")}
+          >
+            <ShoppingBag size={21} />
+            {cartItemCount > 0 && (
+              <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium text-charcoal">
+                {cartItemCount > 99 ? "99+" : cartItemCount}
+              </span>
+            )}
+          </Link>
+          <button
+            className={cn("transition-colors duration-300", transparent ? "text-ivory" : "text-charcoal")}
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Toggle menu"
+          >
+            {open ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
 
       {open && (
@@ -183,9 +222,36 @@ export function Navbar({
               {link.label}
             </Link>
           ))}
-          <Link href={user ? "/account" : "/account/login"} className="py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
-            {user ? "My Account" : "Sign in"}
-          </Link>
+          {user ? (
+            <>
+              <div className="mt-2 border-t border-border-subtle pt-2">
+                <Link href="/account" className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
+                  My Account
+                </Link>
+                <Link href="/account/retail-cart" className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
+                  My Cart
+                </Link>
+                <Link href="/account/orders" className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
+                  My Orders
+                </Link>
+                <Link href="/account/quotes" className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
+                  My Quote Requests
+                </Link>
+                <Link href="/account/sourcing" className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
+                  My Sourcing Requests
+                </Link>
+              </div>
+              <form action={signOutAction}>
+                <button type="submit" className="py-3 text-left text-sm text-charcoal/60" onClick={() => setOpen(false)}>
+                  Sign Out
+                </button>
+              </form>
+            </>
+          ) : (
+            <Link href="/account/login" className="py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
+              Sign in
+            </Link>
+          )}
         </nav>
       )}
     </motion.header>

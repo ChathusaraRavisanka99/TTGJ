@@ -49,6 +49,8 @@ interface GemstoneFormProps {
     certFileUrl: string | null;
     price: number | null;
     showPrice: boolean;
+    retailPrice: number | null;
+    costPrice: number | null;
     stockStatus: string;
     isPublished: boolean;
     isFeatured: boolean;
@@ -281,6 +283,25 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
             <input type="checkbox" name="showPrice" value="true" defaultChecked={initial?.showPrice ?? false} className="accent-gold" />
             Show price publicly (otherwise this item stays quote-only)
           </label>
+        </section>
+
+        <section className="grid gap-5 sm:grid-cols-2 border-t border-border-subtle pt-5">
+          <div>
+            <Label htmlFor="retailPrice">Retail Price (USD)</Label>
+            <Input id="retailPrice" name="retailPrice" type="number" step="0.01" min="0" defaultValue={initial?.retailPrice ?? ""} placeholder="E.g. 4800" />
+            <p className="mt-1 text-xs text-charcoal/45">
+              Once set, retail customers see this price directly and can buy the item outright — always shown,
+              independent of &ldquo;Show price publicly&rdquo; above.
+            </p>
+          </div>
+          <div>
+            <Label htmlFor="costPrice">Cost Price (USD)</Label>
+            <Input id="costPrice" name="costPrice" type="number" step="0.01" min="0" defaultValue={initial?.costPrice ?? ""} placeholder="E.g. 2600" />
+            <p className="mt-1 text-xs text-charcoal/45">
+              Internal only, never shown to customers. Used to compute the birthday promotion&apos;s 10%-off-profit
+              discount (Retail Price − Cost Price) — left blank, this item simply never gets that discount.
+            </p>
+          </div>
         </section>
 
         <label className="flex items-center gap-2 text-sm text-charcoal/75">

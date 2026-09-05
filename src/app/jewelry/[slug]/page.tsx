@@ -8,6 +8,8 @@ import { StockBadge } from "@/components/ui/Badge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { ProductPrice } from "@/components/catalog/ProductPrice";
+import { AddToCartButton } from "@/components/catalog/AddToCartButton";
+import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/layout/Reveal";
 
 const METAL_LABELS: Record<string, string> = {
@@ -48,7 +50,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
             <StockBadge status={piece.stockStatus} />
           </div>
           <h1 className="mt-2 font-serif text-4xl text-charcoal">{piece.name}</h1>
-          <ProductPrice price={piece.price} showPrice={piece.showPrice} promotion={promotion} />
+          <ProductPrice price={piece.price} showPrice={piece.showPrice} retailPrice={piece.retailPrice} promotion={promotion} />
           {piece.description && <p className="mt-4 leading-relaxed text-charcoal/70">{piece.description}</p>}
 
           <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border-subtle py-6">
@@ -75,6 +77,21 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {piece.retailPrice != null && (
+            <div className="mt-8">
+              {session?.user ? (
+                <AddToCartButton jewelryId={piece.id} />
+              ) : (
+                <div>
+                  <p className="text-sm text-charcoal/75">Sign in to add {piece.name} to your cart at the retail price.</p>
+                  <Link href={`/account/login?callbackUrl=${encodeURIComponent(`/jewelry/${piece.slug}`)}`}>
+                    <Button variant="primary" className="mt-3">Sign in to add to cart</Button>
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 

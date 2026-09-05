@@ -34,9 +34,22 @@ export default auth((req) => {
     }
   }
 
+  // /checkout/return and /checkout/cancel are PayHere's own redirect
+  // targets (the customer's browser lands there straight from PayHere's
+  // hosted page) — still gated, since both just look up the signed-in
+  // customer's own order, but never /api/payhere/notify, which is a
+  // server-to-server webhook with no browser session at all.
+  if (pathname.startsWith("/checkout")) {
+    if (!req.auth) {
+      const loginUrl = new URL("/account/login", req.nextUrl.origin);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/account/:path*"],
+  matcher: ["/admin/:path*", "/account/:path*", "/checkout/:path*"],
 };

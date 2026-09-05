@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getPageContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";
+import { getActivePromotionMaps } from "@/lib/promotion-items";
 import { LinkButton } from "@/components/ui/Button";
 import { GemCard } from "@/components/catalog/GemCard";
 import { JewelryCard } from "@/components/catalog/JewelryCard";
@@ -25,7 +26,7 @@ const MINERAL_MARQUEE = [
 ];
 
 export default async function HomePage() {
-  const [featuredGems, featuredJewelry, content] = await Promise.all([
+  const [featuredGems, featuredJewelry, content, { gemstonePrices, jewelryPrices }] = await Promise.all([
     prisma.gemstone.findMany({
       where: { isPublished: true, isFeatured: true },
       orderBy: { createdAt: "desc" },
@@ -39,6 +40,7 @@ export default async function HomePage() {
       include: { media: { orderBy: { sortOrder: "asc" } } },
     }),
     getPageContent("home", DEFAULT_HOME_CONTENT),
+    getActivePromotionMaps(),
   ]);
 
   // Each of these two sections is curated by admins (feature specific items
@@ -186,6 +188,8 @@ export default async function HomePage() {
                     primaryImageUrl={gem.media.find((m) => m.isPrimary)?.url ?? gem.media[0]?.url}
                     price={gem.price}
                     showPrice={gem.showPrice}
+                    retailPrice={gem.retailPrice}
+                    promoPrice={gemstonePrices.get(gem.id)}
                   />
                 </div>
               ))}
@@ -223,6 +227,8 @@ export default async function HomePage() {
                     primaryImageUrl={piece.media.find((m) => m.isPrimary)?.url ?? piece.media[0]?.url}
                     price={piece.price}
                     showPrice={piece.showPrice}
+                    retailPrice={piece.retailPrice}
+                    promoPrice={jewelryPrices.get(piece.id)}
                   />
                 </div>
               ))}

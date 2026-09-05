@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { ShieldCheck, FileText, ExternalLink } from "lucide-react";
 import { getGemstoneBySlug } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
@@ -10,6 +11,8 @@ import { StockBadge } from "@/components/ui/Badge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { ProductPrice } from "@/components/catalog/ProductPrice";
+import { AddToCartButton } from "@/components/catalog/AddToCartButton";
+import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/layout/Reveal";
 
 export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): Promise<Metadata> {
@@ -52,7 +55,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
             {gem.certLab && <CertifiedBadge lab={gem.certLab} />}
           </div>
           <h1 className="mt-2 font-serif text-4xl text-charcoal">{gem.name}</h1>
-          <ProductPrice price={gem.price} showPrice={gem.showPrice} promotion={promotion} />
+          <ProductPrice price={gem.price} showPrice={gem.showPrice} retailPrice={gem.retailPrice} promotion={promotion} />
           {gem.description && <p className="mt-4 leading-relaxed text-charcoal/70">{gem.description}</p>}
 
           <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border-subtle py-6">
@@ -91,6 +94,21 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
                 >
                   <FileText size={14} /> View Certificate
                 </a>
+              )}
+            </div>
+          )}
+
+          {gem.retailPrice != null && (
+            <div className="mt-8">
+              {session?.user ? (
+                <AddToCartButton gemstoneId={gem.id} />
+              ) : (
+                <div>
+                  <p className="text-sm text-charcoal/75">Sign in to add {gem.name} to your cart at the retail price.</p>
+                  <Link href={`/account/login?callbackUrl=${encodeURIComponent(`/gems/${gem.slug}`)}`}>
+                    <Button variant="primary" className="mt-3">Sign in to add to cart</Button>
+                  </Link>
+                </div>
               )}
             </div>
           )}

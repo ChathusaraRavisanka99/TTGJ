@@ -18,6 +18,24 @@ enum UserRole {
   ADMIN
 }
 
+// Orthogonal to UserRole (which only governs ADMIN vs CUSTOMER access) —
+// this is a segmentation/registration-workflow dimension on top of it,
+// meaningful only for CUSTOMER accounts. Per product decision, approval
+// gates nothing else in the app today: a PENDING wholesale account can
+// browse, quote, and buy retail exactly like any other customer. It exists
+// so the business has an approval paper-trail and can build wholesale-only
+// features on top of it later without another migration.
+enum CustomerType {
+  RETAIL
+  WHOLESALE
+}
+
+enum WholesaleStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -30,6 +48,22 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  customerType    CustomerType     @default(RETAIL)
+  // Null for RETAIL accounts (approval is a wholesale-only concept).
+  // PENDING the moment a WHOLESALE registration is submitted — see
+  // registerCustomer in actions/auth.ts.
+  wholesaleStatus WholesaleStatus?
+  businessName    String?
+  businessRegNo   String?
+
+  // Both optional — collected at registration or later in account
+  // settings. Used only by the birthday promotion (lib/checkout.ts):
+  // eligible any day within the birth month, but lastBirthdayDiscountAt
+  // (stamped only when an order actually completes, not merely previewed
+  // in the cart) blocks a second redemption within the same calendar year.
+  dateOfBirth            DateTime?
+  lastBirthdayDiscountAt DateTime?
+
   accounts        Account[]
   sessions        Session[]
   quoteRequests   QuoteRequest[]
@@ -39,6 +73,13 @@ model User {
   cartInvoices    CartInvoice[]
   auctionBids     AuctionBid[]
   chatMessages    ChatMessage[]
+
+  retailCart              RetailCart?
+  orders                  Order[]
+  discountCodeRedemptions DiscountCodeRedemption[]
+  // Codes minted for this specific customer (DiscountCode.scope ==
+  // CUSTOMER) — see DiscountCode.assignedUser below.
+  assignedDiscountCodes   DiscountCode[]
 }
 
 model Account {
@@ -219,6 +260,17 @@ model Gemstone {
   price     Float?
   showPrice Boolean @default(false)
 
+  // The retail direct-purchase price — additive to price/showPrice above,
+  // not a replacement: an item with retailPrice set gets a "Buy Now" at
+  // that price (see lib/retail-cart.ts, lib/checkout.ts) and is preferred
+  // by CardPrice/ProductPrice for display; an item still missing it (not
+  // yet filled in by an admin) keeps behaving exactly as before, quote-
+  // only. costPrice is the real/actual cost, used only to compute the
+  // birthday promotion's 10%-off-profit discount (retailPrice - costPrice)
+  // — an item with no costPrice recorded simply never gets that discount.
+  retailPrice Float?
+  costPrice   Float?
+
   stockStatus StockStatus @default(AVAILABLE)
   isPublished Boolean     @default(true)
 
@@ -230,11 +282,13 @@ model Gemstone {
 
   media MediaAsset[]
 
-  quoteRequests       QuoteRequest[]
-  jewelryGemstoneLink JewelryGemstoneLink[]
-  auctions            Auction[]
-  promotionItems      PromotionItem[]
+  quoteRequests        QuoteRequest[]
+  jewelryGemstoneLink  JewelryGemstoneLink[]
+  auctions             Auction[]
+  promotionItems       PromotionItem[]
   taggedInChatMessages ChatMessage[]
+  retailCartItems      RetailCartItem[]
+  orderItems           OrderItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -279,6 +333,11 @@ model JewelryPiece {
   price     Float?
   showPrice Boolean @default(false)
 
+  // See the matching fields on Gemstone above for the full rationale —
+  // additive retail-checkout price + real cost for the birthday discount.
+  retailPrice Float?
+  costPrice   Float?
+
   stockStatus StockStatus @default(AVAILABLE)
   isPublished Boolean     @default(true)
 
@@ -289,10 +348,12 @@ model JewelryPiece {
   media     MediaAsset[]
   gemstones JewelryGemstoneLink[]
 
-  quoteRequests  QuoteRequest[]
-  auctions       Auction[]
-  promotionItems PromotionItem[]
+  quoteRequests        QuoteRequest[]
+  auctions             Auction[]
+  promotionItems       PromotionItem[]
   taggedInChatMessages ChatMessage[]
+  retailCartItems      RetailCartItem[]
+  orderItems           OrderItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -504,8 +565,8 @@ model SourcingRequest {
 model ChatThread {
   id String @id @default(cuid())
 
-  quoteRequestId String?       @unique
-  quoteRequest   QuoteRequest? @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+  quoteRequestId    String?          @unique
+  quoteRequest      QuoteRequest?    @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
   sourcingRequestId String?          @unique
   sourcingRequest   SourcingRequest? @relation(fields: [sourcingRequestId], references: [id], onDelete: Cascade)
 
@@ -530,8 +591,8 @@ model ChatMessage {
   threadId String
   thread   ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
-  senderId String
-  sender   User     @relation(fields: [senderId], references: [id])
+  senderId   String
+  sender     User     @relation(fields: [senderId], references: [id])
   // Snapshotted at send time — which "side" of the conversation this is,
   // independent of the sender's role ever changing later, and cheaper to
   // render from than joining sender.role on every message every time.
@@ -543,10 +604,10 @@ model ChatMessage {
   // convention CartItem's "exactly one of" origin fields already use).
   body String? @db.Text
 
-  taggedGemstoneId String?
-  taggedGemstone   Gemstone?     @relation(fields: [taggedGemstoneId], references: [id], onDelete: SetNull)
-  taggedJewelryId  String?
-  taggedJewelry    JewelryPiece? @relation(fields: [taggedJewelryId], references: [id], onDelete: SetNull)
+  taggedGemstoneId   String?
+  taggedGemstone     Gemstone?     @relation(fields: [taggedGemstoneId], references: [id], onDelete: SetNull)
+  taggedJewelryId    String?
+  taggedJewelry      JewelryPiece? @relation(fields: [taggedJewelryId], references: [id], onDelete: SetNull)
   // { items: [{ label: string, amount: number }], total: number }
   taggedCartSnapshot Json?
 
@@ -599,15 +660,22 @@ model Cart {
   // a code larger than the cart to go negative.
   discountAmount Float?
 
-  items        CartItem[]
-  invoice      CartInvoice?
-  discountCode DiscountCode?
+  items   CartItem[]
+  invoice CartInvoice?
+
+  // Forward FK (not the old reverse 1:1) — see DiscountCode below: a code
+  // can now apply to many carts/orders over its lifetime (up to maxUses),
+  // so the "currently applied to" relationship lives on the applier
+  // (Cart/Order), not on the code itself.
+  discountCodeId String?
+  discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
+  @@index([discountCodeId])
 }
 
 model CartItem {
@@ -662,11 +730,23 @@ model CartInvoice {
   @@index([userId])
 }
 
-// One-time-use, fixed-amount-off discount codes. Generated by an admin
-// (see actions/discount-codes.ts) with no code tied to any customer in
-// advance — the first cart to redeem one consumes it, full stop. A
-// percentage-off model isn't supported; per the brief, this is "one time
-// use by amount" only.
+// Fixed-amount-off discount codes. Generated by an admin (see
+// actions/discount-codes.ts). A percentage-off model isn't supported; per
+// the brief, this is "one amount off" only — but scope/limit/expiry are:
+// SITE_WIDE (anyone) or CUSTOMER (only assignedUser), an optional maxUses
+// (null = unlimited) tracked by usesCount, and an optional expiresAt.
+//
+// Redemption is tracked in DiscountCodeRedemption, not on this row — a
+// code can be "currently applied" to many open carts/orders at once
+// (Cart.discountCodeId / Order.discountCodeId are plain FKs, no
+// uniqueness), but only counts toward usesCount once a cart/order actually
+// completes (see applyDiscountCode / lib/checkout.ts). This replaces the
+// old one-code-one-cart-forever model.
+enum DiscountScope {
+  SITE_WIDE
+  CUSTOMER
+}
+
 model DiscountCode {
   id   String @id @default(cuid())
   // Stored and matched uppercase — codes are case-insensitive from a
@@ -675,17 +755,49 @@ model DiscountCode {
 
   amountOff Float
 
-  // Set together the moment a customer successfully applies this code to
-  // their open cart (see applyDiscountCode) — both null until then. A
-  // code can be released back to unused by removing it from a cart that
-  // hasn't been submitted yet (removeDiscountCode), which clears both.
-  cartId String?   @unique
-  cart   Cart?     @relation(fields: [cartId], references: [id])
-  usedAt DateTime?
+  scope          DiscountScope @default(SITE_WIDE)
+  assignedUserId String?
+  assignedUser   User?         @relation(fields: [assignedUserId], references: [id])
 
-  createdAt DateTime @default(now())
+  maxUses   Int?
+  usesCount Int  @default(0)
+
+  expiresAt DateTime?
+  // Manual kill switch — an admin can disable a code without deleting its
+  // redemption history.
+  active    Boolean   @default(true)
+
+  carts       Cart[]
+  orders      Order[]
+  redemptions DiscountCodeRedemption[]
+
+  createdAt   DateTime     @default(now())
+  retailCarts RetailCart[]
 
   @@index([code])
+  @@index([assignedUserId])
+}
+
+// One row per completed redemption — written only when the cart/order
+// that applied the code actually finishes (wholesale cart submitted,
+// retail order paid), which is also the moment DiscountCode.usesCount
+// increments. Merely applying-then-removing a code from a still-open
+// cart never creates one of these, so it never burns a use.
+model DiscountCodeRedemption {
+  id             String       @id @default(cuid())
+  discountCodeId String
+  discountCode   DiscountCode @relation(fields: [discountCodeId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+
+  // Exactly one of these two — which pipeline redeemed the code.
+  cartId  String?
+  orderId String?
+
+  redeemedAt DateTime @default(now())
+
+  @@index([discountCodeId])
+  @@index([userId])
 }
 
 // ---------- Page visibility ----------
@@ -752,10 +864,10 @@ model Auction {
   // Never rendered on the public auction page — only the admin sees it.
   // A bid at or above this is what turns "highest bid at close" into an
   // eligible winner; below it, the auction closes with no winner.
-  reservePrice Float
+  reservePrice  Float
   // Minimum amount a new bid must clear the current highest by (or clear
   // startingPrice by, for the first bid).
-  bidIncrement Float @default(50)
+  bidIncrement  Float @default(50)
 
   startsAt DateTime
   endsAt   DateTime
@@ -816,7 +928,7 @@ model PromotionItem {
   jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
 
   promoPrice Float
-  sortOrder  Int    @default(0)
+  sortOrder  Int   @default(0)
 
   createdAt DateTime @default(now())
 
@@ -825,4 +937,193 @@ model PromotionItem {
   @@index([gemstoneId])
   @@index([jewelryId])
   @@index([theme])
+}
+
+// ---------- Retail commerce ----------
+//
+// A second, parallel purchase pipeline alongside the wholesale
+// quote -> accept -> Cart -> wire-transfer flow above, which stays
+// untouched. Retail customers add items directly at their live
+// retailPrice (RetailCart/RetailCartItem — one persistent cart per user,
+// re-validated against current prices at checkout, never a price
+// snapshot), then check out through PayHere (Order/OrderItem, a snapshot
+// at the moment of purchase, same convention Invoice/CartItem already
+// use). See lib/retail-cart.ts and lib/checkout.ts.
+
+model RetailCart {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  items RetailCartItem[]
+
+  // Same forward-FK convention as Cart.discountCode above.
+  discountCodeId String?
+  discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([discountCodeId])
+}
+
+model RetailCartItem {
+  id     String     @id @default(cuid())
+  cartId String
+  cart   RetailCart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  // Exactly one of these two, same convention as CartItem/OrderItem.
+  gemstoneId String?
+  gemstone   Gemstone?     @relation(fields: [gemstoneId], references: [id], onDelete: Cascade)
+  jewelryId  String?
+  jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
+
+  quantity  Int   @default(1)
+  // Price at the moment this line was added — display only. Checkout
+  // (lib/checkout.ts) always re-reads the item's live retailPrice rather
+  // than trusting this, so a cart never checks out at a stale price.
+  unitPrice Float
+
+  createdAt DateTime @default(now())
+
+  @@unique([cartId, gemstoneId])
+  @@unique([cartId, jewelryId])
+  @@index([cartId])
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PAYMENT_FAILED
+  CANCELLED
+}
+
+model Order {
+  id          String @id @default(cuid())
+  // Sequential per calendar year, e.g. "ORD-2026-0007" — same convention
+  // as Invoice.invoiceNumber/CartInvoice.invoiceNumber (see lib/invoicing.ts).
+  orderNumber String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  items OrderItem[]
+
+  // "LKR" for a Sri Lanka shipping address, "USD" for everywhere else in
+  // this pass (see lib/checkout.ts) — every amount below is in this
+  // currency.
+  currency String
+
+  subtotal               Float
+  discountAmount         Float @default(0)
+  birthdayDiscountAmount Float @default(0)
+  taxAmount              Float @default(0)
+  shippingAmount         Float @default(0)
+  handlingFeeAmount      Float @default(0)
+  total                  Float
+
+  // Shipping address, snapshotted at checkout — never a live reference.
+  shipName         String
+  shipPhone        String
+  shipCountry      String
+  shipCity         String
+  shipAddressLine1 String
+  shipAddressLine2 String?
+  shipPostalCode   String?
+
+  status OrderStatus @default(PENDING_PAYMENT)
+
+  paymentGateway   String    @default("payhere")
+  // PayHere's own payment id, set once their notify webhook confirms
+  // success (see app/api/payhere/notify/route.ts).
+  gatewayPaymentId String?
+  paidAt           DateTime?
+
+  discountCodeId String?
+  discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([discountCodeId])
+}
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Exactly one of these two.
+  gemstoneId String?
+  gemstone   Gemstone?     @relation(fields: [gemstoneId], references: [id])
+  jewelryId  String?
+  jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id])
+
+  label     String
+  unitPrice Float
+  quantity  Int
+  lineTotal Float
+
+  @@index([orderId])
+}
+
+// Admin-editable EMS shipping rate table — there's no public rate API, so
+// this is a flat per-order rate per destination zone rather than a live
+// carrier lookup. Exactly one row should have isFallback = true (matched
+// when the shipping country isn't listed in any other zone's countries)
+// — see lib/checkout.ts. Lazily seeded with placeholder figures on first
+// admin visit (src/app/admin/shipping-zones/page.tsx), same
+// self-provisioning convention lib/media.ts's bucket uses.
+model ShippingZone {
+  id         String   @id @default(cuid())
+  label      String
+  countries  String[]
+  isFallback Boolean  @default(false)
+
+  ratePerOrderLKR Float
+  sortOrder       Int     @default(0)
+  active          Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Singleton row (id is always the literal string "singleton") of
+// admin-editable commerce settings — read/created lazily via
+// lib/commerce-settings.ts's getCommerceSettings(), the same
+// self-provisioning pattern lib/media.ts uses for its storage bucket,
+// rather than depending on the seed script (so it works on the existing
+// prod DB too, with no migration-time data needed).
+model CommerceSettings {
+  id String @id @default("singleton")
+
+  // Sri Lanka's standard VAT rate — confirmed 18% as of this writing, but
+  // it has changed before, hence admin-editable rather than hardcoded.
+  vatPercent              Float   @default(18)
+  // Real Sri Lankan VAT practice zero-rates exports; toggle this on only
+  // if the business wants to charge VAT on international orders too.
+  applyVatToInternational Boolean @default(false)
+
+  // PayHere's actual negotiated commission — placeholder until the admin
+  // fills in the real contracted rate. handlingFeeAmount on an Order is
+  // (gatewayCommissionPercent + handlingFeeMarginPercent)% of the
+  // gateway-charged amount (subtotal - discounts + tax + shipping).
+  gatewayCommissionPercent Float @default(3.5)
+  handlingFeeMarginPercent Float @default(1)
+
+  birthdayDiscountPercent Float @default(10)
+
+  // Every order is charged in USD through PayHere regardless of shipping
+  // destination — PayHere itself settles USD (and EUR/GBP/AUD) as well as
+  // LKR, so a Sri Lankan customer's card issuer converts USD to LKR at
+  // the card network's own real-time rate when the charge settles, not
+  // via anything this app computes. The one remaining use for this rate
+  // is converting EMS's own LKR-denominated rate card (see ShippingZone)
+  // into USD to fold into that all-USD total — there's no live FX API in
+  // scope for that either; admin updates this periodically.
+  usdToLkrRate Float @default(300)
+
+  updatedAt DateTime @updatedAt
 }

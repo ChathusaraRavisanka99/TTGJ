@@ -15,6 +15,8 @@ interface JewelryCardProps {
   /** Only rendered when the admin has opted this item into public pricing. */
   price?: number | null;
   showPrice?: boolean;
+  /** The retail direct-purchase price — see CardPrice's own doc comment. */
+  retailPrice?: number | null;
   /** Set only when this piece is in the currently *live* promotional
    * collection — see getActivePromotionMaps. */
   promoPrice?: number | null;
@@ -110,6 +112,7 @@ function JewelryCardList(props: JewelryCardProps) {
         <CardPrice
           price={props.price}
           showPrice={props.showPrice}
+          retailPrice={props.retailPrice}
           promoPrice={props.promoPrice}
           priceClassName="justify-end text-right text-base sm:text-lg"
           quoteClassName="whitespace-nowrap text-right text-xs sm:text-sm"
@@ -143,6 +146,7 @@ function JewelryCardGrid(props: JewelryCardProps) {
         <CardPrice
           price={props.price}
           showPrice={props.showPrice}
+          retailPrice={props.retailPrice}
           promoPrice={props.promoPrice}
           priceClassName="mt-auto pt-2 text-base"
           quoteClassName="mt-auto pt-3 text-xs"

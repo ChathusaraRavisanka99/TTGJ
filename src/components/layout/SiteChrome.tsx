@@ -21,6 +21,7 @@ export function SiteChrome({
   year,
   showPromotions,
   showAuction,
+  cartItemCount,
   children,
 }: {
   user: SiteChromeUser | null;
@@ -35,6 +36,9 @@ export function SiteChrome({
   showPromotions: boolean;
   /** Same idea as showPromotions, for the /auction page's visibility. */
   showAuction: boolean;
+  /** Retail (shopping) cart item count for the nav's cart badge — 0 when
+   * signed out. Same "compute where it's cheap" reasoning as `year`. */
+  cartItemCount: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -45,7 +49,7 @@ export function SiteChrome({
   return (
     <>
       <IntroLoader />
-      <Navbar user={user} showPromotions={showPromotions} showAuction={showAuction} />
+      <Navbar user={user} showPromotions={showPromotions} showAuction={showAuction} cartItemCount={cartItemCount} />
       {children}
       <Footer year={year} />
     </>

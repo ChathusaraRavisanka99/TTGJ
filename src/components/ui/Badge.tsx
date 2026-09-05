@@ -59,3 +59,13 @@ const AUCTION_STATE_STYLES: Record<AuctionDisplayState, string> = {
 export function AuctionStateBadge({ state }: { state: AuctionDisplayState }) {
   return <Badge className={AUCTION_STATE_STYLES[state]}>{AUCTION_STATE_LABELS[state]}</Badge>;
 }
+
+const WHOLESALE_STATUS_STYLES: Record<string, string> = {
+  PENDING: "bg-amber-50 text-amber-800 border-amber-200",
+  APPROVED: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  REJECTED: "bg-red-50 text-red-700 border-red-200",
+};
+
+export function WholesaleStatusBadge({ status }: { status: string }) {
+  return <Badge className={WHOLESALE_STATUS_STYLES[status] ?? ""}>{status.charAt(0) + status.slice(1).toLowerCase()}</Badge>;
+}

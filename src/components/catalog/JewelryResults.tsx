@@ -16,6 +16,8 @@ export interface JewelryResultItem {
   media: { isPrimary: boolean; url: string }[];
   price: number | null;
   showPrice: boolean;
+  /** The retail direct-purchase price — see CardPrice's own doc comment. */
+  retailPrice?: number | null;
   /** Set only when this piece is in the currently *live* promotional
    * collection — see getActivePromotionMaps. */
   promoPrice?: number | null;
@@ -48,6 +50,7 @@ export function JewelryResults({ pieces }: { pieces: JewelryResultItem[] }) {
               primaryImageUrl={piece.media.find((m) => m.isPrimary)?.url ?? piece.media[0]?.url}
               price={piece.price}
               showPrice={piece.showPrice}
+              retailPrice={piece.retailPrice}
               promoPrice={piece.promoPrice}
             />
           </RevealItem>

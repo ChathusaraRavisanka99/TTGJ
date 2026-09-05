@@ -19,6 +19,10 @@ const NAV = [
   { href: "/admin/auctions", label: "Auctions" },
   { href: "/admin/invoices", label: "Invoices" },
   { href: "/admin/customers", label: "Customers" },
+  { href: "/admin/wholesale-applications", label: "Wholesale Applications" },
+  { href: "/admin/orders", label: "Retail Orders" },
+  { href: "/admin/commerce-settings", label: "Commerce Settings" },
+  { href: "/admin/shipping-zones", label: "Shipping Zones" },
 ];
 
 const MASTER_DATA = [

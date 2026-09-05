@@ -3,13 +3,23 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { generateDiscountCode } from "@/actions/discount-codes";
-import { Input, Label, FieldError, FieldHint } from "@/components/ui/Field";
+import { Input, Label, Select, FieldError, FieldHint } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
-export function GenerateDiscountCodeForm() {
+interface CustomerOption {
+  id: string;
+  email: string;
+  name: string | null;
+}
+
+export function GenerateDiscountCodeForm({ customers }: { customers: CustomerOption[] }) {
   const router = useRouter();
   const [amount, setAmount] = useState("");
   const [customCode, setCustomCode] = useState("");
+  const [scope, setScope] = useState<"SITE_WIDE" | "CUSTOMER">("SITE_WIDE");
+  const [assignedUserId, setAssignedUserId] = useState("");
+  const [maxUses, setMaxUses] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -18,7 +28,14 @@ export function GenerateDiscountCodeForm() {
     setError(null);
     setCreated(null);
     startTransition(async () => {
-      const result = await generateDiscountCode(Number(amount), customCode);
+      const result = await generateDiscountCode({
+        amountOff: Number(amount),
+        customCode,
+        scope,
+        assignedUserId: scope === "CUSTOMER" ? assignedUserId : undefined,
+        maxUses: maxUses ? Number(maxUses) : null,
+        expiresAt: expiresAt || null,
+      });
       if (!result.ok) {
         setError(result.error);
         return;
@@ -26,6 +43,8 @@ export function GenerateDiscountCodeForm() {
       setCreated(result.code ?? null);
       setAmount("");
       setCustomCode("");
+      setMaxUses("");
+      setExpiresAt("");
       router.refresh();
     });
   }
@@ -33,9 +52,11 @@ export function GenerateDiscountCodeForm() {
   return (
     <div className="rounded-xl border border-border-subtle bg-surface p-5">
       <p className="font-serif text-lg text-charcoal">Generate a Code</p>
-      <p className="mt-1 text-xs text-charcoal/50">Fixed amount off, single use — spent the moment a customer applies it to their cart.</p>
+      <p className="mt-1 text-xs text-charcoal/50">
+        Fixed amount off. Site-wide or tied to one customer, an optional use limit, and an optional expiry date.
+      </p>
 
-      <div className="mt-4 flex flex-wrap items-end gap-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <Label htmlFor="amountOff">Amount Off (USD)</Label>
           <Input
@@ -46,7 +67,6 @@ export function GenerateDiscountCodeForm() {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="E.g. 50"
-            className="w-32"
           />
         </div>
         <div>
@@ -56,10 +76,58 @@ export function GenerateDiscountCodeForm() {
             value={customCode}
             onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
             placeholder="Auto-generated if blank"
-            className="w-48 font-mono uppercase"
+            className="font-mono uppercase"
           />
         </div>
-        <Button type="button" variant="gold" size="sm" disabled={pending || !amount} onClick={handleGenerate}>
+        <div>
+          <Label htmlFor="maxUses">Max Uses</Label>
+          <Input
+            id="maxUses"
+            type="number"
+            step="1"
+            min="1"
+            value={maxUses}
+            onChange={(e) => setMaxUses(e.target.value)}
+            placeholder="Unlimited"
+          />
+        </div>
+        <div>
+          <Label htmlFor="expiresAt">Expires</Label>
+          <Input id="expiresAt" type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="scope">Who can use it</Label>
+          <Select id="scope" value={scope} onChange={(e) => setScope(e.target.value as "SITE_WIDE" | "CUSTOMER")}>
+            <option value="SITE_WIDE">Anyone (site-wide)</option>
+            <option value="CUSTOMER">One specific customer</option>
+          </Select>
+        </div>
+        {scope === "CUSTOMER" && (
+          <div>
+            <Label htmlFor="assignedUserId">Customer</Label>
+            <Select id="assignedUserId" value={assignedUserId} onChange={(e) => setAssignedUserId(e.target.value)}>
+              <option value="">Select a customer...</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name ? `${c.name} (${c.email})` : c.email}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <Button
+          type="button"
+          variant="gold"
+          size="sm"
+          disabled={pending || !amount || (scope === "CUSTOMER" && !assignedUserId)}
+          onClick={handleGenerate}
+        >
           {pending ? "Generating..." : "Generate"}
         </Button>
       </div>

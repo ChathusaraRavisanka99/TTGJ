@@ -16,6 +16,10 @@ export async function registerCustomer(formData: FormData): Promise<ActionResult
     email: formData.get("email"),
     password: formData.get("password"),
     phone: formData.get("phone") ?? "",
+    customerType: formData.get("customerType") || "RETAIL",
+    businessName: formData.get("businessName") ?? "",
+    businessRegNo: formData.get("businessRegNo") ?? "",
+    dateOfBirth: formData.get("dateOfBirth") ?? "",
   };
 
   const parsed = registerSchema.safeParse(raw);
@@ -23,7 +27,7 @@ export async function registerCustomer(formData: FormData): Promise<ActionResult
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const { name, email, password, phone } = parsed.data;
+  const { name, email, password, phone, customerType, businessName, businessRegNo, dateOfBirth } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -31,6 +35,7 @@ export async function registerCustomer(formData: FormData): Promise<ActionResult
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
+  const isWholesale = customerType === "WHOLESALE";
 
   await prisma.user.create({
     data: {
@@ -39,6 +44,16 @@ export async function registerCustomer(formData: FormData): Promise<ActionResult
       passwordHash,
       phone: phone || undefined,
       role: "CUSTOMER",
+      customerType,
+      // Retail accounts are active immediately (today's behavior,
+      // unchanged) — a wholesale registration instead sits PENDING until
+      // an admin reviews it (see actions/wholesale.ts). Approval gates
+      // nothing else in the app: a pending account can browse, quote, and
+      // buy retail exactly like any other customer in the meantime.
+      wholesaleStatus: isWholesale ? "PENDING" : undefined,
+      businessName: isWholesale ? businessName || undefined : undefined,
+      businessRegNo: isWholesale ? businessRegNo || undefined : undefined,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
     },
   });
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { getPageVisibilities } from "@/lib/page-visibility";
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { MainWrapper } from "@/components/layout/MainWrapper";
@@ -32,6 +33,16 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // server) and threaded down through SiteChrome to Footer as a plain
   // prop — see Footer.tsx for why Footer can't just compute this itself.
   const year = new Date().getFullYear();
+  // Same reasoning for the nav's cart badge — cheap enough to read fresh
+  // on every navigation rather than push it into the session/JWT. Summed
+  // quantity, not a row count, to match the cart page's own "N items"
+  // wording (retailCartSubtotal's sibling reduce in lib/retail-cart.ts).
+  const cartItemCount = session?.user
+    ? (await prisma.retailCartItem.aggregate({
+        where: { cart: { userId: session.user.id } },
+        _sum: { quantity: true },
+      }))._sum.quantity ?? 0
+    : 0;
 
   return (
     <html lang="en" className={`${cormorant.variable} ${inter.variable} h-full antialiased`}>
@@ -41,6 +52,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           year={year}
           showPromotions={visibilities.seasonal !== "HIDDEN"}
           showAuction={visibilities.auction !== "HIDDEN"}
+          cartItemCount={cartItemCount}
         >
           <MainWrapper>{children}</MainWrapper>
         </SiteChrome>

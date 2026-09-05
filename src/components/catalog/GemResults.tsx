@@ -22,6 +22,8 @@ export interface GemResultItem {
   media: { isPrimary: boolean; url: string }[];
   price: number | null;
   showPrice: boolean;
+  /** The retail direct-purchase price — see CardPrice's own doc comment. */
+  retailPrice?: number | null;
   /** Set only when this gem is in the currently *live* promotional
    * collection — see getActivePromotionMaps. */
   promoPrice?: number | null;
@@ -62,6 +64,7 @@ export function GemResults({ gems }: { gems: GemResultItem[] }) {
               primaryImageUrl={gem.media.find((m) => m.isPrimary)?.url ?? gem.media[0]?.url}
               price={gem.price}
               showPrice={gem.showPrice}
+              retailPrice={gem.retailPrice}
               promoPrice={gem.promoPrice}
             />
           </RevealItem>

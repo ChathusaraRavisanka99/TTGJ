@@ -56,7 +56,17 @@ export interface PayhereCheckoutFields {
 }
 
 export function buildPayhereCheckoutFields(input: {
-  orderId: string;
+  /** The order's own sequential number (ORD-2026-0007) — sent to PayHere
+   * as order_id and used in the hash/notify verification. Human-readable
+   * and guessable on purpose (it's just a reference), which is exactly
+   * why it's NOT what return_url/cancel_url use below. */
+  orderNumber: string;
+  /** The order's internal id (cuid) — high-entropy, not sequential, safe
+   * to put in a public (no-session-required) redirect URL without it
+   * doubling as a way to enumerate other customers' orders. See
+   * getPublicOrderStatus in actions/checkout.ts and the middleware
+   * comment on why /checkout/return and /checkout/cancel are public. */
+  orderRecordId: string;
   amount: number;
   currency: string;
   items: string;
@@ -73,10 +83,10 @@ export function buildPayhereCheckoutFields(input: {
   const amountFormatted = input.amount.toFixed(2);
   return {
     merchant_id: merchantId,
-    return_url: `${input.appUrl}/checkout/return?order=${encodeURIComponent(input.orderId)}`,
-    cancel_url: `${input.appUrl}/checkout/cancel?order=${encodeURIComponent(input.orderId)}`,
+    return_url: `${input.appUrl}/checkout/return?order=${encodeURIComponent(input.orderRecordId)}`,
+    cancel_url: `${input.appUrl}/checkout/cancel?order=${encodeURIComponent(input.orderRecordId)}`,
     notify_url: `${input.appUrl}/api/payhere/notify`,
-    order_id: input.orderId,
+    order_id: input.orderNumber,
     items: input.items,
     currency: input.currency,
     amount: amountFormatted,
@@ -87,7 +97,7 @@ export function buildPayhereCheckoutFields(input: {
     address: input.address,
     city: input.city,
     country: input.country,
-    hash: generateCheckoutHash(input.orderId, input.amount, input.currency),
+    hash: generateCheckoutHash(input.orderNumber, input.amount, input.currency),
   };
 }
 

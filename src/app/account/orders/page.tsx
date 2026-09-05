@@ -3,7 +3,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/Badge";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "My Orders" };
 
@@ -14,9 +14,15 @@ const STATUS_STYLES: Record<string, string> = {
   CANCELLED: "bg-charcoal/5 text-charcoal/60 border-charcoal/15",
 };
 
-export default async function AccountOrdersPage() {
+export default async function AccountOrdersPage({ searchParams }: PageProps<"/account/orders">) {
   const session = await auth();
   if (!session?.user) return null;
+
+  const sp = await searchParams;
+  // Set by ReturnStatus's post-payment redirect (?highlight=ORD-...#ORD-...)
+  // so a customer coming straight from PayHere lands on the right order
+  // without having to scan the whole list — see components/checkout/ReturnStatus.tsx.
+  const highlight = typeof sp.highlight === "string" ? sp.highlight : null;
 
   const orders = await prisma.order.findMany({
     where: { userId: session.user.id, status: { not: "CANCELLED" } },
@@ -38,7 +44,14 @@ export default async function AccountOrdersPage() {
       ) : (
         <div className="mt-8 space-y-4">
           {orders.map((o) => (
-            <div key={o.id} className="rounded-xl border border-border-subtle bg-surface p-5">
+            <div
+              key={o.id}
+              id={o.orderNumber}
+              className={cn(
+                "scroll-mt-24 rounded-xl border bg-surface p-5",
+                o.orderNumber === highlight ? "border-gold ring-2 ring-gold/30" : "border-border-subtle",
+              )}
+            >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-mono text-sm text-charcoal/60">{o.orderNumber}</p>
@@ -59,7 +72,7 @@ export default async function AccountOrdersPage() {
               <div className="mt-3 flex items-baseline justify-between border-t border-border-subtle pt-3">
                 <p className="font-serif text-xl text-charcoal">{formatPrice(o.total)} {o.currency}</p>
                 {o.status === "PENDING_PAYMENT" && (
-                  <Link href={`/checkout/return?order=${o.orderNumber}`} className="text-xs text-gold underline">
+                  <Link href={`/checkout/return?order=${o.id}`} className="text-xs text-gold underline">
                     Check status
                   </Link>
                 )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Safety net in case `pathname` never actually changes after a click that
@@ -18,7 +19,10 @@ const MAX_PENDING_MS = 4000;
  * appears on its own for genuinely slow loads via Suspense, no
  * coordination needed here: it renders inside <main>, which sits *behind*
  * this overlay, so if it shows up while this is still up, it just reads
- * through the blur like everything else does).
+ * through the blur like everything else does). Also renders a small
+ * "Getting things ready for you..." pill, mobile-only — see its own
+ * comment below for why a narrow viewport needs that and a desktop one
+ * doesn't.
  *
  * Deliberately NOT implemented by holding the outgoing page's content in
  * component state and swapping it after a delay (an earlier version did
@@ -78,12 +82,33 @@ export function NavigationOverlay() {
   }, [pending]);
 
   return (
-    <div
-      aria-hidden
-      className={cn(
-        "pointer-events-none fixed inset-0 z-40 bg-charcoal/10 backdrop-blur-[2px] transition-opacity duration-200",
-        pending ? "opacity-100" : "opacity-0",
-      )}
-    />
+    <>
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none fixed inset-0 z-40 bg-charcoal/10 backdrop-blur-[2px] transition-opacity duration-200",
+          pending ? "opacity-100" : "opacity-0",
+        )}
+      />
+      {/* Mobile-only: a plain blur reads fine on a big desktop viewport
+          (there's still a whole page of now-fuzzy content around it
+          signalling "something's happening"), but on a narrow phone
+          screen the same blur can look indistinguishable from the app
+          just being stuck — there's barely anything else on screen to
+          read as "in motion." This pill is the unambiguous "no really,
+          it's working" signal for that case specifically. */}
+      <div
+        aria-live="polite"
+        className={cn(
+          "pointer-events-none fixed left-1/2 top-24 z-40 -translate-x-1/2 transition-all duration-200 sm:hidden",
+          pending ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0",
+        )}
+      >
+        <div className="flex items-center gap-2 whitespace-nowrap rounded-full bg-charcoal px-4 py-2.5 text-sm text-ivory shadow-lg">
+          <Loader2 size={15} className="shrink-0 animate-spin text-gold-soft" />
+          Getting things ready for you...
+        </div>
+      </div>
+    </>
   );
 }

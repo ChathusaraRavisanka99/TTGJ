@@ -51,9 +51,21 @@ body {
    the footer completely unreachable once the last section had snap-start.
    That's a much worse bug than an occasionally-clipped arrow, so this
    stays proximity; the arrow issue is mitigated instead by giving it more
-   clearance from the section edge (see SectionArrow). */
+   clearance from the section edge (see SectionArrow).
+   sm: and up only — on a phone, snap fighting a thumb's own scroll
+   momentum reads as janky/sticky rather than the deliberate "settle on a
+   section" feel it's going for on a larger viewport with mouse/trackpad
+   scrolling, so it's off by default and only opts in at the same
+   breakpoint SectionArrow's buttons themselves reappear at (see below) —
+   the two are meant to go together, not one without the other. */
 html {
-  scroll-snap-type: y proximity;
+  scroll-snap-type: none;
+}
+
+@media (min-width: 640px) {
+  html {
+    scroll-snap-type: y proximity;
+  }
 }
 
 h1, h2, h3, h4, .font-serif {

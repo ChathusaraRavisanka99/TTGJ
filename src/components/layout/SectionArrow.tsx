@@ -17,6 +17,11 @@ import { cn } from "@/lib/utils";
  * the footer unreachable. The extra clearance is what actually keeps the
  * arrow in view after `proximity`'s slightly-off landing, without that
  * much worse trade-off.
+ *
+ * Hidden below `sm:` — a "jump to next section" button is a mouse/trackpad-
+ * era affordance; on a phone a thumb already scrolls directly, and the
+ * button just sits in the way of the content it's floating over. Matches
+ * globals.css turning scroll-snap itself off below the same breakpoint.
  */
 export function SectionArrow({
   target,
@@ -38,7 +43,7 @@ export function SectionArrow({
       onClick={() => document.getElementById(target)?.scrollIntoView({ behavior: "smooth" })}
       aria-label={direction === "up" ? "Scroll to previous section" : "Scroll to next section"}
       className={cn(
-        "absolute inset-x-0 z-10 mx-auto flex h-9 w-9 items-center justify-center rounded-full opacity-25 transition-opacity duration-300 hover:opacity-80 focus-visible:opacity-80",
+        "absolute inset-x-0 z-10 mx-auto hidden h-9 w-9 items-center justify-center rounded-full opacity-25 transition-opacity duration-300 hover:opacity-80 focus-visible:opacity-80 sm:flex",
         direction === "up" ? "top-14 sm:top-16" : "bottom-14 sm:bottom-16",
         tone === "light" ? "text-ivory" : "text-charcoal"
       )}

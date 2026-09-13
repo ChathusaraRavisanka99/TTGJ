@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Menu, X, User, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AccountMenu } from "@/components/layout/AccountMenu";
+import { AccountMenu, ACCOUNT_MENU_LINKS } from "@/components/layout/AccountMenu";
 import { signOutAction } from "@/actions/auth";
 
 const BASE_NAV_LINKS = [
@@ -225,21 +225,24 @@ export function Navbar({
           {user ? (
             <>
               <div className="mt-2 border-t border-border-subtle pt-2">
-                <Link href="/account" className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
-                  My Account
-                </Link>
-                <Link href="/account/retail-cart" className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
-                  My Cart
-                </Link>
-                <Link href="/account/orders" className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
-                  My Orders
-                </Link>
-                <Link href="/account/quotes" className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
-                  My Quote Requests
-                </Link>
-                <Link href="/account/sourcing" className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
-                  My Sourcing Requests
-                </Link>
+                {ACCOUNT_MENU_LINKS.map((link) => {
+                  const active = pathname === link.href;
+                  // Same "already here, so show it rather than link it"
+                  // treatment as the desktop AccountMenu dropdown — see
+                  // its own comment for the reasoning.
+                  if (active) {
+                    return (
+                      <span key={link.href} aria-current="page" className="block cursor-default py-3 text-sm font-medium text-charcoal">
+                        {link.label}
+                      </span>
+                    );
+                  }
+                  return (
+                    <Link key={link.href} href={link.href} className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
+                      {link.label}
+                    </Link>
+                  );
+                })}
               </div>
               <form action={signOutAction}>
                 <button type="submit" className="py-3 text-left text-sm text-charcoal/60" onClick={() => setOpen(false)}>

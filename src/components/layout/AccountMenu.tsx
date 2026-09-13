@@ -2,11 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { User, ChevronDown } from "lucide-react";
 import { signOutAction } from "@/actions/auth";
 import { cn } from "@/lib/utils";
 
-const MENU_LINKS = [
+// Shared with Navbar's mobile menu (its account section mirrors this same
+// list) so the two can't drift apart.
+export const ACCOUNT_MENU_LINKS = [
+  { href: "/", label: "Home" },
   { href: "/account", label: "My Account" },
   { href: "/account/retail-cart", label: "My Cart" },
   { href: "/account/orders", label: "My Orders" },
@@ -17,6 +21,7 @@ const MENU_LINKS = [
 export function AccountMenu({ user, transparent }: { user: { name?: string | null }; transparent: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!open) return;
@@ -44,16 +49,35 @@ export function AccountMenu({ user, transparent }: { user: { name?: string | nul
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-border-subtle bg-surface py-1.5 shadow-lg">
-          {MENU_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm text-charcoal/80 hover:bg-ivory-soft hover:text-charcoal"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {ACCOUNT_MENU_LINKS.map((link) => {
+            const active = pathname === link.href;
+            // Already there — showing it as a plain (non-Link) element
+            // styled like its own hover state means clicking it can't
+            // fire a redundant navigation/refresh, and the permanent
+            // highlight itself communicates "you're here" without
+            // needing to actually click to find out.
+            if (active) {
+              return (
+                <span
+                  key={link.href}
+                  aria-current="page"
+                  className="block cursor-default bg-ivory-soft px-4 py-2 text-sm font-medium text-charcoal"
+                >
+                  {link.label}
+                </span>
+              );
+            }
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className="block px-4 py-2 text-sm text-charcoal/80 hover:bg-ivory-soft hover:text-charcoal"
+              >
+                {link.label}
+              </Link>
+            );
+          })}
           <form action={signOutAction} className="border-t border-border-subtle mt-1 pt-1">
             <button type="submit" className="block w-full px-4 py-2 text-left text-sm text-charcoal/60 hover:bg-ivory-soft hover:text-charcoal">
               Sign Out

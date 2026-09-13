@@ -23,6 +23,18 @@ const FULL_BLEED_HERO_ROUTES = ["/", "/about", "/sourcing", "/promotions", "/pro
  * the "not just appearing right away" this exists to fix. Each route is
  * already an independent Server Component render, so remounting here
  * doesn't lose anything a real navigation wouldn't already have reset.
+ *
+ * The "blur the outgoing page" part of a navigation's loading feedback
+ * lives in NavigationOverlay (see SiteChrome), not here — an earlier
+ * version tried to do it here by holding the previous `children` in state
+ * for a beat before swapping. Verified live (instrumented render/effect
+ * logging) that doesn't work reliably: Next's Suspense-streamed
+ * `children` and `usePathname()` don't always update in lockstep, so
+ * "snapshot the old children" ended up snapshotting the *new* route's
+ * loading.tsx fallback in some runs instead of the actual outgoing page.
+ * A `backdrop-blur` overlay sitting on top of whatever's currently
+ * painted sidesteps that entirely — it doesn't care what's underneath or
+ * when it changes.
  */
 export function MainWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

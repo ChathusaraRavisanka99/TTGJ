@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { IntroLoader } from "./IntroLoader";
+import { NavigationOverlay } from "./NavigationOverlay";
 
 interface SiteChromeUser {
   name?: string | null;
@@ -49,6 +50,7 @@ export function SiteChrome({
   return (
     <>
       <IntroLoader />
+      <NavigationOverlay />
       <Navbar user={user} showPromotions={showPromotions} showAuction={showAuction} cartItemCount={cartItemCount} />
       {children}
       <Footer year={year} />

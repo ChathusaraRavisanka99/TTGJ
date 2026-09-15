@@ -244,8 +244,16 @@ export function Navbar({
                   );
                 })}
               </div>
+              {/* No onClick={() => setOpen(false)} here (unlike the Links
+                  above) — closing the menu is a state update that
+                  unmounts this very form mid-click, which raced with and
+                  silently swallowed the submit before signOutAction ever
+                  ran (verified live: the session cookie survived the
+                  click). signOutAction's own redirectTo navigates away
+                  once it actually completes, which closes this menu by
+                  replacing the whole page — no manual close needed. */}
               <form action={signOutAction}>
-                <button type="submit" className="py-3 text-left text-sm text-charcoal/60" onClick={() => setOpen(false)}>
+                <button type="submit" className="py-3 text-left text-sm text-charcoal/60">
                   Sign Out
                 </button>
               </form>

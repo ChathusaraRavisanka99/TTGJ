@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { updateSubcultureText } from "@/actions/subculture-content";
+import { updateSubcultureText, updateSubcultureSlug } from "@/actions/subculture-content";
 import { Input, Textarea, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { PageVisibilityControl } from "@/components/admin/PageVisibilityControl";
@@ -68,13 +68,14 @@ export function SubcultureContentForm({
       </div>
 
       <div className="mt-4 flex items-center justify-between">
-        <p className="text-xs text-charcoal/50">
-          Never linked from the main site — reachable only at{" "}
-          <code className="rounded bg-ivory-soft px-1 py-0.5">/collections/{tab}</code>.
-        </p>
-        <Link href={`/collections/${tab}`} target="_blank" className="text-sm text-gold underline">
+        <p className="text-xs text-charcoal/50">Never linked from the main site — reachable only by direct URL.</p>
+        <Link href={`/collections/${content.urlSlug}`} target="_blank" className="text-sm text-gold underline">
           View live page ↗
         </Link>
+      </div>
+
+      <div className="mt-6 rounded-xl border border-border-subtle bg-surface p-5">
+        <SubcultureSlugForm key={tab} collection={tab} initialSlug={content.urlSlug} />
       </div>
 
       <div className="mt-6 rounded-xl border border-border-subtle bg-surface p-5">
@@ -126,6 +127,54 @@ export function SubcultureContentForm({
           <SubcultureItemsManager key={tab} collection={tab} gemstones={gemstones} jewelry={jewelry} items={itemsByCollection[tab]} />
         </div>
       </div>
+    </div>
+  );
+}
+
+// Renaming takes effect immediately (the route resolves whatever's
+// currently saved on every request — see resolveBySlug in
+// collections/[slug]/page.tsx), but the old URL simply stops working;
+// nothing redirects it forward, so this warns before saving.
+function SubcultureSlugForm({ collection, initialSlug }: { collection: SubcultureKey; initialSlug: string }) {
+  const router = useRouter();
+  const [slug, setSlug] = useState(initialSlug);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit() {
+    setError(null);
+    setSaved(false);
+    if (slug !== initialSlug && !confirm(`Change the live URL from /collections/${initialSlug} to /collections/${slug}? The old link will stop working immediately.`)) {
+      return;
+    }
+    setPending(true);
+    const result = await updateSubcultureSlug(collection, slug);
+    setPending(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setSaved(true);
+    router.refresh();
+  }
+
+  return (
+    <div>
+      <Label htmlFor="urlSlug">URL Slug</Label>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-charcoal/50">/collections/</span>
+        <Input id="urlSlug" value={slug} onChange={(e) => setSlug(e.target.value)} className="w-64" />
+        <Button type="button" variant="outline" size="sm" disabled={pending || slug === initialSlug} onClick={handleSubmit}>
+          {pending ? "Saving..." : "Save Slug"}
+        </Button>
+        {saved && !error && <span className="text-sm text-green-700">Saved.</span>}
+      </div>
+      <p className="mt-1.5 text-xs text-charcoal/50">
+        Lowercase letters, numbers, and hyphens only. Changing this updates the live page immediately — the old URL
+        stops working right away, nothing forwards it.
+      </p>
+      <FieldError>{error ?? undefined}</FieldError>
     </div>
   );
 }

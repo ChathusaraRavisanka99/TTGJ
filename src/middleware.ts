@@ -11,9 +11,42 @@ import authConfig from "@/lib/auth.config";
 // `auth()` built from just the edge-safe slice of the config.
 const { auth } = NextAuth(authConfig);
 
+// Known legitimate non-browser clients that must still get through —
+// search engine crawlers (so the sitemap-driven discoverability these
+// pages are built for actually works) and the link-preview bots chat
+// apps use to render an OG card when someone shares a /collections URL.
+const ALLOWED_BOT_UA = /googlebot|bingbot|duckduckbot|slurp|baiduspider|yandexbot|applebot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|whatsapp|telegrambot/i;
+
+// A handful of common non-browser HTTP client signatures. This is a
+// speed bump against casual scraping, not real security — curl (or
+// anything else) can trivially set `-A "Mozilla/5.0 ..."` and sail
+// through, since a User-Agent is just a header the client chooses to
+// send. It's scoped to /collections only: these are the hidden pages
+// meant to be found by a person following a link, not queried directly.
+const NON_BROWSER_UA = /^curl\/|^wget\/|python-requests|python-urllib|okhttp|go-http-client|java\/|apache-httpclient|libwww-perl|postmanruntime|insomnia|httpie|^axios\/|node-fetch/i;
+
+function isBrowserRequest(userAgent: string): boolean {
+  if (!userAgent) return false;
+  if (ALLOWED_BOT_UA.test(userAgent)) return true;
+  if (NON_BROWSER_UA.test(userAgent)) return false;
+  // Every real desktop/mobile browser (Chrome, Firefox, Safari, Edge)
+  // includes "Mozilla/5.0" for historical compatibility reasons — a
+  // request without it almost certainly isn't one.
+  return /mozilla/i.test(userAgent);
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const role = req.auth?.user?.role;
+
+  if (pathname.startsWith("/collections")) {
+    const userAgent = req.headers.get("user-agent") ?? "";
+    if (!isBrowserRequest(userAgent)) {
+      // Reads as though the route doesn't exist, same as a page that's
+      // actually Hidden — no hint that a stricter check exists at all.
+      return new NextResponse("Not Found", { status: 404 });
+    }
+  }
 
   // Includes the query string (e.g. ?highlight=ORD-...), not just the
   // bare pathname — otherwise a redirect like /account/orders?highlight=
@@ -58,5 +91,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/account/:path*", "/checkout/:path*"],
+  matcher: ["/admin/:path*", "/account/:path*", "/checkout/:path*", "/collections/:path*"],
 };

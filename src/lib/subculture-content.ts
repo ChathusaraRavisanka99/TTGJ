@@ -17,6 +17,16 @@ export interface SubcultureImage {
 }
 
 export interface SubcultureContent {
+  /** The public /collections/<urlSlug> path segment — admin-editable
+   * (src/actions/subculture-content.ts's updateSubcultureSlug), decoupled
+   * from this collection's internal SubcultureKey so renaming the URL
+   * never touches PageVisibility, SubcultureCollectionItem, or this row's
+   * own storage key, all of which stay keyed by the stable internal id.
+   * Defaults to that internal id. Takes effect immediately — the route
+   * resolves whatever's currently saved here on every request, not a
+   * build-time list — but the old URL simply 404s once changed; nothing
+   * redirects it forward. */
+  urlSlug: string;
   heroKicker: string;
   heroHeading: string;
   heroSubtext: string;
@@ -49,7 +59,7 @@ export interface SubcultureContent {
   ogImage: string;
 }
 
-const BASE_DEFAULTS: Omit<SubcultureContent, "heroKicker" | "heroHeading" | "heroSubtext" | "heroCtaLabel" | "introKicker" | "introHeading" | "introBody" | "seoTitle" | "seoDescription" | "crossLinkBlurb"> = {
+const BASE_DEFAULTS: Omit<SubcultureContent, "urlSlug" | "heroKicker" | "heroHeading" | "heroSubtext" | "heroCtaLabel" | "introKicker" | "introHeading" | "introBody" | "seoTitle" | "seoDescription" | "crossLinkBlurb"> = {
   heroImage: "",
   heroImageAlt: "",
   heroImageMobile: "",
@@ -63,6 +73,7 @@ const BASE_DEFAULTS: Omit<SubcultureContent, "heroKicker" | "heroHeading" | "her
 export const DEFAULT_SUBCULTURE_CONTENT: Record<SubcultureKey, SubcultureContent> = {
   "goth-dark-romantic": {
     ...BASE_DEFAULTS,
+    urlSlug: "goth-dark-romantic",
     heroKicker: "Goth / Dark Romantic",
     heroHeading: "Beauty in the Dark.",
     heroSubtext: "Natural gemstones crafted for those who find elegance beyond the ordinary.",
@@ -78,6 +89,7 @@ export const DEFAULT_SUBCULTURE_CONTENT: Record<SubcultureKey, SubcultureContent
   },
   "vampire-gothic-fantasy": {
     ...BASE_DEFAULTS,
+    urlSlug: "vampire-gothic-fantasy",
     heroKicker: "Vampire / Gothic Fantasy",
     heroHeading: "Born After Dark.",
     heroSubtext: "Deep color. Ancient beauty. Jewelry for the night.",
@@ -93,6 +105,7 @@ export const DEFAULT_SUBCULTURE_CONTENT: Record<SubcultureKey, SubcultureContent
   },
   "dark-academia": {
     ...BASE_DEFAULTS,
+    urlSlug: "dark-academia",
     heroKicker: "Dark Academia",
     heroHeading: "For Those Who Appreciate the Uncommon.",
     heroSubtext: "Natural gemstones, quiet luxury and timeless craftsmanship.",
@@ -108,6 +121,7 @@ export const DEFAULT_SUBCULTURE_CONTENT: Record<SubcultureKey, SubcultureContent
   },
   "metal-rock": {
     ...BASE_DEFAULTS,
+    urlSlug: "metal-rock",
     heroKicker: "Metal / Rock",
     heroHeading: "Wear It Loud.",
     heroSubtext: "Raw materials. Dark stones. Uncompromising character.",
@@ -123,6 +137,7 @@ export const DEFAULT_SUBCULTURE_CONTENT: Record<SubcultureKey, SubcultureContent
   },
   "witchy-occult": {
     ...BASE_DEFAULTS,
+    urlSlug: "witchy-occult",
     heroKicker: "Witchy / Occult",
     heroHeading: "Wear What Calls to You.",
     heroSubtext: "Natural gemstones chosen for their color, character and mystery.",
@@ -158,4 +173,17 @@ export async function saveSubcultureContent(key: SubcultureKey, data: Partial<Su
 
 export function subcultureLabel(key: SubcultureKey): string {
   return SUBCULTURE_COLLECTIONS[key]?.label ?? key;
+}
+
+export const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** Finds which collection currently owns a given public URL slug — the
+ * route's one lookup step (src/app/collections/[slug]/page.tsx), so a
+ * renamed slug resolves correctly on the very next request with no
+ * rebuild. Only five (soon more) rows, so fetching all of them and
+ * scanning is simpler and cheap — no separate slug-to-key index table. */
+export async function resolveCollectionKeyBySlug(urlSlug: string): Promise<SubcultureKey | null> {
+  const all = await getAllSubcultureContent();
+  const match = SUBCULTURE_KEYS.find((key) => all[key].urlSlug === urlSlug);
+  return match ?? null;
 }

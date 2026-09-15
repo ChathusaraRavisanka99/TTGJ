@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { PAGE_VISIBILITY_KEYS, type PageVisibilityKey, type PageVisibilityState } from "@/lib/page-visibility";
+import { isSubcultureKey } from "@/lib/subculture-collections";
+import { getSubcultureContent } from "@/lib/subculture-content";
 import type { ActionResult } from "./auth";
 
 const STATES: PageVisibilityState[] = ["HIDDEN", "COMING_SOON", "LIVE"];
@@ -25,7 +27,13 @@ export async function setPageVisibility(key: PageVisibilityKey, state: PageVisib
   revalidatePath("/promotions");
   revalidatePath("/auction");
   revalidatePath("/admin/promotions");
-  revalidatePath(`/collections/${key}`);
   revalidatePath("/admin/alt-collections");
+  revalidatePath("/sitemap.xml");
+  // A subculture collection's public path is its current, admin-editable
+  // urlSlug, not this PageVisibility key — see SubcultureContent.urlSlug.
+  if (isSubcultureKey(key)) {
+    const content = await getSubcultureContent(key);
+    revalidatePath(`/collections/${content.urlSlug}`);
+  }
   return { ok: true };
 }

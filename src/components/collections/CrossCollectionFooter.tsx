@@ -9,10 +9,15 @@ export function CrossCollectionFooter({
   currentKey,
   blurb,
   liveKeys,
+  slugsByKey,
 }: {
   currentKey: SubcultureKey;
   blurb: string;
   liveKeys: SubcultureKey[];
+  /** Current public slug per collection (admin-editable) — never the
+   * fixed code-level `.slug` on SubcultureDef, which won't reflect a
+   * rename. */
+  slugsByKey: Record<SubcultureKey, string>;
 }) {
   const others = SUBCULTURE_LIST.filter((c) => c.key !== currentKey && liveKeys.includes(c.key));
   if (others.length === 0) return null;
@@ -25,7 +30,7 @@ export function CrossCollectionFooter({
           {others.map((c) => (
             <Link
               key={c.key}
-              href={`/collections/${c.slug}`}
+              href={`/collections/${slugsByKey[c.key]}`}
               className="group rounded-xl border border-white/10 bg-white/[0.03] p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:bg-white/[0.06]"
             >
               <span className="text-2xl">{c.emoji}</span>

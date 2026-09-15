@@ -22,11 +22,15 @@ export function AlternativeCollectionPage({
   content,
   items,
   liveKeys,
+  slugsByKey,
 }: {
   theme: SubcultureDef;
   content: SubcultureContent;
   items: CollectionCardData[];
   liveKeys: SubcultureKey[];
+  /** Every collection's current public slug (admin-editable — see
+   * SubcultureContent.urlSlug), for the cross-collection footer's links. */
+  slugsByKey: Record<SubcultureKey, string>;
 }) {
   const hasHero = Boolean(content.heroImage);
 
@@ -140,7 +144,7 @@ export function AlternativeCollectionPage({
       )}
 
       {/* ---------- Cross-collection discovery ---------- */}
-      <CrossCollectionFooter currentKey={theme.key} blurb={content.crossLinkBlurb} liveKeys={liveKeys} />
+      <CrossCollectionFooter currentKey={theme.key} blurb={content.crossLinkBlurb} liveKeys={liveKeys} slugsByKey={slugsByKey} />
     </div>
   );
 }

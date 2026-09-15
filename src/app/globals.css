@@ -265,6 +265,69 @@ h1, h2, h3, h4, .font-serif {
   animation-delay: var(--particle-delay, 0s);
 }
 
+/* Subculture collection pages (src/components/collections/decor) — one
+   small bespoke atmosphere per theme, layered under the shared
+   DriftParticles glyph drift above. Every one of these is pure CSS
+   (no JS animation library) so it costs nothing before hydration. */
+
+/* Vampire: two blurred mist bands drifting past each other at different
+   speeds/directions — linear timing again, for the same seamless-loop
+   reason particle-fall/rise use it. */
+@keyframes mist-drift-a {
+  0% { transform: translateX(-15%); }
+  100% { transform: translateX(15%); }
+}
+@keyframes mist-drift-b {
+  0% { transform: translateX(10%); }
+  100% { transform: translateX(-10%); }
+}
+.animate-mist-drift-a {
+  animation: mist-drift-a 22s ease-in-out infinite alternate;
+}
+.animate-mist-drift-b {
+  animation: mist-drift-b 28s ease-in-out infinite alternate;
+}
+
+/* Dark Academia: an irregular candle flicker — more, unevenly-spaced
+   keyframe stops than gem-sparkle's clean sine pulse, so it reads as a
+   real flame rather than a metronome. */
+@keyframes candle-flicker {
+  0%, 100% { opacity: 0.55; }
+  8% { opacity: 0.4; }
+  22% { opacity: 0.65; }
+  35% { opacity: 0.45; }
+  52% { opacity: 0.6; }
+  68% { opacity: 0.42; }
+  83% { opacity: 0.58; }
+}
+.animate-candle-flicker {
+  animation: candle-flicker 6s ease-in-out infinite;
+}
+
+/* Metal/Rock: a diagonal stage-light beam sweeping across the hero. */
+@keyframes stage-sweep {
+  0% { transform: translateX(-60%) rotate(-8deg); opacity: 0; }
+  15% { opacity: 0.5; }
+  50% { opacity: 0.7; }
+  85% { opacity: 0.3; }
+  100% { transform: translateX(60%) rotate(-8deg); opacity: 0; }
+}
+.animate-stage-sweep {
+  animation: stage-sweep 7s ease-in-out infinite;
+}
+
+/* Witchy/Occult: a very slow rotation for the celestial diagram ring —
+   its own class (not Tailwind's animate-spin) so it can be muted by
+   prefers-reduced-motion below without touching functional spinners
+   elsewhere in the app. */
+@keyframes celestial-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-celestial-rotate {
+  animation: celestial-rotate 90s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
   .animate-scroll-cue,
@@ -276,7 +339,12 @@ h1, h2, h3, h4, .font-serif {
   .animate-miner-swing,
   .animate-gem-sparkle,
   .animate-particle-fall,
-  .animate-particle-rise {
+  .animate-particle-rise,
+  .animate-mist-drift-a,
+  .animate-mist-drift-b,
+  .animate-candle-flicker,
+  .animate-stage-sweep,
+  .animate-celestial-rotate {
     animation: none;
   }
 }

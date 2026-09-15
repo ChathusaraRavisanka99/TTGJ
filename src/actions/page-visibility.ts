@@ -20,10 +20,12 @@ export async function setPageVisibility(key: PageVisibilityKey, state: PageVisib
   });
 
   // Every route this could plausibly affect — cheap to over-revalidate a
-  // couple of paths versus wiring a key-to-path map for two entries.
+  // handful of paths versus wiring a key-to-path map for so few entries.
   revalidatePath("/", "layout");
   revalidatePath("/promotions");
   revalidatePath("/auction");
   revalidatePath("/admin/promotions");
+  revalidatePath(`/collections/${key}`);
+  revalidatePath("/admin/alt-collections");
   return { ok: true };
 }

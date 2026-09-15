@@ -1,13 +1,27 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { getPageVisibilities } from "@/lib/page-visibility";
+import { SUBCULTURE_KEYS } from "@/lib/subculture-collections";
 
 const BASE_URL = process.env.AUTH_URL ?? "http://localhost:3000";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [gems, jewelry] = await Promise.all([
+  const [gems, jewelry, collectionVisibilities] = await Promise.all([
     prisma.gemstone.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }),
     prisma.jewelryPiece.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }),
+    getPageVisibilities([...SUBCULTURE_KEYS]),
   ]);
+
+  // The five hidden subculture collections: never linked from nav, but —
+  // unlike /promotions, which deliberately omits itself here — these
+  // should be discoverable by search engines once an admin turns one on,
+  // per the brief's explicit ask. Hidden ones stay out entirely, same
+  // "doesn't exist publicly yet" rule the page itself enforces.
+  const collectionRoutes: MetadataRoute.Sitemap = SUBCULTURE_KEYS.filter((key) => collectionVisibilities[key] === "LIVE").map((key) => ({
+    url: `${BASE_URL}/collections/${key}`,
+    changeFrequency: "weekly",
+    priority: 0.5,
+  }));
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}/`, changeFrequency: "weekly", priority: 1 },
@@ -32,5 +46,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...gemRoutes, ...jewelryRoutes];
+  return [...staticRoutes, ...gemRoutes, ...jewelryRoutes, ...collectionRoutes];
 }

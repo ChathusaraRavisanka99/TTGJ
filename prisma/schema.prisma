@@ -286,6 +286,7 @@ model Gemstone {
   jewelryGemstoneLink  JewelryGemstoneLink[]
   auctions             Auction[]
   promotionItems       PromotionItem[]
+  subcultureItems      SubcultureCollectionItem[]
   taggedInChatMessages ChatMessage[]
   retailCartItems      RetailCartItem[]
   orderItems           OrderItem[]
@@ -351,6 +352,7 @@ model JewelryPiece {
   quoteRequests        QuoteRequest[]
   auctions             Auction[]
   promotionItems       PromotionItem[]
+  subcultureItems      SubcultureCollectionItem[]
   taggedInChatMessages ChatMessage[]
   retailCartItems      RetailCartItem[]
   orderItems           OrderItem[]
@@ -937,6 +939,48 @@ model PromotionItem {
   @@index([gemstoneId])
   @@index([jewelryId])
   @@index([theme])
+}
+
+// ---------- Alternative (subculture) collections ----------
+//
+// Hidden-by-default landing pages at /collections/[slug] targeting
+// alternative-fashion subcultures (Goth, Vampire/Gothic Fantasy, Dark
+// Academia, Metal/Rock, Witchy/Occult) — never linked from the main nav,
+// only reachable by direct URL. Visibility is tracked per collection via
+// PageVisibility (key == this row's `collection`), same on/off mechanism
+// PromotionItem's page already uses. Unlike PromotionItem, all five
+// collections can be enabled independently at once (no single "active"
+// one), so there's no promoPrice here — this is pure curation, not a
+// discount collection — and `featured` replaces it, for the admin to
+// highlight a handful of items within a collection's own grid.
+//
+// `collection` is a plain string validated at the app level against
+// SUBCULTURE_KEYS (src/lib/subculture-collections.ts), the same
+// no-enum-no-migration-for-a-new-key convention PromotionItem.theme and
+// PageVisibility.key already use — adding a sixth subculture later is a
+// code change, not a migration.
+model SubcultureCollectionItem {
+  id         String @id @default(cuid())
+  collection String
+
+  gemstoneId String?
+  gemstone   Gemstone?     @relation(fields: [gemstoneId], references: [id], onDelete: Cascade)
+  jewelryId  String?
+  jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
+
+  // Curated highlight within this collection's own grid — independent of
+  // Gemstone.isFeatured/JewelryPiece.isFeatured, which drive the
+  // homepage's own featured sections.
+  featured  Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([collection, gemstoneId])
+  @@unique([collection, jewelryId])
+  @@index([gemstoneId])
+  @@index([jewelryId])
+  @@index([collection])
 }
 
 // ---------- Retail commerce ----------

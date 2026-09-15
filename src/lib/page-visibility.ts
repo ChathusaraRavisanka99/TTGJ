@@ -4,7 +4,15 @@ import { prisma } from "@/lib/prisma";
 // key and this is the only spot that needs updating to register a new
 // one. Not DB-enforced (PageVisibility.key is a plain string), just a
 // safety net against a typo'd key silently doing nothing.
-export const PAGE_VISIBILITY_KEYS = ["seasonal", "auction"] as const;
+export const PAGE_VISIBILITY_KEYS = [
+  "seasonal",
+  "auction",
+  "goth-dark-romantic",
+  "vampire-gothic-fantasy",
+  "dark-academia",
+  "metal-rock",
+  "witchy-occult",
+] as const;
 export type PageVisibilityKey = (typeof PAGE_VISIBILITY_KEYS)[number];
 
 export type PageVisibilityState = "HIDDEN" | "COMING_SOON" | "LIVE";

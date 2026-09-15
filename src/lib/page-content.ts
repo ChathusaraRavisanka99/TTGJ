@@ -198,6 +198,13 @@ export async function getSeasonalContent(): Promise<SeasonalContent> {
 export type { AboutContent } from "@/lib/about-blocks";
 export { DEFAULT_ABOUT_CONTENT } from "@/lib/about-blocks";
 
+// The five hidden subculture collection pages (/collections/[slug]) — one
+// PageContent row per collection, keyed "collection:<slug>". Content shape
+// and defaults live in subculture-content.ts, re-exported here for the
+// same single-import-path reason as AboutContent above.
+export type { SubcultureContent, SubcultureImage } from "@/lib/subculture-content";
+export { DEFAULT_SUBCULTURE_CONTENT, getSubcultureContent, saveSubcultureContent } from "@/lib/subculture-content";
+
 export async function getPageContent<T extends object>(page: string, defaults: T): Promise<T> {
   const row = await prisma.pageContent.findUnique({ where: { page } });
   if (!row || typeof row.data !== "object" || row.data === null) return defaults;

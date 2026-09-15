@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { pollChatMessages } from "@/actions/chat";
@@ -36,6 +37,7 @@ export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin
 
   const spec = quote.configuredSpec as ConfiguredSpec | null;
   const gemVisual = getQuoteGemVisual(quote);
+  const referenceImages = (quote.referenceImages as string[] | null) ?? [];
 
   return (
     <div className="max-w-6xl">
@@ -62,6 +64,9 @@ export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin
             )}
             {!quote.gemstone && !quote.jewelry && spec && (
               <p className="mt-1 text-charcoal">Configured gem</p>
+            )}
+            {!quote.gemstone && !quote.jewelry && !spec && (
+              <p className="mt-1 text-charcoal">Custom Design</p>
             )}
             <p className="mt-2 text-sm text-charcoal/60">Quantity: {quote.quantity}</p>
             <p className="text-xs text-charcoal/45">Submitted {quote.createdAt.toLocaleString()}</p>
@@ -92,7 +97,20 @@ export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin
                   <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs text-amber-800">⚠ May contain a price offer — review</span>
                 )}
               </div>
-              <p className="mt-2 text-sm text-charcoal">{quote.note}</p>
+              <p className="mt-2 whitespace-pre-line text-sm text-charcoal">{quote.note}</p>
+            </div>
+          )}
+
+          {referenceImages.length > 0 && (
+            <div className="rounded-xl border border-border-subtle bg-surface p-5">
+              <p className="text-xs uppercase tracking-wide text-charcoal/45">Reference Images</p>
+              <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {referenceImages.map((src) => (
+                  <a key={src} href={src} target="_blank" rel="noreferrer" className="relative block aspect-square overflow-hidden rounded-lg border border-border-subtle">
+                    <Image src={src} alt="Customer reference image" fill sizes="150px" className="object-cover" />
+                  </a>
+                ))}
+              </div>
             </div>
           )}
 

@@ -79,7 +79,7 @@ export function SubcultureContentForm({
       </div>
 
       <div className="mt-6 rounded-xl border border-border-subtle bg-surface p-5">
-        <PageVisibilityControl pageKey={tab} currentState={visibilityByCollection[tab]} />
+        <PageVisibilityControl key={tab} pageKey={tab} currentState={visibilityByCollection[tab]} />
       </div>
 
       <div className="mt-8 border-t border-border-subtle pt-8">

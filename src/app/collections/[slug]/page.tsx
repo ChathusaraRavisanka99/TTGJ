@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { getPageVisibility, getPageVisibilities } from "@/lib/page-visibility";
 import { getAllSubcultureContent } from "@/lib/subculture-content";
 import { getCollectionItems, toCollectionCardData } from "@/lib/subculture-items";
@@ -73,7 +74,7 @@ export default async function SubcultureCollectionPage({ params }: PageProps<"/c
   // doc comment: defaults to HIDDEN until an admin turns a page on).
   if (visibility === "HIDDEN") notFound();
 
-  const [rows, visibilities] = await Promise.all([getCollectionItems(key), getPageVisibilities([...SUBCULTURE_KEYS])]);
+  const [rows, visibilities, session] = await Promise.all([getCollectionItems(key), getPageVisibilities([...SUBCULTURE_KEYS]), auth()]);
 
   const content = all[key];
   const items = rows.map(toCollectionCardData).filter((item) => item !== null);
@@ -105,7 +106,14 @@ export default async function SubcultureCollectionPage({ params }: PageProps<"/c
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <AlternativeCollectionPage theme={theme} content={content} items={items} liveKeys={liveKeys} slugsByKey={slugsByKey} />
+      <AlternativeCollectionPage
+        theme={theme}
+        content={content}
+        items={items}
+        liveKeys={liveKeys}
+        slugsByKey={slugsByKey}
+        isSignedIn={!!session?.user}
+      />
     </>
   );
 }

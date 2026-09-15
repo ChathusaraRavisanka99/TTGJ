@@ -86,7 +86,7 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
                         aria-hidden
                       />
                     )}
-                    {q.gemstone?.name ?? q.jewelry?.name ?? "Configured gem"}
+                    {q.gemstone?.name ?? q.jewelry?.name ?? (q.productType === "CUSTOM" ? "Custom Design" : "Configured gem")}
                     {unread > 0 && (
                       <span className="flex items-center gap-1 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-medium text-charcoal">
                         <MessageCircle size={10} /> {unread}

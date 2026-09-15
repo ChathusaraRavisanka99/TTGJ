@@ -9,6 +9,16 @@ import { cn } from "@/lib/utils";
 const controlClass =
   "rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-xs text-white/80 focus:outline-none focus:ring-1 focus:ring-white/30";
 
+// <option> elements render in the browser's own native dropdown popup, not
+// this component's dark-themed box — Chrome/Firefox/Edge do honor `color`/
+// `background-color` set directly on <option>, but the select's inherited
+// text-white/80 was leaking into that popup with no matching dark
+// background, so every option rendered as near-invisible light text on the
+// popup's default white background. Setting both explicitly on each
+// <option> fixes that without touching the (correctly dark-on-dark)
+// trigger itself.
+const optionClass = "bg-neutral-900 text-white";
+
 function matchesSection(item: CollectionCardData, hints: string[]): boolean {
   const mineral = item.mineralName?.toLowerCase() ?? "";
   return hints.some((hint) => mineral.includes(hint));
@@ -51,22 +61,22 @@ export function CollectionGrid({ items, theme }: { items: CollectionCardData[]; 
     <div>
       <div className="flex flex-wrap items-center gap-2.5">
         <select value={gemstone} onChange={(e) => setGemstone(e.target.value)} className={controlClass}>
-          <option value="">All Gemstones</option>
+          <option className={optionClass} value="">All Gemstones</option>
           {gemstoneOptions.map((g) => (
-            <option key={g} value={g}>{g}</option>
+            <option key={g} className={optionClass} value={g}>{g}</option>
           ))}
         </select>
         <select value={type} onChange={(e) => setType(e.target.value as typeof type)} className={controlClass}>
-          <option value="">All Types</option>
-          <option value="gemstone">Loose Gemstones</option>
-          <option value="jewelry">Jewelry</option>
+          <option className={optionClass} value="">All Types</option>
+          <option className={optionClass} value="gemstone">Loose Gemstones</option>
+          <option className={optionClass} value="jewelry">Jewelry</option>
         </select>
         <select value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className={controlClass}>
-          <option value="">Any Price</option>
-          <option value="500">Up to $500</option>
-          <option value="1000">Up to $1,000</option>
-          <option value="2500">Up to $2,500</option>
-          <option value="5000">Up to $5,000</option>
+          <option className={optionClass} value="">Any Price</option>
+          <option className={optionClass} value="500">Up to $500</option>
+          <option className={optionClass} value="1000">Up to $1,000</option>
+          <option className={optionClass} value="2500">Up to $2,500</option>
+          <option className={optionClass} value="5000">Up to $5,000</option>
         </select>
         <label className={cn(controlClass, "flex cursor-pointer items-center gap-2")}>
           <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="accent-current" />

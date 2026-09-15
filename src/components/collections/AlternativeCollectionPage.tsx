@@ -7,6 +7,7 @@ import { LinkButton } from "@/components/ui/Button";
 import { CollectionDecor } from "@/components/collections/decor/CollectionDecor";
 import { CollectionGrid } from "@/components/collections/CollectionGrid";
 import { CrossCollectionFooter } from "@/components/collections/CrossCollectionFooter";
+import { CustomJewelryRequestForm } from "@/components/collections/CustomJewelryRequestForm";
 import { cn } from "@/lib/utils";
 
 // The reusable shell every /collections/[slug] page renders through (see
@@ -23,6 +24,7 @@ export function AlternativeCollectionPage({
   items,
   liveKeys,
   slugsByKey,
+  isSignedIn,
 }: {
   theme: SubcultureDef;
   content: SubcultureContent;
@@ -31,6 +33,10 @@ export function AlternativeCollectionPage({
   /** Every collection's current public slug (admin-editable — see
    * SubcultureContent.urlSlug), for the cross-collection footer's links. */
   slugsByKey: Record<SubcultureKey, string>;
+  /** Gates the "Commission a Custom Piece" section's form vs. a sign-in
+   * prompt — same convention as /sourcing's SourcingForm, since a
+   * submitted request needs an account to review/reply against. */
+  isSignedIn: boolean;
 }) {
   const hasHero = Boolean(content.heroImage);
 
@@ -142,6 +148,34 @@ export function AlternativeCollectionPage({
           ))}
         </RevealGroup>
       )}
+
+      {/* ---------- Custom design submission ---------- */}
+      <section className="relative mx-auto max-w-2xl px-5 pb-20 sm:px-8 sm:pb-28">
+        <Reveal>
+          <p className={cn("text-xs uppercase tracking-[0.35em]", theme.kickerClass)}>Bespoke</p>
+          <h2 className={cn("mt-4 font-serif text-3xl leading-tight sm:text-4xl", theme.headingClass)}>Commission a Custom Piece</h2>
+          <p className={cn("mt-4 leading-relaxed", theme.bodyClass)}>
+            Have something specific in mind for this look? Describe it — attach reference images if you have them —
+            and our design team will follow up with a quote.
+          </p>
+        </Reveal>
+        <Reveal delay={0.1} className="mt-8">
+          {isSignedIn ? (
+            <CustomJewelryRequestForm theme={theme} collectionLabel={theme.label} />
+          ) : (
+            <div className={cn("rounded-2xl border p-6", theme.cardBorderClass)}>
+              <p className={theme.bodyClass}>Sign in to submit a custom design request.</p>
+              <LinkButton
+                href={`/account/login?callbackUrl=%2Fcollections%2F${encodeURIComponent(content.urlSlug)}`}
+                variant={theme.buttonVariant}
+                className="mt-4"
+              >
+                Sign in
+              </LinkButton>
+            </div>
+          )}
+        </Reveal>
+      </section>
 
       {/* ---------- Cross-collection discovery ---------- */}
       <CrossCollectionFooter currentKey={theme.key} blurb={content.crossLinkBlurb} liveKeys={liveKeys} slugsByKey={slugsByKey} />

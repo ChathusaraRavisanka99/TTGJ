@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils";
 // pt-24 nav-clearance padding below, or a strip of bare background shows up
 // between the fixed Navbar and the top of their hero image.
 const FULL_BLEED_HERO_ROUTES = ["/", "/about", "/sourcing", "/promotions", "/promotions/collection"];
+// /collections/[slug] (the hidden subculture landing pages) is dynamic, so
+// it can't be listed above — every page under it opens with the same
+// full-bleed min-h-dvh hero (see AlternativeCollectionPage).
+const FULL_BLEED_HERO_PREFIXES = ["/collections/"];
 
 /**
  * The Navbar is fixed (not sticky) so it can float transparently over the
@@ -38,7 +42,7 @@ const FULL_BLEED_HERO_ROUTES = ["/", "/about", "/sourcing", "/promotions", "/pro
  */
 export function MainWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const hasFullBleedHero = FULL_BLEED_HERO_ROUTES.includes(pathname);
+  const hasFullBleedHero = FULL_BLEED_HERO_ROUTES.includes(pathname) || FULL_BLEED_HERO_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const isAdmin = pathname.startsWith("/admin");
   return (
     // relative: lets PageLoader (the Suspense fallback — see loading.tsx)

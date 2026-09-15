@@ -33,7 +33,7 @@ export default async function PrintableQuotePage({ params }: PageProps<"/admin/q
   const gemVisual = getQuoteGemVisual(quote);
   const spec = quote.configuredSpec as ConfiguredSpec | null;
 
-  const itemLabel = quote.gemstone?.name ?? quote.jewelry?.name ?? (spec ? `Configured ${spec.mineralName}` : "Item");
+  const itemLabel = quote.gemstone?.name ?? quote.jewelry?.name ?? (spec ? `Configured ${spec.mineralName}` : quote.productType === "CUSTOM" ? "Custom Design" : "Item");
   const itemSpecLine = gemVisual
     ? `${gemVisual.caratWeight}ct ${gemVisual.cutName} ${gemVisual.mineralName} · ${gemVisual.clarityName}`
     : quote.jewelry

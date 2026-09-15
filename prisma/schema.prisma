@@ -430,6 +430,10 @@ enum QuoteStatus {
 enum ProductType {
   GEMSTONE
   JEWELRY
+  // A free-form bespoke design idea (no existing catalog item or
+  // configurator spec) — submitted from a subculture collection page's
+  // "Commission a Custom Piece" section. See referenceImages below.
+  CUSTOM
 }
 
 model QuoteRequest {
@@ -446,6 +450,13 @@ model QuoteRequest {
   // Present when the request originated from the standalone configurator
   // rather than an existing catalog item.
   configuredSpec Json?
+
+  // Customer-attached photos for a CUSTOM (no catalog item/configuredSpec)
+  // request — an array of /media/[filename] URLs, same storage path as any
+  // other upload (see lib/media.ts saveUploadedMedia). Null/empty for every
+  // GEMSTONE/JEWELRY quote, which reference their own catalog images
+  // instead.
+  referenceImages Json?
 
   quantity Int     @default(1)
   note     String? @db.Text

@@ -36,7 +36,10 @@ export default async function AccountQuotesPage() {
         <div className="mt-8 space-y-4">
           {quotes.map((q, i) => {
             const spec = q.configuredSpec as ConfiguredSpec | null;
-            const label = q.gemstone?.name ?? q.jewelry?.name ?? (spec ? `Configured ${spec.mineralName} (${spec.cutName})` : "Item");
+            const label =
+              q.gemstone?.name ??
+              q.jewelry?.name ??
+              (spec ? `Configured ${spec.mineralName} (${spec.cutName})` : q.productType === "CUSTOM" ? "Custom Design" : "Item");
             const unread = unreadCounts[i];
             return (
               <Link
@@ -68,7 +71,7 @@ export default async function AccountQuotesPage() {
                     )}
                   </div>
                 )}
-                {q.note && <p className="mt-3 text-sm text-charcoal/70">&ldquo;{q.note}&rdquo;</p>}
+                {q.note && <p className="mt-3 whitespace-pre-line text-sm text-charcoal/70">&ldquo;{q.note}&rdquo;</p>}
                 {q.adminNotes && (
                   <div className="mt-3 rounded-lg bg-ivory-soft p-3 text-sm text-charcoal/75">
                     <p className="text-xs uppercase tracking-wide text-charcoal/45">From Ratnavue</p>

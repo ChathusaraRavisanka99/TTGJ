@@ -31,6 +31,13 @@ export const quoteRequestSchema = z
 
 export type QuoteRequestInput = z.infer<typeof quoteRequestSchema>;
 
+export const customJewelryRequestSchema = z.object({
+  description: z.string().min(10, "Tell us a bit more about what you'd like made").max(2000),
+  collectionLabel: z.string().max(80).optional().or(z.literal("")),
+});
+
+export type CustomJewelryRequestInput = z.infer<typeof customJewelryRequestSchema>;
+
 export const sourcingRequestSchema = z.object({
   mineralDescription: z.string().min(2, "Tell us what mineral or gem you're after").max(200),
   approxSize: z.string().max(100).optional().or(z.literal("")),

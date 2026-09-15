@@ -140,14 +140,23 @@ export function AdminSidebar() {
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-charcoal px-4 py-8 text-ivory/80 lg:hidden">
-          <div className="flex items-center justify-between px-2">
+        // flex h-dvh flex-col + overflow-hidden on this outer box, with
+        // overflow-y-auto on a separate inner flex-1 region below — not
+        // overflow-y-auto directly on this fixed element. The two
+        // combined (scrolling a position:fixed element via its own
+        // overflow) is a known WebKit/iOS Safari bug where touch-scroll
+        // silently does nothing; Navbar.tsx's mobile menu already solves
+        // this the same way. The link list has grown past one phone
+        // screen (25+ entries across three sections), so this isn't
+        // optional here.
+        <div className="fixed inset-0 z-50 flex h-dvh flex-col overflow-hidden bg-charcoal text-ivory/80 lg:hidden">
+          <div className="flex shrink-0 items-center justify-between px-6 py-6">
             <Logo>Ratnavue Admin</Logo>
             <button type="button" onClick={() => setOpen(false)} aria-label="Close menu" className="text-ivory">
               <X size={22} />
             </button>
           </div>
-          <div className="mt-8">
+          <div className="flex-1 overflow-y-auto px-4 pb-8">
             <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} />
           </div>
         </div>

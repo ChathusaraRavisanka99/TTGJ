@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     return new NextResponse("Invalid signature", { status: 400 });
   }
 
-  const order = await prisma.order.findUnique({ where: { orderNumber: orderId } });
+  const order = await prisma.order.findUnique({ where: { orderNumber: orderId }, include: { items: true } });
   if (!order) {
     console.error(`PayHere notify: unknown order ${orderId}`);
     return new NextResponse("Order not found", { status: 404 });
@@ -60,6 +60,20 @@ export async function POST(req: Request) {
   }
 
   await prisma.order.update({ where: { id: order.id }, data: { status: "PAID", paidAt: new Date(), gatewayPaymentId: paymentId } });
+
+  // Every gemstone/jewelry piece here is one-of-a-kind (see StockStatus) —
+  // this is what actually closes the loop the checkout-time re-check
+  // (buildCheckoutBreakdown) depends on: without flipping it to SOLD here,
+  // nothing would ever stop a second customer's cart/checkout from
+  // treating an already-paid-for item as still available.
+  const gemstoneIds = order.items.map((i) => i.gemstoneId).filter((id): id is string => id != null);
+  const jewelryIds = order.items.map((i) => i.jewelryId).filter((id): id is string => id != null);
+  if (gemstoneIds.length > 0) {
+    await prisma.gemstone.updateMany({ where: { id: { in: gemstoneIds } }, data: { stockStatus: "SOLD" } });
+  }
+  if (jewelryIds.length > 0) {
+    await prisma.jewelryPiece.updateMany({ where: { id: { in: jewelryIds } }, data: { stockStatus: "SOLD" } });
+  }
 
   if (order.discountCodeId) {
     // Best-effort — a code going bad between checkout and payment

@@ -13,6 +13,14 @@ export default async function CheckoutPage() {
 
   const cart = await getRetailCartWithItems(session.user.id);
   if (cart.items.length === 0) redirect("/account/retail-cart");
+  // The cart page's own "Proceed to Checkout" button is disabled while any
+  // item is unavailable, but that's only a UI nicety — a direct visit to
+  // this URL, or a stale tab, needs the same guard server-side. The real
+  // enforcement is buildCheckoutBreakdown's re-check inside
+  // initiateRetailCheckout; this redirect just avoids showing a shipping
+  // form for an order that submit would refuse anyway.
+  const hasUnavailableItem = cart.items.some((item) => (item.gemstone?.stockStatus ?? item.jewelry?.stockStatus) !== "AVAILABLE");
+  if (hasUnavailableItem) redirect("/account/retail-cart");
 
   const subtotal = retailCartSubtotal(cart.items);
 

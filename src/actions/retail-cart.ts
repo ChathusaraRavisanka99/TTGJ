@@ -16,35 +16,30 @@ export async function addToRetailCart(input: { gemstoneId?: string; jewelryId?: 
     ? await prisma.gemstone.findUnique({ where: { id: input.gemstoneId } })
     : await prisma.jewelryPiece.findUnique({ where: { id: input.jewelryId } });
   if (!item || item.retailPrice == null) return { ok: false, error: "This item isn't available for direct purchase." };
+  // Every catalog item here is one-of-a-kind (natural gemstones, bespoke
+  // jewelry) — there's no quantity/units field anywhere in the schema —
+  // so once it's SOLD/RESERVED there's nothing left to add another unit
+  // of. Re-checked again at checkout (see buildCheckoutBreakdown) for the
+  // window between adding to cart and paying.
+  if (item.stockStatus !== "AVAILABLE") return { ok: false, error: "This item is no longer available." };
 
   const cart = await getOrCreateRetailCart(session.user.id);
   if (input.gemstoneId) {
     await prisma.retailCartItem.upsert({
       where: { cartId_gemstoneId: { cartId: cart.id, gemstoneId: input.gemstoneId } },
+      // Already in the cart (a repeat "Add to Cart" click) — one-of-a-kind,
+      // so there's nothing to increment; just refresh the snapshotted price.
       create: { cartId: cart.id, gemstoneId: input.gemstoneId, quantity: 1, unitPrice: item.retailPrice },
-      update: { quantity: { increment: 1 }, unitPrice: item.retailPrice },
+      update: { quantity: 1, unitPrice: item.retailPrice },
     });
   } else {
     await prisma.retailCartItem.upsert({
       where: { cartId_jewelryId: { cartId: cart.id, jewelryId: input.jewelryId! } },
       create: { cartId: cart.id, jewelryId: input.jewelryId, quantity: 1, unitPrice: item.retailPrice },
-      update: { quantity: { increment: 1 }, unitPrice: item.retailPrice },
+      update: { quantity: 1, unitPrice: item.retailPrice },
     });
   }
 
-  revalidatePath("/account/retail-cart");
-  return { ok: true };
-}
-
-export async function updateRetailCartItemQuantity(itemId: string, quantity: number): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user) return { ok: false, error: "Sign in required." };
-  if (quantity < 1) return removeRetailCartItem(itemId);
-
-  const item = await prisma.retailCartItem.findUnique({ where: { id: itemId }, include: { cart: true } });
-  if (!item || item.cart.userId !== session.user.id) return { ok: false, error: "Item not found." };
-
-  await prisma.retailCartItem.update({ where: { id: itemId }, data: { quantity } });
   revalidatePath("/account/retail-cart");
   return { ok: true };
 }

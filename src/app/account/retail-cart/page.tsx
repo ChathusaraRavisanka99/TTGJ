@@ -24,6 +24,7 @@ export default async function RetailCartPage() {
 
   const subtotal = retailCartSubtotal(cart.items);
   const birthdayEligible = isBirthdayEligible(user);
+  const hasUnavailableItem = cart.items.some((item) => (item.gemstone?.stockStatus ?? item.jewelry?.stockStatus) !== "AVAILABLE");
   const hasNonPromoItemWithCost = cart.items.some((item) => {
     const isPromotional = item.gemstoneId ? promotions.gemstonePrices.has(item.gemstoneId) : item.jewelryId ? promotions.jewelryPrices.has(item.jewelryId) : false;
     const costPrice = item.gemstone?.costPrice ?? item.jewelry?.costPrice ?? null;
@@ -60,6 +61,7 @@ export default async function RetailCartPage() {
                   label: retailCartItemLabel(item),
                   href: item.gemstone ? `/gems/${item.gemstone.slug}` : `/jewelry/${item.jewelry!.slug}`,
                   imageUrl: (item.gemstone?.media[0]?.url) ?? (item.jewelry?.media[0]?.url),
+                  unavailable: (item.gemstone?.stockStatus ?? item.jewelry?.stockStatus) !== "AVAILABLE",
                 }}
               />
             ))}
@@ -77,8 +79,17 @@ export default async function RetailCartPage() {
           </div>
           <p className="mt-1 text-right text-xs text-charcoal/45">Tax, shipping, and handling are calculated at checkout.</p>
 
+          {hasUnavailableItem && (
+            <p className="mt-4 text-right text-sm text-red-700">Remove the unavailable item(s) above to continue to checkout.</p>
+          )}
           <div className="mt-6 flex justify-end">
-            <LinkButton href="/checkout" variant="gold" size="lg">Proceed to Checkout</LinkButton>
+            {hasUnavailableItem ? (
+              <LinkButton href="/checkout" variant="gold" size="lg" aria-disabled className="pointer-events-none opacity-50">
+                Proceed to Checkout
+              </LinkButton>
+            ) : (
+              <LinkButton href="/checkout" variant="gold" size="lg">Proceed to Checkout</LinkButton>
+            )}
           </div>
         </>
       )}

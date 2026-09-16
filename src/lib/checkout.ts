@@ -63,6 +63,22 @@ export async function buildCheckoutBreakdown(input: { userId: string; shippingCo
   ]);
   if (!cart || cart.items.length === 0) throw new Error("Your cart is empty.");
 
+  // Every gemstone/jewelry piece in this catalog is one-of-a-kind — no
+  // quantity/units field exists anywhere (see StockStatus) — so this has
+  // to be a live re-check, not something trusted from whenever the item
+  // was added to the cart. Catches both a genuine sale to someone else in
+  // the meantime and an admin manually pulling the item. Thrown here
+  // (rather than returning a partial breakdown) so this is the single
+  // gate every path to creating an Order goes through — see
+  // initiateRetailCheckout, which surfaces this message as-is.
+  const unavailable = cart.items
+    .filter((item) => (item.gemstone ?? item.jewelry)?.stockStatus !== "AVAILABLE")
+    .map((item) => item.gemstone?.name ?? item.jewelry?.name ?? "An item");
+  if (unavailable.length > 0) {
+    const subject = unavailable.join(", ");
+    throw new Error(`${subject} ${unavailable.length === 1 ? "is" : "are"} no longer available — please remove ${unavailable.length === 1 ? "it" : "them"} from your cart to continue.`);
+  }
+
   // VAT is about the shipping *destination* (Sri Lankan domestic supply
   // vs. a zero-rated export), independent of which currency the charge
   // itself is made in.

@@ -7,6 +7,7 @@ import {
   getChatContext,
   getOrCreateChatThread,
   getChatMessages,
+  getConversationsForCustomer,
   snapshotOpenCart,
   type ChatRequestType,
 } from "@/lib/chat";
@@ -157,6 +158,31 @@ export async function pollChatMessages(requestType: ChatRequestType, requestId: 
 }
 
 export type ChatMessageView = Awaited<ReturnType<typeof pollChatMessages>>[number];
+
+/** The floating chat bubble's polling endpoint (see FloatingChatButton) —
+ * every one of the signed-in customer's own conversations, most recent
+ * first, with a total unread count for the bubble's badge. Empty for a
+ * signed-out visitor rather than an error, same convention as
+ * pollNotifications. */
+export async function pollMyConversations() {
+  const session = await auth();
+  if (!session?.user) return { items: [], unreadCount: 0 };
+
+  const rows = await getConversationsForCustomer(session.user.id);
+  return {
+    unreadCount: rows.reduce((sum, r) => sum + r.unreadCount, 0),
+    items: rows.map((r) => ({
+      requestType: r.requestType,
+      requestId: r.requestId,
+      itemLabel: r.itemLabel,
+      lastMessagePreview: r.lastMessagePreview,
+      lastMessageAt: r.lastMessageAt.toISOString(),
+      unreadCount: r.unreadCount,
+    })),
+  };
+}
+
+export type ConversationView = Awaited<ReturnType<typeof pollMyConversations>>["items"][number];
 
 /** Either side can tag a catalog item, so this only requires being
  * signed in, not being an admin — the gemstone/jewelry pickers for the

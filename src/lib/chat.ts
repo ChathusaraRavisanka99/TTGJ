@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { cartTotal } from "@/lib/discount-codes";
+import type { ConfiguredSpec } from "@/lib/validation/quote";
 
 export type ChatRequestType = "quote" | "sourcing";
 
@@ -71,6 +72,69 @@ export async function getUnreadCount(requestType: ChatRequestType, requestId: st
       createdAt: since ? { gt: since } : undefined,
     },
   });
+}
+
+export interface CustomerConversation {
+  requestType: ChatRequestType;
+  requestId: string;
+  itemLabel: string;
+  lastMessageAt: Date;
+  lastMessagePreview: string | null;
+  unreadCount: number;
+}
+
+/** Every quote/sourcing request of this customer's that has an actual
+ * chat thread — the data behind the floating chat bubble's conversation
+ * list (see FloatingChatButton). Same cross-type merge /admin/messages
+ * uses, just scoped to one customer instead of the whole business, so
+ * "fetch both tables, combine in memory" is even safer here (at most a
+ * handful of rows per person). */
+export async function getConversationsForCustomer(userId: string): Promise<CustomerConversation[]> {
+  const [quotes, sourcing] = await Promise.all([
+    prisma.quoteRequest.findMany({
+      where: { userId, chatThread: { isNot: null } },
+      include: {
+        gemstone: { select: { name: true } },
+        jewelry: { select: { name: true } },
+        chatThread: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+      },
+    }),
+    prisma.sourcingRequest.findMany({
+      where: { userId, chatThread: { isNot: null } },
+      include: { chatThread: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } } },
+    }),
+  ]);
+
+  const rows: CustomerConversation[] = [
+    ...quotes.map((q) => {
+      const spec = q.configuredSpec as ConfiguredSpec | null;
+      const itemLabel = q.gemstone?.name ?? q.jewelry?.name ?? (spec?.mineralName ? `Configured ${spec.mineralName}` : q.productType === "CUSTOM" ? "Custom Design" : "Item");
+      return {
+        requestType: "quote" as const,
+        requestId: q.id,
+        itemLabel,
+        lastMessageAt: q.chatThread!.messages[0]?.createdAt ?? q.chatThread!.createdAt,
+        lastMessagePreview: q.chatThread!.messages[0]?.body ?? null,
+        unreadCount: 0,
+      };
+    }),
+    ...sourcing.map((s) => ({
+      requestType: "sourcing" as const,
+      requestId: s.id,
+      itemLabel: s.mineralDescription,
+      lastMessageAt: s.chatThread!.messages[0]?.createdAt ?? s.chatThread!.createdAt,
+      lastMessagePreview: s.chatThread!.messages[0]?.body ?? null,
+      unreadCount: 0,
+    })),
+  ];
+
+  const unreadCounts = await Promise.all(rows.map((r) => getUnreadCount(r.requestType, r.requestId, "CUSTOMER")));
+  rows.forEach((r, i) => {
+    r.unreadCount = unreadCounts[i];
+  });
+
+  rows.sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
+  return rows;
 }
 
 /** A JSON-serializable snapshot of a cart at the moment it's tagged in a

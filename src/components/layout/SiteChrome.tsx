@@ -5,6 +5,7 @@ import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { IntroLoader } from "./IntroLoader";
 import { NavigationOverlay } from "./NavigationOverlay";
+import { FloatingChatButton } from "./FloatingChatButton";
 
 interface SiteChromeUser {
   name?: string | null;
@@ -54,6 +55,7 @@ export function SiteChrome({
       <Navbar user={user} showPromotions={showPromotions} showAuction={showAuction} cartItemCount={cartItemCount} />
       {children}
       <Footer year={year} />
+      {user && <FloatingChatButton />}
     </>
   );
 }

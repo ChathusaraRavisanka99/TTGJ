@@ -25,7 +25,7 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hr / 24)}d ago`;
 }
 
-/** Bottom-left floating entry point into the customer's existing quote/
+/** Bottom-right floating entry point into the customer's existing quote/
  * sourcing chats — signed-in only, since chat is still tied to a request
  * rather than a general "ask us anything" widget (that option was
  * deliberately turned down — see NotificationBell's sibling feature, the
@@ -78,9 +78,9 @@ export function FloatingChatButton() {
   }
 
   return (
-    <div ref={containerRef} className="fixed bottom-6 left-6 z-40">
+    <div ref={containerRef} className="fixed bottom-6 right-6 z-40">
       {open && (
-        <div className="absolute bottom-16 left-0 w-80 max-w-[85vw] rounded-xl border border-border-subtle bg-surface p-2 text-left shadow-lg">
+        <div className="absolute bottom-16 right-0 w-80 max-w-[85vw] rounded-xl border border-border-subtle bg-surface p-2 text-left shadow-lg">
           <p className="px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/50">Your Conversations</p>
           <div className="max-h-80 overflow-y-auto">
             {items.length === 0 && (
@@ -119,7 +119,17 @@ export function FloatingChatButton() {
         type="button"
         onClick={handleClick}
         aria-label="Your conversations"
-        className="relative flex h-14 w-14 items-center justify-center rounded-full bg-charcoal text-ivory shadow-lg transition-transform duration-300 hover:-translate-y-0.5 hover:bg-charcoal-soft"
+        className={cn(
+          "relative flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5",
+          // Glass bubble: a translucent tint (not a solid fill) plus
+          // backdrop-blur is what actually reads as "glass" — a border
+          // alone on a transparent background just looks unstyled. The
+          // charcoal tint (rather than white) is what keeps the white
+          // icon/badge legible over both this site's light pages and its
+          // dark home/collection heroes, since backdrop-blur alone doesn't
+          // add contrast, it only blurs whatever's already behind it.
+          "border border-white/30 bg-charcoal/35 hover:bg-charcoal/50",
+        )}
       >
         <MessageCircle size={24} />
         {unreadCount > 0 && (

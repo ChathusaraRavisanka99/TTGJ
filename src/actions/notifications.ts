@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { getNotificationsForUser, markAllNotificationsRead as markAllRead, markNotificationRead as markOneRead } from "@/lib/notifications";
+import type { ChatRequestType } from "@/lib/chat";
 import type { ActionResult } from "./auth";
 
 /** The bell's polling endpoint — same "plain polling, not a websocket"
@@ -21,7 +22,7 @@ export async function pollNotifications() {
       id: n.id,
       type: n.type,
       message: n.message,
-      requestType: n.requestType as "quote" | "sourcing",
+      requestType: n.requestType as ChatRequestType,
       requestId: n.requestId,
       readAt: n.readAt?.toISOString() ?? null,
       createdAt: n.createdAt.toISOString(),

@@ -11,15 +11,22 @@ import type { ConfiguredSpec } from "@/lib/validation/quote";
 const PAGE_SIZE = 20;
 
 interface InboxRow {
-  requestType: "quote" | "sourcing";
+  requestType: "quote" | "sourcing" | "general";
   requestId: string;
   itemLabel: string;
   customerName: string;
   customerEmail: string;
-  status: string;
+  // null for "general" — a support chat has no QuoteStatus of its own.
+  status: string | null;
   lastMessageAt: Date | null;
   lastMessagePreview: string | null;
   unread: number;
+}
+
+function rowHref(r: Pick<InboxRow, "requestType" | "requestId">): string {
+  if (r.requestType === "quote") return `/admin/quotes/${r.requestId}`;
+  if (r.requestType === "sourcing") return `/admin/sourcing/${r.requestId}`;
+  return `/admin/support/${r.requestId}`;
 }
 
 function quoteItemLabel(q: {
@@ -51,7 +58,7 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
   const sort = sp.sort === "unread" ? "unread" : "recent";
   const page = Math.max(1, Number(sp.page) || 1);
 
-  const [quotes, sourcing] = await Promise.all([
+  const [quotes, sourcing, general] = await Promise.all([
     prisma.quoteRequest.findMany({
       include: {
         user: { select: { name: true, email: true } },
@@ -64,6 +71,13 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
       include: {
         user: { select: { name: true, email: true } },
         chatThread: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } },
+      },
+    }),
+    prisma.chatThread.findMany({
+      where: { generalUserId: { not: null } },
+      include: {
+        generalUser: { select: { id: true, name: true, email: true } },
+        messages: { orderBy: { createdAt: "desc" }, take: 1 },
       },
     }),
   ]);
@@ -93,6 +107,22 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
         status: r.status,
         lastMessageAt: r.chatThread!.messages[0]?.createdAt ?? r.chatThread!.createdAt,
         lastMessagePreview: r.chatThread!.messages[0]?.body ?? null,
+        unread: 0,
+      })),
+    ...general
+      // A general thread is created the moment the customer opens
+      // /account/support, before they've necessarily sent anything — only
+      // show it here once there's an actual message to review.
+      .filter((t) => t.messages.length > 0)
+      .map((t) => ({
+        requestType: "general" as const,
+        requestId: t.generalUser!.id,
+        itemLabel: "Chat with Support",
+        customerName: t.generalUser!.name ?? t.generalUser!.email,
+        customerEmail: t.generalUser!.email,
+        status: null,
+        lastMessageAt: t.messages[0]?.createdAt ?? t.createdAt,
+        lastMessagePreview: t.messages[0]?.body ?? null,
         unread: 0,
       })),
   ];
@@ -131,7 +161,7 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
           </span>
         )}
       </div>
-      <p className="mt-1 text-sm text-charcoal/60">Every quote and sourcing request with an active conversation, in one place.</p>
+      <p className="mt-1 text-sm text-charcoal/60">Every quote, sourcing request, and support chat with an active conversation, in one place.</p>
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <form action="/admin/messages" method="get" className="flex items-center gap-2">
@@ -179,10 +209,7 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
             {pageRows.map((r) => (
               <tr key={`${r.requestType}-${r.requestId}`} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
                 <td className="px-4 py-3">
-                  <Link
-                    href={r.requestType === "quote" ? `/admin/quotes/${r.requestId}` : `/admin/sourcing/${r.requestId}`}
-                    className="flex items-center gap-2 text-charcoal hover:text-gold"
-                  >
+                  <Link href={rowHref(r)} className="flex items-center gap-2 text-charcoal hover:text-gold">
                     {r.customerName}
                     {r.unread > 0 && (
                       <span className="flex items-center gap-1 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-medium text-charcoal">
@@ -192,7 +219,7 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
                   </Link>
                   <p className="text-xs text-charcoal/45">{r.customerEmail}</p>
                 </td>
-                <td className="px-4 py-3 text-charcoal/70">{r.requestType === "quote" ? "Quote" : "Sourcing"}</td>
+                <td className="px-4 py-3 text-charcoal/70">{r.requestType === "quote" ? "Quote" : r.requestType === "sourcing" ? "Sourcing" : "Support"}</td>
                 <td className="px-4 py-3 text-charcoal/70">{r.itemLabel}</td>
                 <td className="px-4 py-3 text-charcoal/70">
                   {r.lastMessagePreview ? (
@@ -204,7 +231,7 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
                     <span className="text-charcoal/40">Attachment only</span>
                   )}
                 </td>
-                <td className="px-4 py-3"><QuoteStatusBadge status={r.status} /></td>
+                <td className="px-4 py-3">{r.status ? <QuoteStatusBadge status={r.status} /> : <span className="text-charcoal/30">—</span>}</td>
               </tr>
             ))}
             {pageRows.length === 0 && (

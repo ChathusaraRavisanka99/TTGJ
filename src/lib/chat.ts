@@ -2,11 +2,21 @@ import { prisma } from "@/lib/prisma";
 import { cartTotal } from "@/lib/discount-codes";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
 
-export type ChatRequestType = "quote" | "sourcing";
+export type ChatRequestType = "quote" | "sourcing" | "general";
 
 export interface ChatContext {
   threadId: string | null;
   customerId: string;
+}
+
+// "general" is the one case where requestId isn't a QuoteRequest/
+// SourcingRequest id — it's the customer's own userId (one general
+// support thread per customer, see ChatThread.generalUserId). That's what
+// lets sendChatMessage's existing ownership check ("must be admin, or
+// requestId's owner") work unchanged for it: a customer's own id is
+// trivially "their own."
+function generalThreadWhere(userId: string) {
+  return { generalUserId: userId };
 }
 
 /**
@@ -21,23 +31,29 @@ export async function getChatContext(requestType: ChatRequestType, requestId: st
     if (!quote) return null;
     return { threadId: quote.chatThread?.id ?? null, customerId: quote.userId };
   }
-  const sourcing = await prisma.sourcingRequest.findUnique({ where: { id: requestId }, select: { userId: true, chatThread: { select: { id: true } } } });
-  if (!sourcing) return null;
-  return { threadId: sourcing.chatThread?.id ?? null, customerId: sourcing.userId };
+  if (requestType === "sourcing") {
+    const sourcing = await prisma.sourcingRequest.findUnique({ where: { id: requestId }, select: { userId: true, chatThread: { select: { id: true } } } });
+    if (!sourcing) return null;
+    return { threadId: sourcing.chatThread?.id ?? null, customerId: sourcing.userId };
+  }
+  // "general": requestId is the customer's own userId, and always resolves
+  // (there's nothing separate to 404 on the way a bad quote/sourcing id
+  // would) — the thread itself is still created lazily on first message.
+  const user = await prisma.user.findUnique({ where: { id: requestId }, select: { id: true, generalChatThread: { select: { id: true } } } });
+  if (!user) return null;
+  return { threadId: user.generalChatThread?.id ?? null, customerId: user.id };
 }
 
 /** Lazily creates the thread on first message — see the schema comment
  * on ChatThread. Idempotent: safe to call even if one already exists. */
 export async function getOrCreateChatThread(requestType: ChatRequestType, requestId: string): Promise<string> {
-  const existing = await prisma.chatThread.findFirst({
-    where: requestType === "quote" ? { quoteRequestId: requestId } : { sourcingRequestId: requestId },
-    select: { id: true },
-  });
+  const where =
+    requestType === "quote" ? { quoteRequestId: requestId } : requestType === "sourcing" ? { sourcingRequestId: requestId } : generalThreadWhere(requestId);
+
+  const existing = await prisma.chatThread.findFirst({ where, select: { id: true } });
   if (existing) return existing.id;
 
-  const created = await prisma.chatThread.create({
-    data: requestType === "quote" ? { quoteRequestId: requestId } : { sourcingRequestId: requestId },
-  });
+  const created = await prisma.chatThread.create({ data: where });
   return created.id;
 }
 
@@ -58,8 +74,10 @@ export async function getChatMessages(threadId: string | null) {
  * side, created after I last opened this thread." No thread yet means
  * nothing to be unread. */
 export async function getUnreadCount(requestType: ChatRequestType, requestId: string, forRole: "CUSTOMER" | "ADMIN"): Promise<number> {
+  const where =
+    requestType === "quote" ? { quoteRequestId: requestId } : requestType === "sourcing" ? { sourcingRequestId: requestId } : generalThreadWhere(requestId);
   const thread = await prisma.chatThread.findFirst({
-    where: requestType === "quote" ? { quoteRequestId: requestId } : { sourcingRequestId: requestId },
+    where,
     select: { id: true, lastReadByCustomerAt: true, lastReadByAdminAt: true },
   });
   if (!thread) return 0;
@@ -135,6 +153,32 @@ export async function getConversationsForCustomer(userId: string): Promise<Custo
 
   rows.sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
   return rows;
+}
+
+export interface GeneralThreadInfo {
+  unreadCount: number;
+  lastMessagePreview: string | null;
+  lastMessageAt: Date | null;
+}
+
+/** Unlike quote/sourcing conversations (only ever listed once an admin
+ * has replied and a thread exists), "Chat with Support" is always
+ * offerable — a customer starts it themselves — so the floating chat
+ * bubble needs this even when nothing's been sent yet, hence the null
+ * defaults rather than omitting the row entirely. */
+export async function getGeneralThreadInfo(userId: string): Promise<GeneralThreadInfo> {
+  const thread = await prisma.chatThread.findFirst({
+    where: generalThreadWhere(userId),
+    include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } },
+  });
+  if (!thread) return { unreadCount: 0, lastMessagePreview: null, lastMessageAt: null };
+
+  const unreadCount = await getUnreadCount("general", userId, "CUSTOMER");
+  return {
+    unreadCount,
+    lastMessagePreview: thread.messages[0]?.body ?? null,
+    lastMessageAt: thread.messages[0]?.createdAt ?? thread.createdAt,
+  };
 }
 
 /** A JSON-serializable snapshot of a cart at the moment it's tagged in a

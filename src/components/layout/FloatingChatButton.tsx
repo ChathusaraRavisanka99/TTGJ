@@ -13,10 +13,13 @@ import { cn } from "@/lib/utils";
 const POLL_INTERVAL_MS = 20000;
 
 function requestHref(c: Pick<ConversationView, "requestType" | "requestId">): string {
-  return c.requestType === "quote" ? `/account/quotes/${c.requestId}` : `/account/sourcing/${c.requestId}`;
+  if (c.requestType === "quote") return `/account/quotes/${c.requestId}`;
+  if (c.requestType === "sourcing") return `/account/sourcing/${c.requestId}`;
+  return "/account/support";
 }
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string | null): string | null {
+  if (!iso) return null;
   const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
   if (min < 1) return "just now";
   if (min < 60) return `${min}m ago`;
@@ -25,13 +28,13 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hr / 24)}d ago`;
 }
 
-/** Bottom-right floating entry point into the customer's existing quote/
- * sourcing chats — signed-in only, since chat is still tied to a request
- * rather than a general "ask us anything" widget (that option was
- * deliberately turned down — see NotificationBell's sibling feature, the
- * admin messages inbox, for the equivalent on the admin side). With
- * exactly one conversation this skips the popup and jumps straight there;
- * with several it lists them so the customer picks which to open. */
+/** Bottom-right floating entry point into chat — signed-in only. Always
+ * offers "Chat with Support" (a general thread the customer starts
+ * themselves, see /account/support) pinned first, plus any existing
+ * quote/sourcing conversations below. With nothing else going on (the
+ * common case — just Support, no other conversation yet) this skips the
+ * popup and jumps straight there; once there's more than one place to go,
+ * it opens the popup so the customer picks. */
 export function FloatingChatButton() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -81,36 +84,43 @@ export function FloatingChatButton() {
     <div ref={containerRef} className="fixed bottom-6 right-6 z-40">
       {open && (
         <div className="absolute bottom-16 right-0 w-80 max-w-[85vw] rounded-xl border border-border-subtle bg-surface p-2 text-left shadow-lg">
-          <p className="px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/50">Your Conversations</p>
+          <p className="px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/50">Chat</p>
           <div className="max-h-80 overflow-y-auto">
-            {items.length === 0 && (
-              <p className="px-2 py-6 text-center text-sm text-charcoal/50">
-                No conversations yet — a chat opens once you submit a{" "}
-                <Link href="/sourcing" onClick={() => setOpen(false)} className="text-gold underline">
-                  sourcing request
-                </Link>{" "}
-                or request a quote on a gemstone/jewelry piece.
-              </p>
-            )}
-            {items.map((c) => (
-              <Link
-                key={`${c.requestType}-${c.requestId}`}
-                href={requestHref(c)}
-                onClick={() => setOpen(false)}
-                className={cn("block rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-ivory-soft", c.unreadCount > 0 && "bg-gold/10")}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-charcoal">{c.itemLabel}</p>
-                  {c.unreadCount > 0 && (
-                    <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium text-charcoal">
-                      {c.unreadCount > 9 ? "9+" : c.unreadCount}
-                    </span>
+            {!loaded && <p className="px-2 py-6 text-center text-sm text-charcoal/50">Loading...</p>}
+            {loaded &&
+              items.map((c, i) => (
+                <Link
+                  key={`${c.requestType}-${c.requestId}`}
+                  href={requestHref(c)}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "block rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-ivory-soft",
+                    c.unreadCount > 0 && "bg-gold/10",
+                    // A visual break between the always-there "Chat with
+                    // Support" pin and whatever quote/sourcing
+                    // conversations follow it — skipped when Support is
+                    // the only entry, since there'd be nothing to separate.
+                    i === 0 && items.length > 1 && "mb-1 border-b border-border-subtle pb-2.5",
                   )}
-                </div>
-                {c.lastMessagePreview && <p className="truncate text-xs text-charcoal/60">{c.lastMessagePreview}</p>}
-                <p className="mt-0.5 text-xs text-charcoal/45">{timeAgo(c.lastMessageAt)}</p>
-              </Link>
-            ))}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate font-medium text-charcoal">{c.itemLabel}</p>
+                    {c.unreadCount > 0 && (
+                      <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium text-charcoal">
+                        {c.unreadCount > 9 ? "9+" : c.unreadCount}
+                      </span>
+                    )}
+                  </div>
+                  {c.lastMessagePreview ? (
+                    <>
+                      <p className="truncate text-xs text-charcoal/60">{c.lastMessagePreview}</p>
+                      <p className="mt-0.5 text-xs text-charcoal/45">{timeAgo(c.lastMessageAt)}</p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-charcoal/60">Start a conversation with our team.</p>
+                  )}
+                </Link>
+              ))}
           </div>
         </div>
       )}

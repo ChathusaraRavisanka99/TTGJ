@@ -16,6 +16,7 @@ export const ACCOUNT_MENU_LINKS = [
   { href: "/account/orders", label: "My Orders" },
   { href: "/account/quotes", label: "My Quote Requests" },
   { href: "/account/sourcing", label: "My Sourcing Requests" },
+  { href: "/account/support", label: "Chat with Support" },
 ];
 
 export function AccountMenu({ user, transparent }: { user: { name?: string | null }; transparent: boolean }) {

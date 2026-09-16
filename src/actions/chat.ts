@@ -8,6 +8,7 @@ import {
   getOrCreateChatThread,
   getChatMessages,
   getConversationsForCustomer,
+  getGeneralThreadInfo,
   snapshotOpenCart,
   type ChatRequestType,
 } from "@/lib/chat";
@@ -17,9 +18,11 @@ import type { ActionResult } from "./auth";
 export type ChatTag = { type: "gemstone" | "jewelry"; id: string } | { type: "cart" };
 
 function requestPaths(requestType: ChatRequestType, requestId: string): string[] {
-  return requestType === "quote"
-    ? [`/admin/quotes/${requestId}`, `/account/quotes/${requestId}`]
-    : [`/admin/sourcing/${requestId}`, `/account/sourcing/${requestId}`];
+  if (requestType === "quote") return [`/admin/quotes/${requestId}`, `/account/quotes/${requestId}`];
+  if (requestType === "sourcing") return [`/admin/sourcing/${requestId}`, `/account/sourcing/${requestId}`];
+  // "general": requestId is the customer's own userId, not a request id —
+  // see getChatContext's own comment.
+  return [`/admin/support/${requestId}`, `/account/support`];
 }
 
 /**
@@ -88,13 +91,13 @@ export async function sendChatMessage(input: {
   // (an unread badge) is already covered by getUnreadCount in the
   // /admin/messages inbox.
   if (isAdmin) {
-    await createNotification({
-      userId: context.customerId,
-      type: "CHAT_REPLY",
-      message: input.requestType === "quote" ? "You have a new reply on your quote request." : "You have a new reply on your sourcing request.",
-      requestType: input.requestType,
-      requestId: input.requestId,
-    });
+    const message =
+      input.requestType === "quote"
+        ? "You have a new reply on your quote request."
+        : input.requestType === "sourcing"
+          ? "You have a new reply on your sourcing request."
+          : "You have a new reply from support.";
+    await createNotification({ userId: context.customerId, type: "CHAT_REPLY", message, requestType: input.requestType, requestId: input.requestId });
   }
 
   return { ok: true };
@@ -159,19 +162,42 @@ export async function pollChatMessages(requestType: ChatRequestType, requestId: 
 
 export type ChatMessageView = Awaited<ReturnType<typeof pollChatMessages>>[number];
 
+export interface ConversationView {
+  requestType: ChatRequestType;
+  requestId: string;
+  itemLabel: string;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+  unreadCount: number;
+}
+
 /** The floating chat bubble's polling endpoint (see FloatingChatButton) —
  * every one of the signed-in customer's own conversations, most recent
  * first, with a total unread count for the bubble's badge. Empty for a
  * signed-out visitor rather than an error, same convention as
- * pollNotifications. */
-export async function pollMyConversations() {
+ * pollNotifications.
+ *
+ * "Chat with Support" (the general thread) is always pinned first, even
+ * with no messages yet — unlike a quote/sourcing conversation, which only
+ * ever appears once an admin has replied and a thread exists, this one is
+ * something the customer starts themselves, so there's always something
+ * to click into. */
+export async function pollMyConversations(): Promise<{ items: ConversationView[]; unreadCount: number }> {
   const session = await auth();
   if (!session?.user) return { items: [], unreadCount: 0 };
 
-  const rows = await getConversationsForCustomer(session.user.id);
-  return {
-    unreadCount: rows.reduce((sum, r) => sum + r.unreadCount, 0),
-    items: rows.map((r) => ({
+  const [rows, general] = await Promise.all([getConversationsForCustomer(session.user.id), getGeneralThreadInfo(session.user.id)]);
+
+  const items: ConversationView[] = [
+    {
+      requestType: "general",
+      requestId: session.user.id,
+      itemLabel: "Chat with Support",
+      lastMessagePreview: general.lastMessagePreview,
+      lastMessageAt: general.lastMessageAt?.toISOString() ?? null,
+      unreadCount: general.unreadCount,
+    },
+    ...rows.map((r) => ({
       requestType: r.requestType,
       requestId: r.requestId,
       itemLabel: r.itemLabel,
@@ -179,10 +205,10 @@ export async function pollMyConversations() {
       lastMessageAt: r.lastMessageAt.toISOString(),
       unreadCount: r.unreadCount,
     })),
-  };
-}
+  ];
 
-export type ConversationView = Awaited<ReturnType<typeof pollMyConversations>>["items"][number];
+  return { unreadCount: items.reduce((sum, i) => sum + i.unreadCount, 0), items };
+}
 
 /** Either side can tag a catalog item, so this only requires being
  * signed in, not being an admin — the gemstone/jewelry pickers for the

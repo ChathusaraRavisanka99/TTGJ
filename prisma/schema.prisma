@@ -74,6 +74,8 @@ model User {
   auctionBids     AuctionBid[]
   chatMessages    ChatMessage[]
   notifications   Notification[]
+  // The other side of ChatThread.generalUserId — see its own comment.
+  generalChatThread ChatThread? @relation("GeneralSupportThread")
 
   retailCart              RetailCart?
   orders                  Order[]
@@ -583,6 +585,13 @@ model ChatThread {
   quoteRequest      QuoteRequest?    @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
   sourcingRequestId String?          @unique
   sourcingRequest   SourcingRequest? @relation(fields: [sourcingRequestId], references: [id], onDelete: Cascade)
+  // A general "chat with support" thread — not tied to any quote/sourcing
+  // request, one per customer (hence @unique). Exactly one of these three
+  // FKs is ever set (validated in lib/chat.ts, same "not a DB constraint"
+  // convention the other exactly-one-of groups in this schema already
+  // use, e.g. ChatMessage's own tag fields below).
+  generalUserId String? @unique
+  generalUser   User?   @relation("GeneralSupportThread", fields: [generalUserId], references: [id], onDelete: Cascade)
 
   // Last time each side actually opened this thread — an unread count is
   // derived at read time ("messages from the other side created after
@@ -598,6 +607,7 @@ model ChatThread {
 
   @@index([quoteRequestId])
   @@index([sourcingRequestId])
+  @@index([generalUserId])
 }
 
 model ChatMessage {

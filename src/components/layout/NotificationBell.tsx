@@ -13,7 +13,9 @@ import { cn } from "@/lib/utils";
 const POLL_INTERVAL_MS = 20000;
 
 function requestHref(n: NotificationView): string {
-  return n.requestType === "quote" ? `/account/quotes/${n.requestId}` : `/account/sourcing/${n.requestId}`;
+  if (n.requestType === "quote") return `/account/quotes/${n.requestId}`;
+  if (n.requestType === "sourcing") return `/account/sourcing/${n.requestId}`;
+  return "/account/support";
 }
 
 function timeAgo(iso: string): string {

@@ -162,6 +162,25 @@ export async function pollChatMessages(requestType: ChatRequestType, requestId: 
 
 export type ChatMessageView = Awaited<ReturnType<typeof pollChatMessages>>[number];
 
+/** Lets an embedded ChatPanel (the floating bubble's inline chat, and the
+ * admin messages inbox's split view — see FloatingChatButton and
+ * AdminMessagesInbox) bootstrap its "tag the cart" option without a
+ * server-rendered page fetching it up front the way every full detail
+ * page already does. Same ownership rule as the rest of this file. */
+export async function getHasOpenCartForRequest(requestType: ChatRequestType, requestId: string): Promise<boolean> {
+  const session = await auth();
+  if (!session?.user) return false;
+
+  const context = await getChatContext(requestType, requestId);
+  if (!context) return false;
+
+  const isAdmin = session.user.role === "ADMIN";
+  if (!isAdmin && session.user.id !== context.customerId) return false;
+
+  const cart = await prisma.cart.findFirst({ where: { userId: context.customerId, status: "OPEN" }, include: { items: true } });
+  return !!cart && cart.items.length > 0;
+}
+
 export interface ConversationView {
   requestType: ChatRequestType;
   requestId: string;
@@ -182,9 +201,9 @@ export interface ConversationView {
  * ever appears once an admin has replied and a thread exists, this one is
  * something the customer starts themselves, so there's always something
  * to click into. */
-export async function pollMyConversations(): Promise<{ items: ConversationView[]; unreadCount: number }> {
+export async function pollMyConversations(): Promise<{ items: ConversationView[]; unreadCount: number; userId: string | null }> {
   const session = await auth();
-  if (!session?.user) return { items: [], unreadCount: 0 };
+  if (!session?.user) return { items: [], unreadCount: 0, userId: null };
 
   const [rows, general] = await Promise.all([getConversationsForCustomer(session.user.id), getGeneralThreadInfo(session.user.id)]);
 
@@ -207,7 +226,7 @@ export async function pollMyConversations(): Promise<{ items: ConversationView[]
     })),
   ];
 
-  return { unreadCount: items.reduce((sum, i) => sum + i.unreadCount, 0), items };
+  return { unreadCount: items.reduce((sum, i) => sum + i.unreadCount, 0), items, userId: session.user.id };
 }
 
 /** Either side can tag a catalog item, so this only requires being

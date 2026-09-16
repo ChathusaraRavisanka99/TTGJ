@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { MessageCircle } from "lucide-react";
-import { pollMyConversations, type ConversationView } from "@/actions/chat";
+import { ChevronLeft, MessageCircle } from "lucide-react";
+import { pollMyConversations, pollChatMessages, getHasOpenCartForRequest, type ConversationView, type ChatMessageView } from "@/actions/chat";
+import { ChatPanel } from "@/components/chat/ChatPanel";
 import { cn } from "@/lib/utils";
 
 // Same "plain polling" convention as ChatPanel/NotificationBell — see
@@ -31,16 +31,21 @@ function timeAgo(iso: string | null): string | null {
 /** Bottom-right floating entry point into chat — signed-in only. Always
  * offers "Chat with Support" (a general thread the customer starts
  * themselves, see /account/support) pinned first, plus any existing
- * quote/sourcing conversations below. With nothing else going on (the
- * common case — just Support, no other conversation yet) this skips the
- * popup and jumps straight there; once there's more than one place to go,
- * it opens the popup so the customer picks. */
+ * quote/sourcing conversations below. Selecting a conversation chats
+ * right there in the popup (an embedded ChatPanel, same component the
+ * full account pages use) — "Open full page" is offered alongside it for
+ * anyone who'd rather have the whole page. With nothing else going on
+ * (the common case — just Support, no other conversation yet) this skips
+ * the list and opens straight into that chat. */
 export function FloatingChatButton() {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<ConversationView[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [selected, setSelected] = useState<ConversationView | null>(null);
+  const [panelMessages, setPanelMessages] = useState<ChatMessageView[] | null>(null);
+  const [panelHasOpenCart, setPanelHasOpenCart] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,6 +55,7 @@ export function FloatingChatButton() {
       if (cancelled) return;
       setItems(result.items);
       setUnreadCount(result.unreadCount);
+      setCurrentUserId(result.userId);
       setLoaded(true);
     }
     tick();
@@ -69,59 +75,110 @@ export function FloatingChatButton() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
+  async function openConversation(c: ConversationView) {
+    setSelected(c);
+    setPanelMessages(null);
+    const [messages, hasOpenCart] = await Promise.all([pollChatMessages(c.requestType, c.requestId), getHasOpenCartForRequest(c.requestType, c.requestId)]);
+    setPanelMessages(messages);
+    setPanelHasOpenCart(hasOpenCart);
+  }
+
   function handleClick() {
-    // Not loaded yet (first poll still in flight) — just open the popup,
-    // which shows its own loading-appropriate empty state rather than
-    // guessing at a single-conversation redirect from stale/empty data.
-    if (loaded && items.length === 1) {
-      router.push(requestHref(items[0]));
+    if (open) {
+      setOpen(false);
       return;
     }
-    setOpen((v) => !v);
+    setOpen(true);
+    // Not loaded yet (first poll still in flight) — the popup shows its
+    // own loading state rather than guessing at a single-conversation
+    // shortcut from stale/empty data.
+    if (loaded && items.length === 1) {
+      openConversation(items[0]);
+    } else {
+      setSelected(null);
+    }
   }
 
   return (
     <div ref={containerRef} className="fixed bottom-6 right-6 z-40">
       {open && (
-        <div className="absolute bottom-16 right-0 w-80 max-w-[85vw] rounded-xl border border-border-subtle bg-surface p-2 text-left shadow-lg">
-          <p className="px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/50">Chat</p>
-          <div className="max-h-80 overflow-y-auto">
-            {!loaded && <p className="px-2 py-6 text-center text-sm text-charcoal/50">Loading...</p>}
-            {loaded &&
-              items.map((c, i) => (
-                <Link
-                  key={`${c.requestType}-${c.requestId}`}
-                  href={requestHref(c)}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "block rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-ivory-soft",
-                    c.unreadCount > 0 && "bg-gold/10",
-                    // A visual break between the always-there "Chat with
-                    // Support" pin and whatever quote/sourcing
-                    // conversations follow it — skipped when Support is
-                    // the only entry, since there'd be nothing to separate.
-                    i === 0 && items.length > 1 && "mb-1 border-b border-border-subtle pb-2.5",
-                  )}
+        <div className="absolute bottom-16 right-0">
+          {!selected ? (
+            <div className="w-80 max-w-[85vw] rounded-xl border border-border-subtle bg-surface p-2 text-left shadow-lg">
+              <p className="px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/50">Chat</p>
+              <div className="max-h-80 overflow-y-auto">
+                {!loaded && <p className="px-2 py-6 text-center text-sm text-charcoal/50">Loading...</p>}
+                {loaded &&
+                  items.map((c, i) => (
+                    <button
+                      key={`${c.requestType}-${c.requestId}`}
+                      type="button"
+                      onClick={() => openConversation(c)}
+                      className={cn(
+                        "block w-full rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-ivory-soft",
+                        c.unreadCount > 0 && "bg-gold/10",
+                        // A visual break between the always-there "Chat
+                        // with Support" pin and whatever quote/sourcing
+                        // conversations follow it — skipped when Support
+                        // is the only entry, since there'd be nothing to
+                        // separate.
+                        i === 0 && items.length > 1 && "mb-1 border-b border-border-subtle pb-2.5",
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate font-medium text-charcoal">{c.itemLabel}</p>
+                        {c.unreadCount > 0 && (
+                          <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium text-charcoal">
+                            {c.unreadCount > 9 ? "9+" : c.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      {c.lastMessagePreview ? (
+                        <>
+                          <p className="truncate text-xs text-charcoal/60">{c.lastMessagePreview}</p>
+                          <p className="mt-0.5 text-xs text-charcoal/45">{timeAgo(c.lastMessageAt)}</p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-charcoal/60">Start a conversation with our team.</p>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          ) : (
+            <div className="w-96 max-w-[90vw]">
+              <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-border-subtle bg-surface px-3 py-2 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  className="flex items-center gap-1 text-sm text-charcoal/70 hover:text-charcoal"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="truncate font-medium text-charcoal">{c.itemLabel}</p>
-                    {c.unreadCount > 0 && (
-                      <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium text-charcoal">
-                        {c.unreadCount > 9 ? "9+" : c.unreadCount}
-                      </span>
-                    )}
-                  </div>
-                  {c.lastMessagePreview ? (
-                    <>
-                      <p className="truncate text-xs text-charcoal/60">{c.lastMessagePreview}</p>
-                      <p className="mt-0.5 text-xs text-charcoal/45">{timeAgo(c.lastMessageAt)}</p>
-                    </>
-                  ) : (
-                    <p className="text-xs text-charcoal/60">Start a conversation with our team.</p>
-                  )}
+                  <ChevronLeft size={16} />
+                  {items.length > 1 ? "Back" : "Chat"}
+                </button>
+                <p className="truncate px-2 text-sm font-medium text-charcoal">{selected.itemLabel}</p>
+                <Link href={requestHref(selected)} className="shrink-0 text-xs text-gold hover:underline">
+                  Open full page ↗
                 </Link>
-              ))}
-          </div>
+              </div>
+              {panelMessages === null || !currentUserId ? (
+                <div className="rounded-b-xl border border-t-0 border-border-subtle bg-surface p-5 shadow-lg">
+                  <p className="text-sm text-charcoal/50">Loading...</p>
+                </div>
+              ) : (
+                <div className="[&>div]:rounded-t-none [&>div]:shadow-lg">
+                  <ChatPanel
+                    key={`${selected.requestType}-${selected.requestId}`}
+                    requestType={selected.requestType}
+                    requestId={selected.requestId}
+                    currentUserId={currentUserId}
+                    initialMessages={panelMessages}
+                    hasOpenCart={panelHasOpenCart}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

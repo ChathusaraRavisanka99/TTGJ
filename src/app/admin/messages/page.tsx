@@ -1,33 +1,15 @@
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/chat";
-import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
+import { AdminMessagesInbox, type InboxRow } from "@/components/admin/AdminMessagesInbox";
 import { cn } from "@/lib/utils";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
 
 const PAGE_SIZE = 20;
-
-interface InboxRow {
-  requestType: "quote" | "sourcing" | "general";
-  requestId: string;
-  itemLabel: string;
-  customerName: string;
-  customerEmail: string;
-  // null for "general" — a support chat has no QuoteStatus of its own.
-  status: string | null;
-  lastMessageAt: Date | null;
-  lastMessagePreview: string | null;
-  unread: number;
-}
-
-function rowHref(r: Pick<InboxRow, "requestType" | "requestId">): string {
-  if (r.requestType === "quote") return `/admin/quotes/${r.requestId}`;
-  if (r.requestType === "sourcing") return `/admin/sourcing/${r.requestId}`;
-  return `/admin/support/${r.requestId}`;
-}
 
 function quoteItemLabel(q: {
   gemstone: { name: string } | null;
@@ -57,6 +39,8 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
   const q = typeof sp.q === "string" ? sp.q.trim().toLowerCase() : "";
   const sort = sp.sort === "unread" ? "unread" : "recent";
   const page = Math.max(1, Number(sp.page) || 1);
+
+  const session = await auth();
 
   const [quotes, sourcing, general] = await Promise.all([
     prisma.quoteRequest.findMany({
@@ -194,52 +178,7 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
         </div>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
-              <th className="px-4 py-3">Customer</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Item</th>
-              <th className="px-4 py-3">Last Message</th>
-              <th className="px-4 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.map((r) => (
-              <tr key={`${r.requestType}-${r.requestId}`} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
-                <td className="px-4 py-3">
-                  <Link href={rowHref(r)} className="flex items-center gap-2 text-charcoal hover:text-gold">
-                    {r.customerName}
-                    {r.unread > 0 && (
-                      <span className="flex items-center gap-1 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-medium text-charcoal">
-                        <MessageCircle size={10} /> {r.unread}
-                      </span>
-                    )}
-                  </Link>
-                  <p className="text-xs text-charcoal/45">{r.customerEmail}</p>
-                </td>
-                <td className="px-4 py-3 text-charcoal/70">{r.requestType === "quote" ? "Quote" : r.requestType === "sourcing" ? "Sourcing" : "Support"}</td>
-                <td className="px-4 py-3 text-charcoal/70">{r.itemLabel}</td>
-                <td className="px-4 py-3 text-charcoal/70">
-                  {r.lastMessagePreview ? (
-                    <>
-                      <p className="max-w-xs truncate">{r.lastMessagePreview}</p>
-                      <p className="text-xs text-charcoal/45">{r.lastMessageAt?.toLocaleString()}</p>
-                    </>
-                  ) : (
-                    <span className="text-charcoal/40">Attachment only</span>
-                  )}
-                </td>
-                <td className="px-4 py-3">{r.status ? <QuoteStatusBadge status={r.status} /> : <span className="text-charcoal/30">—</span>}</td>
-              </tr>
-            ))}
-            {pageRows.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-charcoal/50">No conversations found.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {session?.user && <AdminMessagesInbox rows={pageRows} currentAdminId={session.user.id} />}
 
       <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />
     </div>

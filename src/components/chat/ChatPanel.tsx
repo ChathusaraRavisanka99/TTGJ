@@ -73,8 +73,21 @@ export function ChatPanel({
     return () => clearInterval(interval);
   }, [requestType, requestId]);
 
+  // Skips the very first run (mount) — scrollIntoView bubbles up to
+  // whatever ancestor actually scrolls, which on a page where this panel
+  // sits below other content (e.g. the quote/sourcing detail pages) was
+  // the whole document: landing on the page auto-scrolled it straight
+  // down to the chat, rather than leaving the customer at the top where
+  // they navigated to. Only scrolling on a message-count *increase* after
+  // that keeps the "jump to the new message" behavior while sending or
+  // polling, without that unwanted scroll-on-navigate.
+  const hasMountedRef = useRef(false);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages.length]);
 
   useEffect(() => {

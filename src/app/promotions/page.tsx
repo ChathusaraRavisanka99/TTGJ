@@ -6,6 +6,8 @@ import { getSeasonalContent } from "@/lib/page-content";
 import { countPromotionItems } from "@/lib/promotion-items";
 import { SEASONAL_THEMES } from "@/lib/seasonal-themes";
 import { FallingParticles } from "@/components/seasonal/FallingParticles";
+import { WindBlownLeaves } from "@/components/seasonal/WindBlownLeaves";
+import { SantaFlyby } from "@/components/seasonal/SantaFlyby";
 import { LinkButton } from "@/components/ui/Button";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -40,7 +42,11 @@ export default async function PromotionsPage() {
     // of clipping if an admin's own copy ever runs long on a short
     // viewport.
     <div className={`relative flex min-h-dvh items-center justify-center overflow-hidden ${theme.backgroundClass}`}>
-      <FallingParticles theme={theme} seed={theme.key.length} />
+      {/* Autumn's leaves get their own bespoke blow-then-drop motion
+          instead of the generic straight fall every other season uses —
+          see WindBlownLeaves' own comment. */}
+      {theme.key === "autumn" ? <WindBlownLeaves seed={theme.key.length} /> : <FallingParticles theme={theme} seed={theme.key.length} />}
+      {theme.key === "winter" && <SantaFlyby />}
 
       {/* Halloween's "other stuff" — a static row of jack-o'-lanterns
           anchored along the bottom, distinct from the falling bats above:

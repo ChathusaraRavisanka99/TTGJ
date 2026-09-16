@@ -7,6 +7,8 @@ import { getSeasonalContent } from "@/lib/page-content";
 import { getPromotionItems, promotionItemLabel } from "@/lib/promotion-items";
 import { SEASONAL_THEMES } from "@/lib/seasonal-themes";
 import { FallingParticles } from "@/components/seasonal/FallingParticles";
+import { WindBlownLeaves } from "@/components/seasonal/WindBlownLeaves";
+import { SantaFlyby } from "@/components/seasonal/SantaFlyby";
 import { PromotionItemCard } from "@/components/promotions/PromotionItemCard";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -40,7 +42,8 @@ export default async function PromotionsCollectionPage() {
     // empty screen, which read as broken rather than intentional). The
     // background still covers however tall that content turns out to be.
     <div className={`relative overflow-hidden ${theme.backgroundClass}`}>
-      <FallingParticles theme={theme} seed={theme.key.length} />
+      {theme.key === "autumn" ? <WindBlownLeaves seed={theme.key.length} /> : <FallingParticles theme={theme} seed={theme.key.length} />}
+      {theme.key === "winter" && <SantaFlyby />}
 
       {/* Anchored to the bottom of the actual content (not a fixed pixel
           offset from the top) — same placement /promotions' own hero

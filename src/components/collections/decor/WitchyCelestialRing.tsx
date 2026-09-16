@@ -1,10 +1,17 @@
+import { ThemeFlyby } from "./ThemeFlyby";
+import { ShootingStar } from "./FlybySilhouettes";
+
 /** A faint, slowly-rotating celestial diagram — a dashed orbit ring with
  * scattered star points and a crescent-moon mark — the Witchy/Occult
  * page's signature motif, tarot/astronomy-diagram in spirit rather than
- * any literal pentagram or costume-shop occult symbol. */
+ * any literal pentagram or costume-shop occult symbol. A shooting star
+ * crossing on its own long loop fits the same astronomy-diagram spirit. */
 export function WitchyCelestialRing() {
   return (
     <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden" aria-hidden>
+      <ThemeFlyby top="16%" duration="14s" delay="-5s" rotate={18}>
+        <ShootingStar className="text-[#e8e6f0]/80" />
+      </ThemeFlyby>
       <svg viewBox="0 0 400 400" className="animate-celestial-rotate h-[130%] w-[130%] max-w-none text-[#7a6fb0]/25 sm:h-[90%] sm:w-[90%]">
         <circle cx="200" cy="200" r="180" fill="none" stroke="currentColor" strokeWidth="0.75" strokeDasharray="1 10" />
         <circle cx="200" cy="200" r="130" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="0.5 14" />

@@ -37,10 +37,25 @@ const MAX_PENDING_MS = 4000;
  * (a capture-phase document listener) rather than any router state, since
  * that's the one signal that's unambiguous and strictly precedes
  * everything else changing.
+ *
+ * Also renders a thin top progress bar (the Linear/GitHub/YouTube
+ * convention) alongside the blur — a full-screen blur alone reads as
+ * "something happened" but not "how much longer," and a bar is the
+ * lightest-weight way to add that without a real percentage (which a
+ * client-side navigation's fetch duration never actually knows up front).
  */
 export function NavigationOverlay() {
   const pathname = usePathname();
   const [pending, setPending] = useState(false);
+  const [justFinished, setJustFinished] = useState(false);
+  // Bumped only when a *new* navigation starts (never on finish) — the
+  // progress bar below is keyed on this, so each fresh navigation gets a
+  // fresh element whose animate-nav-progress keyframe restarts at 0%,
+  // while the pending -> justFinished transition within one navigation
+  // stays on the *same* element so the "snap to 100%" can actually
+  // transition from wherever the growth animation had gotten to, instead
+  // of popping in already at 100% the way a remount would.
+  const [navId, setNavId] = useState(0);
   const [lastPathname, setLastPathname] = useState(pathname);
 
   // The new route has actually arrived — clear immediately. Done directly
@@ -50,8 +65,22 @@ export function NavigationOverlay() {
   // react to a prop change causes an extra wasted render pass.
   if (pathname !== lastPathname) {
     setLastPathname(pathname);
-    if (pending) setPending(false);
+    if (pending) {
+      setPending(false);
+      // The progress bar's own "snap to 100%, then fade" moment — see the
+      // bar's JSX below and animate-nav-progress's own comment for why
+      // this doesn't just let the bar sit wherever animate-nav-progress
+      // had gotten to (a real fetch duration is never known up front, so
+      // that could be anywhere short of 90%).
+      setJustFinished(true);
+    }
   }
+
+  useEffect(() => {
+    if (!justFinished) return;
+    const t = setTimeout(() => setJustFinished(false), 300);
+    return () => clearTimeout(t);
+  }, [justFinished]);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -69,6 +98,7 @@ export function NavigationOverlay() {
       // never get the overlay.
       if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return;
       setPending(true);
+      setNavId((n) => n + 1);
     }
     // Capture phase: fires before the click reaches <Link>'s own handler.
     document.addEventListener("click", onClick, true);
@@ -83,6 +113,22 @@ export function NavigationOverlay() {
 
   return (
     <>
+      {/* z-50: above the blur overlay and the public Navbar's own z-50 —
+          it needs to read as "on top of everything," including the fixed
+          nav it's reporting on. Always mounted (never conditionally
+          removed) so the pending -> justFinished handoff animates on one
+          continuous element; only `key={navId}` forces a fresh instance,
+          and only when a new navigation actually starts. */}
+      <div
+        key={navId}
+        aria-hidden
+        className={cn(
+          "pointer-events-none fixed left-0 top-0 z-50 h-[3px] bg-gradient-to-r from-gold-soft to-gold",
+          pending && "animate-nav-progress opacity-100",
+          justFinished && "w-full opacity-100 transition-[width,opacity] duration-300 ease-out",
+          !pending && !justFinished && "opacity-0 transition-opacity duration-300",
+        )}
+      />
       <div
         aria-hidden
         className={cn(

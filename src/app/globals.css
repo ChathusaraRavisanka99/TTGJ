@@ -177,12 +177,34 @@ h1, h2, h3, h4, .font-serif {
    rather than two unrelated animations, but a touch slower since it's
    revealing a whole page rather than four lines of loader text. */
 @keyframes page-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .animate-page-in {
   animation: page-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* NavigationOverlay's top progress bar — the "something's loading" signal
+   a lot of modern sites use (Linear, GitHub, YouTube) alongside a full
+   overlay rather than instead of one, since a thin bar alone reads as too
+   subtle on the very first frame of a click. `pending` drives the growth
+   toward (never reaching) 90% — a real fetch duration is unknown up
+   front, so this fakes progress rather than claiming a real percentage,
+   the same convention every one of those sites' bars uses. NavigationOverlay
+   flips to the "finish" class the instant the real navigation lands,
+   snapping to 100% before fading — see its own comment for the state
+   machine driving which class is active. */
+@keyframes nav-progress-grow {
+  0% { width: 0%; }
+  15% { width: 30%; }
+  40% { width: 55%; }
+  70% { width: 75%; }
+  100% { width: 90%; }
+}
+
+.animate-nav-progress {
+  animation: nav-progress-grow 4s cubic-bezier(0.1, 0.7, 0.3, 1) forwards;
 }
 
 /* Closing CTA's showcase gem — a slow, mild colour drift meant to read as
@@ -335,6 +357,76 @@ h1, h2, h3, h4, .font-serif {
   animation: celestial-rotate 90s linear infinite;
 }
 
+/* Every subculture theme's "signature flyby" — one small silhouette
+   (bat, raven, lightning bolt, shooting star, drifting feather; see
+   src/components/collections/decor/ThemeFlyby.tsx) crossing the hero on
+   a long, infrequent loop. A straight horizontal line (not an arc) on the
+   outer element, ease-in-out so it eases in from and back into the edges
+   rather than a robotic constant-speed crossing — the wing-flap/twinkle
+   motion layers on top via flyby-bob on a *child* element, since combining
+   both into one keyframe would need calc()'d midpoints for every mixed-unit
+   property, which is exactly the kind of thing that silently fails to
+   animate in some engines rather than erroring. Two elements, two simple
+   keyframes, composited by the browser, is the boring reliable way to get
+   the same combined look. */
+@keyframes theme-flyby {
+  0% { transform: translateX(var(--flyby-start-x, -15vw)) rotate(var(--flyby-rotate, -6deg)); opacity: 0; }
+  10% { opacity: var(--flyby-opacity, 0.85); }
+  90% { opacity: var(--flyby-opacity, 0.85); }
+  100% { transform: translateX(var(--flyby-end-x, 115vw)) rotate(var(--flyby-rotate, -6deg)); opacity: 0; }
+}
+.animate-theme-flyby {
+  animation: theme-flyby var(--flyby-duration, 16s) ease-in-out infinite;
+  animation-delay: var(--flyby-delay, 0s);
+}
+
+@keyframes flyby-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+.animate-flyby-bob {
+  animation: flyby-bob 1.1s ease-in-out infinite;
+}
+
+/* Winter promotions page: Santa's sleigh arcs in from one bottom corner,
+   crests near the top, and exits the opposite corner — a gentle parabola
+   (the mid-keyframe's lift) rather than a flat crossing, so it reads as
+   "flying over" the scene instead of sliding past it. */
+@keyframes santa-flyby {
+  0% { transform: translate(-20vw, 8vh) rotate(-4deg); opacity: 0; }
+  12% { opacity: 1; }
+  50% { transform: translate(50vw, -14vh) rotate(2deg); }
+  88% { opacity: 1; }
+  100% { transform: translate(120vw, 6vh) rotate(-4deg); opacity: 0; }
+}
+.animate-santa-flyby {
+  animation: santa-flyby 22s ease-in-out infinite;
+}
+
+/* Autumn promotions page: a gust-blown leaf — mostly horizontal drift for
+   the first half (the "wind blows" phase, with only a slight downward
+   give), then a steep fall for the second half once the gust passes (the
+   "start dropping" phase). Distinct from the generic particle-fall other
+   seasons use, which is a constant-rate straight drop from the top —
+   autumn's brief asked for the two-phase blow-then-drop motion
+   specifically. */
+@keyframes leaf-blow-drop {
+  0% { transform: translate(-10vw, -8vh) rotate(0deg); opacity: 0; }
+  12% { opacity: var(--particle-opacity, 0.85); }
+  45% { transform: translate(55vw, 6vh) rotate(140deg); }
+  100% {
+    transform: translate(var(--particle-drift, 85vw), 110vh) rotate(var(--particle-spin, 520deg));
+    opacity: 0;
+  }
+}
+.animate-leaf-blow-drop {
+  animation-name: leaf-blow-drop;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.7, 1);
+  animation-iteration-count: infinite;
+  animation-duration: var(--particle-duration, 9s);
+  animation-delay: var(--particle-delay, 0s);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee,
   .animate-scroll-cue,
@@ -351,7 +443,12 @@ h1, h2, h3, h4, .font-serif {
   .animate-mist-drift-b,
   .animate-candle-flicker,
   .animate-stage-sweep,
-  .animate-celestial-rotate {
+  .animate-celestial-rotate,
+  .animate-nav-progress,
+  .animate-theme-flyby,
+  .animate-flyby-bob,
+  .animate-santa-flyby,
+  .animate-leaf-blow-drop {
     animation: none;
   }
 }

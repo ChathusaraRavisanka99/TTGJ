@@ -102,8 +102,14 @@ export const SUBCULTURE_COLLECTIONS: Record<SubcultureKey, SubcultureDef> = {
     heroOverlayClass: "bg-gradient-to-t from-[#0f0c0e] via-[#0f0c0e]/60 to-transparent",
     headingClass: "text-[#f2ece4]",
     bodyClass: "text-[#f2ece4]/70",
-    kickerClass: "text-[#8a5a6b]",
-    accentClass: "text-[#8a5a6b]",
+    // Lighter than the border/glow's own #8a5a6b (kept below for those
+    // decorative, non-text uses) — the original measured ~3.7:1 against
+    // this page's near-black backgrounds, short of WCAG AA's 4.5:1 for
+    // the small text this drives (the kicker label and each product
+    // card's "Request a Quote" link). This shade holds the same dusty-
+    // rose hue at ~6.9:1.
+    kickerClass: "text-[#c99aac]",
+    accentClass: "text-[#c99aac]",
     dividerClass: "bg-[#8a5a6b]/40",
     cardBorderClass: "border-[#3a2e33] hover:border-[#8a5a6b]/50",
     cardGlowClass: "shadow-[0_0_40px_-12px_rgba(138,90,107,0.35)]",
@@ -125,8 +131,11 @@ export const SUBCULTURE_COLLECTIONS: Record<SubcultureKey, SubcultureDef> = {
     heroOverlayClass: "bg-gradient-to-t from-[#0b0507] via-[#0b0507]/55 to-transparent",
     headingClass: "text-[#f2e6e6]",
     bodyClass: "text-[#f2e6e6]/70",
-    kickerClass: "text-[#a3283f]",
-    accentClass: "text-[#a3283f]",
+    // Same contrast fix as Goth's kicker/accent above — the original
+    // #a3283f measured under 3:1 against this page's near-black
+    // backgrounds. This brighter crimson holds the hue at ~5.6:1.
+    kickerClass: "text-[#e0546c]",
+    accentClass: "text-[#e0546c]",
     dividerClass: "bg-[#a3283f]/50",
     cardBorderClass: "border-[#3d151d] hover:border-[#a3283f]/60",
     cardGlowClass: "shadow-[0_0_50px_-10px_rgba(163,40,63,0.4)]",
@@ -193,7 +202,11 @@ export const SUBCULTURE_COLLECTIONS: Record<SubcultureKey, SubcultureDef> = {
     heroOverlayClass: "bg-gradient-to-t from-[#0c0d0f] via-[#0c0d0f]/60 to-transparent",
     headingClass: "text-[#e7e8ea]",
     bodyClass: "text-[#e7e8ea]/70",
-    kickerClass: "text-[#8a1f1f]",
+    // The original #8a1f1f measured ~2.3:1 against this page's near-black
+    // backgrounds — the worst offender of this feature's contrast pass.
+    // This lighter red holds the hue at ~4.8:1. accentClass's light grey
+    // was already comfortably high-contrast and is unchanged.
+    kickerClass: "text-[#c9504f]",
     accentClass: "text-[#9aa0a8]",
     dividerClass: "bg-[#9aa0a8]/40",
     cardBorderClass: "border-[#2a2c30] hover:border-[#9aa0a8]/60",

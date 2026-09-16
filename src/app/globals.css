@@ -57,13 +57,20 @@ body {
    section" feel it's going for on a larger viewport with mouse/trackpad
    scrolling, so it's off by default and only opts in at the same
    breakpoint SectionArrow's buttons themselves reappear at (see below) —
-   the two are meant to go together, not one without the other. */
+   the two are meant to go together, not one without the other.
+   `html.no-scroll-snap` (toggled by MainWrapper for /collections routes)
+   opts back out even at sm:+ — those pages have no snap-start sections at
+   all, but their hero/intro sections are still close enough to full
+   viewport height that this container-level rule alone made mobile
+   Safari/Chrome snap between them anyway (no child needs an explicit
+   scroll-snap-align for that — verified live on a real phone in
+   landscape and via a wide "mobile" devtools viewport, both >=640px). */
 html {
   scroll-snap-type: none;
 }
 
 @media (min-width: 640px) {
-  html {
+  html:not(.no-scroll-snap) {
     scroll-snap-type: y proximity;
   }
 }

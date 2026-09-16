@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,21 @@ export function MainWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const hasFullBleedHero = FULL_BLEED_HERO_ROUTES.includes(pathname) || FULL_BLEED_HERO_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const isAdmin = pathname.startsWith("/admin");
+
+  // `<html>` (the scroll-snap container — see globals.css) is rendered by
+  // the root layout, outside this component's own subtree, so opting a
+  // route out of sm:+ scroll-snap can't be done by className here the way
+  // hasFullBleedHero is below — it has to reach across via
+  // document.documentElement directly. Scoped to /collections: those
+  // pages have no snap-start section of their own, but their near-full-
+  // viewport-height sections still triggered mobile Safari/Chrome's
+  // proximity snapping between them at sm:+ widths (a real phone in
+  // landscape, or a wide "mobile" devtools viewport) purely from the
+  // container-level rule, with no child scroll-snap-align needed.
+  useEffect(() => {
+    document.documentElement.classList.toggle("no-scroll-snap", pathname.startsWith("/collections/"));
+  }, [pathname]);
+
   return (
     // relative: lets PageLoader (the Suspense fallback — see loading.tsx)
     // cover this box exactly via `absolute inset-0` instead of a

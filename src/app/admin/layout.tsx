@@ -20,10 +20,20 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   }
 
   return (
-    // Block-stacked (mobile top bar, then content) below lg, side-by-side
-    // flex row (permanent sidebar) at lg+ — see AdminSidebar for the
-    // matching responsive split of its own markup.
-    <div className="min-h-[calc(100vh-1px)] bg-ivory-soft print:block print:bg-white lg:flex">
+    // flex-col (mobile top bar, then content stacked) below lg, flex-row
+    // (permanent sidebar beside content) at lg+ — see AdminSidebar for the
+    // matching responsive split of its own markup. Unconditionally flex
+    // (not `lg:flex`) is what actually matters here, not the direction:
+    // the content column below needs to be a flex item at every
+    // breakpoint so `flex-1` gives it a definite height for
+    // AdminPageLoader's `absolute inset-0` to fill — a plain block box's
+    // height is derived from its in-flow children, and during the
+    // loading fallback its only child is that same `absolute` (so
+    // flow-height-contributing-zero) loader, collapsing the whole column
+    // to just its own padding. Verified live: below lg this was rendering
+    // the spinner squashed into a ~48px strip under the mobile top bar
+    // instead of filling the screen.
+    <div className="flex min-h-[calc(100vh-1px)] flex-col bg-ivory-soft print:block print:bg-white lg:flex-row">
       <AdminSidebar />
       {/* relative: lets AdminPageLoader (the Suspense fallback — see
           admin/loading.tsx) cover this box exactly via `absolute inset-0`

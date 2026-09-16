@@ -6,6 +6,7 @@ import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { BackLink } from "@/components/admin/BackLink";
 import { formatPrice } from "@/lib/utils";
+import { markNotificationsReadForRequest } from "@/lib/notifications";
 
 export default async function AccountSourcingDetailPage({ params }: PageProps<"/account/sourcing/[id]">) {
   const { id } = await params;
@@ -18,6 +19,11 @@ export default async function AccountSourcingDetailPage({ params }: PageProps<"/
   const [openCart, initialMessages] = await Promise.all([
     prisma.cart.findFirst({ where: { userId: session.user.id, status: "OPEN" }, include: { items: true } }),
     pollChatMessages("sourcing", id),
+    // Fire-and-forget-ish (still awaited via Promise.all, but nothing here
+    // depends on its result) — opening this page is what "read" means for
+    // any notification pointing at it, same as ChatPanel's own
+    // mark-read-on-open for unread chat counts.
+    markNotificationsReadForRequest("sourcing", id, session.user.id),
   ]);
 
   return (

@@ -5,10 +5,20 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { ensureInvoiceForQuote } from "@/lib/invoicing";
 import { ensureCartItemForQuote, ensureCartItemForSourcing } from "@/lib/cart";
+import { createNotification } from "@/lib/notifications";
 import type { ActionResult } from "./auth";
 
 const QUOTE_STATUSES = ["SUBMITTED", "UNDER_REVIEW", "QUOTED", "ACCEPTED", "DECLINED", "EXPIRED"] as const;
 type QuoteStatus = (typeof QUOTE_STATUSES)[number];
+
+const STATUS_LABELS: Record<QuoteStatus, string> = {
+  SUBMITTED: "Submitted",
+  UNDER_REVIEW: "Under Review",
+  QUOTED: "Quoted",
+  ACCEPTED: "Accepted",
+  DECLINED: "Declined",
+  EXPIRED: "Expired",
+};
 
 export async function updateQuoteRequest(
   id: string,
@@ -23,7 +33,7 @@ export async function updateQuoteRequest(
   await requireAdmin();
   if (!QUOTE_STATUSES.includes(status)) return { ok: false, error: "Invalid status." };
 
-  const current = await prisma.quoteRequest.findUnique({ where: { id }, select: { quotedPrice: true } });
+  const current = await prisma.quoteRequest.findUnique({ where: { id }, select: { quotedPrice: true, status: true, userId: true } });
   if (!current) return { ok: false, error: "Quote not found." };
 
   // A price has to exist before a quote can be marked Quoted or Accepted —
@@ -53,6 +63,19 @@ export async function updateQuoteRequest(
     await ensureCartItemForQuote(id);
   }
 
+  // Only a genuine transition notifies — re-saving the same status (e.g.
+  // just editing adminNotes) would otherwise spam a fresh notification
+  // every time.
+  if (status !== current.status) {
+    await createNotification({
+      userId: current.userId,
+      type: "STATUS_CHANGE",
+      message: `Your quote request is now ${STATUS_LABELS[status]}.`,
+      requestType: "quote",
+      requestId: id,
+    });
+  }
+
   revalidatePath("/admin/quotes");
   revalidatePath(`/admin/quotes/${id}`);
   revalidatePath("/account/quotes");
@@ -73,7 +96,7 @@ export async function updateSourcingRequest(
   await requireAdmin();
   if (!QUOTE_STATUSES.includes(status)) return { ok: false, error: "Invalid status." };
 
-  const current = await prisma.sourcingRequest.findUnique({ where: { id }, select: { quotedPrice: true } });
+  const current = await prisma.sourcingRequest.findUnique({ where: { id }, select: { quotedPrice: true, status: true, userId: true } });
   if (!current) return { ok: false, error: "Sourcing request not found." };
 
   const effectivePrice = quotedPrice ?? current.quotedPrice;
@@ -94,6 +117,16 @@ export async function updateSourcingRequest(
 
   if (status === "ACCEPTED") {
     await ensureCartItemForSourcing(id);
+  }
+
+  if (status !== current.status) {
+    await createNotification({
+      userId: current.userId,
+      type: "STATUS_CHANGE",
+      message: `Your sourcing request is now ${STATUS_LABELS[status]}.`,
+      requestType: "sourcing",
+      requestId: id,
+    });
   }
 
   revalidatePath("/admin/sourcing");

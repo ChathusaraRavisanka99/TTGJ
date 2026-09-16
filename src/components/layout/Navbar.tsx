@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { Menu, X, User, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountMenu, ACCOUNT_MENU_LINKS } from "@/components/layout/AccountMenu";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { signOutAction } from "@/actions/auth";
 
 const BASE_NAV_LINKS = [
@@ -168,6 +169,7 @@ export function Navbar({
               </span>
             )}
           </Link>
+          {user && <NotificationBell transparent={transparent} />}
           {user ? (
             <AccountMenu user={user} transparent={transparent} />
           ) : (
@@ -197,6 +199,7 @@ export function Navbar({
               </span>
             )}
           </Link>
+          {user && <NotificationBell transparent={transparent} />}
           <button
             className={cn("transition-colors duration-300", transparent ? "text-ivory" : "text-charcoal")}
             onClick={() => setOpen((v) => !v)}

@@ -73,6 +73,7 @@ model User {
   cartInvoices    CartInvoice[]
   auctionBids     AuctionBid[]
   chatMessages    ChatMessage[]
+  notifications   Notification[]
 
   retailCart              RetailCart?
   orders                  Order[]
@@ -628,6 +629,39 @@ model ChatMessage {
 
   @@index([threadId])
   @@index([senderId])
+}
+
+enum NotificationType {
+  CHAT_REPLY
+  STATUS_CHANGE
+}
+
+// Customer-facing, in-app only for now (see lib/notifications.ts) — one row
+// per event (an admin's chat reply, or their quote/sourcing request's
+// status changing) rather than reusing ChatThread's "everything since I
+// last opened it" scheme, since a notification is a discrete, individually
+// readable/dismissable item (a bell dropdown), not a running count.
+// Deliberately customer-only: an admin's equivalent is the unread chat
+// counts already surfaced (sortable/searchable) in /admin/messages.
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  message String
+
+  // Same requestType/requestId discriminator lib/chat.ts's ChatRequestType
+  // already uses — every notification today originates from a
+  // QuoteRequest or SourcingRequest, so this is enough to link back to it
+  // without a second nullable-FK-pair the way ChatThread needs.
+  requestType String
+  requestId   String
+
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, readAt])
 }
 
 // ---------- Cart & payment ----------

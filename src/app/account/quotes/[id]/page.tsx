@@ -8,6 +8,7 @@ import { ChatPanel } from "@/components/chat/ChatPanel";
 import { BackLink } from "@/components/admin/BackLink";
 import { formatPrice } from "@/lib/utils";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
+import { markNotificationsReadForRequest } from "@/lib/notifications";
 
 export default async function AccountQuoteDetailPage({ params }: PageProps<"/account/quotes/[id]">) {
   const { id } = await params;
@@ -32,6 +33,7 @@ export default async function AccountQuoteDetailPage({ params }: PageProps<"/acc
   const [openCart, initialMessages] = await Promise.all([
     prisma.cart.findFirst({ where: { userId: session.user.id, status: "OPEN" }, include: { items: true } }),
     pollChatMessages("quote", id),
+    markNotificationsReadForRequest("quote", id, session.user.id),
   ]);
 
   return (

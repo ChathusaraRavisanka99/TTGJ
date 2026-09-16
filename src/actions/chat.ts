@@ -10,6 +10,7 @@ import {
   snapshotOpenCart,
   type ChatRequestType,
 } from "@/lib/chat";
+import { createNotification } from "@/lib/notifications";
 import type { ActionResult } from "./auth";
 
 export type ChatTag = { type: "gemstone" | "jewelry"; id: string } | { type: "cart" };
@@ -80,6 +81,21 @@ export async function sendChatMessage(input: {
   });
 
   for (const path of requestPaths(input.requestType, input.requestId)) revalidatePath(path);
+
+  // Only the admin side notifies — a customer sending a message doesn't
+  // need to be told about their own message, and the admin's equivalent
+  // (an unread badge) is already covered by getUnreadCount in the
+  // /admin/messages inbox.
+  if (isAdmin) {
+    await createNotification({
+      userId: context.customerId,
+      type: "CHAT_REPLY",
+      message: input.requestType === "quote" ? "You have a new reply on your quote request." : "You have a new reply on your sourcing request.",
+      requestType: input.requestType,
+      requestId: input.requestId,
+    });
+  }
+
   return { ok: true };
 }
 

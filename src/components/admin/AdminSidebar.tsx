@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/gems", label: "Gemstones" },
   { href: "/admin/jewelry", label: "Jewelry" },
   { href: "/admin/media", label: "Media" },
+  { href: "/admin/messages", label: "Messages" },
   { href: "/admin/quotes", label: "Quote Requests" },
   { href: "/admin/sourcing", label: "Sourcing Requests" },
   { href: "/admin/carts", label: "Submitted Carts" },

@@ -7,7 +7,7 @@ import { CollectionProductCard } from "@/components/collections/CollectionProduc
 import { cn } from "@/lib/utils";
 
 const controlClass =
-  "rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-xs text-white/80 focus:outline-none focus:ring-1 focus:ring-white/30";
+  "rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 focus:outline-none focus:ring-1 focus:ring-white/30";
 
 // <option> elements render in the browser's own native dropdown popup, not
 // this component's dark-themed box — Chrome/Firefox/Edge do honor `color`/
@@ -59,7 +59,14 @@ export function CollectionGrid({ items, theme }: { items: CollectionCardData[]; 
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2.5">
+      {/* mt-5: the theme-label kicker just above this (in
+          AlternativeCollectionPage) had no spacing of its own before this
+          row, so the two sat nearly flush — close enough to read as an
+          accident rather than a deliberate "label, then its filters"
+          grouping. gap-2 (down from 2.5) and the pills' own tighter
+          padding (see controlClass) make the row itself read as one
+          cohesive toolbar instead of four loosely related buttons. */}
+      <div className="mt-5 flex flex-wrap items-center gap-2">
         <select value={gemstone} onChange={(e) => setGemstone(e.target.value)} className={controlClass}>
           <option className={optionClass} value="">All Gemstones</option>
           {gemstoneOptions.map((g) => (

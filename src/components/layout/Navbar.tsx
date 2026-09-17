@@ -199,7 +199,7 @@ export function Navbar({
               </span>
             )}
           </Link>
-          {user && <NotificationBell transparent={transparent} />}
+          {user && <NotificationBell transparent={transparent} size={21} />}
           <button
             className={cn("transition-colors duration-300", transparent ? "text-ivory" : "text-charcoal")}
             onClick={() => setOpen((v) => !v)}

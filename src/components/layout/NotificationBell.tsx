@@ -35,8 +35,13 @@ function timeAgo(iso: string): string {
  * dropdown. Visiting the linked request page is what actually marks its
  * notifications read (see markNotificationsReadForRequest in the account
  * detail pages) — "Mark all read" here is just a shortcut for clearing
- * the badge without visiting each one. */
-export function NotificationBell({ transparent }: { transparent: boolean }) {
+ * the badge without visiting each one.
+ *
+ * `size` defaults to the desktop row's cart-icon size (19) but Navbar
+ * passes 21 in its mobile row, matching that row's own larger cart icon —
+ * this bell renders once in each row, and a fixed size here previously
+ * left it visibly smaller than its neighbour on mobile specifically. */
+export function NotificationBell({ transparent, size = 19 }: { transparent: boolean; size?: number }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationView[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -81,7 +86,7 @@ export function NotificationBell({ transparent }: { transparent: boolean }) {
         onClick={() => setOpen((v) => !v)}
         className={cn("relative transition-colors duration-300", transparent ? "text-ivory/85 hover:text-ivory" : "text-charcoal/80 hover:text-charcoal")}
       >
-        <Bell size={19} />
+        <Bell size={size} />
         {unreadCount > 0 && (
           <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-medium text-charcoal">
             {unreadCount > 9 ? "9+" : unreadCount}

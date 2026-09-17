@@ -4,6 +4,13 @@ export interface SeasonalThemeDef {
   key: SeasonalThemeKey;
   label: string;
   backgroundClass: string;
+  /** Whether this theme's backgroundClass is dark enough for light
+   * (ivory) text — Navbar reads this to decide whether /promotions can
+   * safely use the transparent-over-hero nav treatment (see its own
+   * TRANSPARENT_NAV_ROUTES comment): Halloween's hero is dark like every
+   * subculture collection page, but Spring/Summer/Autumn/Winter's are
+   * light, where transparent ivory nav text/logo would go illegible. */
+  isDark: boolean;
   headingClass: string;
   bodyClass: string;
   kickerClass: string;
@@ -21,6 +28,7 @@ export const SEASONAL_THEMES: Record<SeasonalThemeKey, SeasonalThemeDef> = {
     key: "spring",
     label: "Spring",
     backgroundClass: "bg-gradient-to-b from-rose-50 via-ivory to-ivory-soft",
+    isDark: false,
     headingClass: "text-charcoal",
     bodyClass: "text-charcoal/70",
     kickerClass: "text-rose-400",
@@ -34,6 +42,7 @@ export const SEASONAL_THEMES: Record<SeasonalThemeKey, SeasonalThemeDef> = {
     key: "summer",
     label: "Summer",
     backgroundClass: "bg-gradient-to-b from-amber-50 via-gold-soft/25 to-ivory",
+    isDark: false,
     headingClass: "text-charcoal",
     bodyClass: "text-charcoal/70",
     kickerClass: "text-gold",
@@ -47,6 +56,7 @@ export const SEASONAL_THEMES: Record<SeasonalThemeKey, SeasonalThemeDef> = {
     key: "autumn",
     label: "Autumn",
     backgroundClass: "bg-gradient-to-b from-orange-50 via-amber-100/50 to-ivory-soft",
+    isDark: false,
     headingClass: "text-charcoal",
     bodyClass: "text-charcoal/70",
     kickerClass: "text-orange-500",
@@ -60,6 +70,7 @@ export const SEASONAL_THEMES: Record<SeasonalThemeKey, SeasonalThemeDef> = {
     key: "winter",
     label: "Winter",
     backgroundClass: "bg-gradient-to-b from-sky-50 via-ivory to-ivory-soft",
+    isDark: false,
     headingClass: "text-charcoal",
     bodyClass: "text-charcoal/70",
     kickerClass: "text-sky-500",
@@ -73,6 +84,7 @@ export const SEASONAL_THEMES: Record<SeasonalThemeKey, SeasonalThemeDef> = {
     key: "halloween",
     label: "Halloween",
     backgroundClass: "bg-gradient-to-b from-charcoal via-[#1a1220] to-charcoal",
+    isDark: true,
     headingClass: "text-ivory",
     bodyClass: "text-ivory/70",
     kickerClass: "text-orange-400",

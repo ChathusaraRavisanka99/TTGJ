@@ -4,6 +4,8 @@ import "./globals.css";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPageVisibilities } from "@/lib/page-visibility";
+import { getSeasonalContent } from "@/lib/page-content";
+import { SEASONAL_THEMES } from "@/lib/seasonal-themes";
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { MainWrapper } from "@/components/layout/MainWrapper";
 
@@ -28,7 +30,18 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [session, visibilities] = await Promise.all([auth(), getPageVisibilities(["seasonal", "auction"])]);
+  const [session, visibilities, seasonalContent] = await Promise.all([
+    auth(),
+    getPageVisibilities(["seasonal", "auction"]),
+    getSeasonalContent(),
+  ]);
+  // Navbar's transparent-over-hero treatment on /promotions is only safe
+  // when that season's hero is actually dark (Halloween) — Spring/Summer/
+  // Autumn/Winter's are light, where transparent ivory nav text would go
+  // illegible. Computed here (cheap, and this already fetches session/
+  // visibility fresh on every navigation) rather than Navbar querying it
+  // itself, same "compute where it's cheap" reasoning as cartItemCount.
+  const promotionsThemeIsDark = SEASONAL_THEMES[seasonalContent.activeTheme]?.isDark ?? false;
   // Computed once here (a Server Component, so this only ever runs on the
   // server) and threaded down through SiteChrome to Footer as a plain
   // prop — see Footer.tsx for why Footer can't just compute this itself.
@@ -53,6 +66,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           showPromotions={visibilities.seasonal !== "HIDDEN"}
           showAuction={visibilities.auction !== "HIDDEN"}
           cartItemCount={cartItemCount}
+          promotionsThemeIsDark={promotionsThemeIsDark}
         >
           <MainWrapper>{children}</MainWrapper>
         </SiteChrome>

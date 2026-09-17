@@ -24,6 +24,7 @@ export function SiteChrome({
   showPromotions,
   showAuction,
   cartItemCount,
+  promotionsThemeIsDark,
   children,
 }: {
   user: SiteChromeUser | null;
@@ -41,6 +42,10 @@ export function SiteChrome({
   /** Retail (shopping) cart item count for the nav's cart badge — 0 when
    * signed out. Same "compute where it's cheap" reasoning as `year`. */
   cartItemCount: number;
+  /** Whether the currently-active seasonal theme's hero is dark — see
+   * SeasonalThemeDef.isDark. Navbar needs this to know whether /promotions
+   * can safely use the transparent-over-hero nav treatment. */
+  promotionsThemeIsDark: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -52,7 +57,13 @@ export function SiteChrome({
     <>
       <IntroLoader />
       <NavigationOverlay />
-      <Navbar user={user} showPromotions={showPromotions} showAuction={showAuction} cartItemCount={cartItemCount} />
+      <Navbar
+        user={user}
+        showPromotions={showPromotions}
+        showAuction={showAuction}
+        cartItemCount={cartItemCount}
+        promotionsThemeIsDark={promotionsThemeIsDark}
+      />
       {children}
       <Footer year={year} />
       {user && <FloatingChatButton />}

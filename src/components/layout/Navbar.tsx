@@ -21,17 +21,42 @@ const BASE_NAV_LINKS = [
 const PROMOTIONS_LINK = { href: "/promotions", label: "Promotions" };
 const AUCTION_LINK = { href: "/auction", label: "Auctions" };
 
-// Solidify almost as soon as the page moves — the hero's own headline sits
-// well within the first ~150px, so a threshold based on viewport height
-// (e.g. "70% scrolled") leaves a wide window where that text scrolls up
-// underneath the still-transparent nav and visibly collides with it.
+// Solidify almost as soon as the page moves, on the home page specifically
+// — its hero's own headline sits well within the first ~150px, so a
+// threshold based on viewport height (e.g. "70% scrolled") leaves a wide
+// window where that text scrolls up underneath the still-transparent nav
+// and visibly collides with it.
 const SOLID_THRESHOLD_PX = 24;
+
+// Every other route that gets the transparent-over-hero treatment has a
+// full min-h-dvh hero (see AlternativeCollectionPage and the promotions
+// pages) rather than home's short one, so solidifying at the same tiny
+// pixel offset would turn the nav solid while most of that hero image is
+// still on screen below it. This instead waits until the hero itself is
+// nearly scrolled past — clamped so a very short viewport (landscape
+// phone) still gets a sane minimum.
+function solidThresholdFor(isHome: boolean): number {
+  return isHome ? SOLID_THRESHOLD_PX : Math.max(200, window.innerHeight - 120);
+}
+
+// Routes whose own first section is a full-bleed hero — same list
+// MainWrapper uses for its own "no top padding" treatment (see its own
+// comment), reused here since a transparent-until-scrolled nav only makes
+// sense over that same hero. Deliberately narrower than MainWrapper's own
+// list: /about and /sourcing use a *light* hero image, where light
+// ivory nav text wouldn't stay legible the way it does over these
+// pages' dark ones. /promotions and /promotions/collection are handled
+// separately below — their hero's darkness depends on the active
+// seasonal theme (see promotionsThemeIsDark).
+const TRANSPARENT_NAV_ROUTES = ["/"];
+const PROMOTIONS_ROUTES = ["/promotions", "/promotions/collection"];
 
 export function Navbar({
   user,
   showPromotions,
   showAuction,
   cartItemCount,
+  promotionsThemeIsDark,
 }: {
   user: { name?: string | null; email?: string | null } | null;
   /** True when the seasonal promotions page is Coming Soon or Live (see
@@ -44,6 +69,11 @@ export function Navbar({
   /** Retail (shopping) cart item count — 0 when signed out, in which
    * case the icon itself is still shown (it just links to sign in). */
   cartItemCount: number;
+  /** Whether the currently-active seasonal theme's hero is dark (see
+   * SeasonalThemeDef.isDark) — only then is transparent ivory nav text
+   * legible over /promotions and /promotions/collection. Halloween is
+   * dark; Spring/Summer/Autumn/Winter are light. */
+  promotionsThemeIsDark: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -54,10 +84,14 @@ export function Navbar({
     ...BASE_NAV_LINKS.slice(4),
   ];
   const isHome = pathname === "/";
+  const isTransparentRoute =
+    TRANSPARENT_NAV_ROUTES.includes(pathname) ||
+    pathname.startsWith("/collections/") ||
+    (promotionsThemeIsDark && PROMOTIONS_ROUTES.includes(pathname));
   // `pathname` is stable across the server/client render (Next.js resolves
   // it before hydration), so this initial value never mismatches — only the
-  // home page's actual scroll position is genuinely client-only.
-  const [scrolled, setScrolled] = useState(!isHome);
+  // actual scroll position is genuinely client-only.
+  const [scrolled, setScrolled] = useState(!isTransparentRoute);
   // Close on navigation (covers back/forward too, not just link clicks —
   // those already call setOpen(false) directly). Adjusted during render
   // (React's documented pattern for "reset state when a prop changes")
@@ -67,17 +101,23 @@ export function Navbar({
   if (pathname !== lastPathname) {
     setLastPathname(pathname);
     if (open) setOpen(false);
+    // Navbar persists across navigations (it lives outside MainWrapper's
+    // per-route remount), so without this, arriving at a fresh
+    // full-bleed-hero page could inherit whatever `scrolled` the
+    // *previous* page's scroll position had left behind, rather than
+    // starting transparent the way a real first paint of that page would.
+    setScrolled(!isTransparentRoute);
   }
 
-  const transparent = isHome && !scrolled && !open;
+  const transparent = isTransparentRoute && !scrolled && !open;
 
   useEffect(() => {
-    if (!isHome) return;
-    const onScroll = () => setScrolled(window.scrollY > SOLID_THRESHOLD_PX);
+    if (!isTransparentRoute) return;
+    const onScroll = () => setScrolled(window.scrollY > solidThresholdFor(isHome));
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [isHome]);
+  }, [isTransparentRoute, isHome]);
 
   // The open menu is a full-screen takeover (below), so background
   // content must not scroll underneath it — otherwise a swipe against the

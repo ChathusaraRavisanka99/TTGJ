@@ -44,7 +44,24 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
   const verifyUrl = buildCertVerifyUrl(gem.certLab?.verifyUrlTemplate, gem.certReportNumber);
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
+    <div className="relative overflow-hidden">
+      {/* On a wide desktop viewport, the max-w-6xl content column leaves a
+          lot of bare ivory in the side gutters. Rather than stretch the
+          layout (a two-column gallery/details grid reads worse much wider
+          than this), fill that space with an ambient glow colour-matched
+          to this exact stone (colorHue/colorLightness — the same fields
+          GemVisualizer renders from), so the empty margin reads as
+          deliberate spotlighting rather than unfinished whitespace. Purely
+          decorative and far too blurred to read as a shape; hidden from
+          screen readers. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-20 left-1/2 h-[920px] w-[1700px] max-w-none -translate-x-1/2 rounded-full blur-3xl"
+        style={{
+          background: `radial-gradient(closest-side, hsla(${gem.colorHue}, 62%, ${Math.min(70, Math.max(35, gem.colorLightness))}%, 0.28), transparent 70%)`,
+        }}
+      />
+      <div className="relative mx-auto max-w-6xl px-5 py-12 sm:px-8">
       <div className="grid gap-12 lg:grid-cols-2">
         <Reveal y={16}>
           <MediaGallery media={gem.media} fallbackLabel={gem.name} />
@@ -176,6 +193,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
           </div>
         </Reveal>
       )}
+      </div>
     </div>
   );
 }

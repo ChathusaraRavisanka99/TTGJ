@@ -24,6 +24,18 @@ const METAL_LABELS: Record<string, string> = {
   SILVER: "Silver",
 };
 
+// Same "fill the wide side gutters with an ambient glow tied to the actual
+// product" idea as the gem detail page — a gemstone has its own hue to draw
+// from, but a jewelry piece's most prominent colour is its metal, so this
+// glows with each metal's own real tone instead.
+const METAL_GLOW: Record<string, string> = {
+  GOLD: "hsla(43, 65%, 55%, 0.28)",
+  WHITE_GOLD: "hsla(45, 20%, 88%, 0.32)",
+  ROSE_GOLD: "hsla(12, 55%, 68%, 0.30)",
+  PLATINUM: "hsla(210, 10%, 80%, 0.30)",
+  SILVER: "hsla(220, 8%, 85%, 0.32)",
+};
+
 export async function generateMetadata({ params }: PageProps<"/jewelry/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const piece = await getJewelryBySlug(slug);
@@ -44,7 +56,13 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
   ]);
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
+    <div className="relative overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-20 left-1/2 h-[920px] w-[1700px] max-w-none -translate-x-1/2 rounded-full blur-3xl"
+        style={{ background: `radial-gradient(closest-side, ${METAL_GLOW[piece.metalType] ?? METAL_GLOW.GOLD}, transparent 70%)` }}
+      />
+      <div className="relative mx-auto max-w-6xl px-5 py-12 sm:px-8">
       <div className="grid gap-12 lg:grid-cols-2">
         <Reveal y={16}>
           <MediaGallery media={piece.media} fallbackLabel={piece.name} />
@@ -145,6 +163,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
           </div>
         </Reveal>
       )}
+      </div>
     </div>
   );
 }

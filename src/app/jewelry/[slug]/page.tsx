@@ -14,9 +14,12 @@ import { JewelryCard } from "@/components/catalog/JewelryCard";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/layout/Reveal";
 import { TrustBar } from "@/components/layout/TrustBar";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { CardSlider } from "@/components/ui/CardSlider";
 import { HeritageSideArt } from "@/components/catalog/HeritageSideArt";
+import { StickyBuyBar } from "@/components/catalog/StickyBuyBar";
 import { getTrustBarMessages } from "@/lib/i18n-messages";
+import { formatPrice } from "@/lib/utils";
 
 const METAL_LABELS: Record<string, string> = {
   GOLD: "Gold",
@@ -46,11 +49,25 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
     getTrustBarMessages(),
   ]);
 
+  const pieceTypeLabel = piece.pieceType.charAt(0) + piece.pieceType.slice(1).toLowerCase();
+  // Same price precedence CardPrice/ProductPrice use for display — see
+  // StickyBuyBar's own comment for why this is a plain label.
+  const displayPrice = promotion?.promoPrice ?? piece.retailPrice ?? (piece.showPrice ? piece.price : null);
+  const stickyPriceLabel = displayPrice != null ? formatPrice(displayPrice) : "Request a Quote";
+
   return (
     <div className="relative overflow-hidden">
       <HeritageSideArt side="left" className="absolute left-0 top-0 h-full w-48" />
       <HeritageSideArt side="right" className="absolute right-0 top-0 h-full w-48" />
       <div className="relative mx-auto max-w-6xl px-5 py-12 sm:px-8">
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Jewelry", href: "/jewelry" },
+          { label: pieceTypeLabel, href: `/jewelry?pieceType=${piece.pieceType}` },
+          { label: piece.name },
+        ]}
+      />
       <div className="grid gap-12 lg:grid-cols-2">
         <Reveal y={16}>
           <MediaGallery media={piece.media} fallbackLabel={piece.name} />
@@ -58,9 +75,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 
         <Reveal delay={0.1} y={16}>
           <div className="flex items-center gap-3">
-            <p className="text-xs uppercase tracking-widest text-gold">
-              {piece.pieceType.charAt(0) + piece.pieceType.slice(1).toLowerCase()}
-            </p>
+            <p className="text-xs uppercase tracking-widest text-gold">{pieceTypeLabel}</p>
             <StockBadge status={piece.stockStatus} />
           </div>
           <h1 className="mt-2 font-serif text-4xl text-charcoal">{piece.name}</h1>
@@ -102,23 +117,25 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
             </div>
           )}
 
-          {piece.retailPrice != null && (
-            <div className="mt-8">
-              {session?.user ? (
-                <AddToCartButton jewelryId={piece.id} />
-              ) : (
-                <div>
-                  <p className="text-sm text-charcoal/75">Sign in to add {piece.name} to your cart at the retail price.</p>
-                  <Link href={`/account/login?callbackUrl=${encodeURIComponent(`/jewelry/${piece.slug}`)}`}>
-                    <Button variant="primary" className="mt-3">Sign in to add to cart</Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          )}
+          <div id="buy-box">
+            {piece.retailPrice != null && (
+              <div className="mt-8">
+                {session?.user ? (
+                  <AddToCartButton jewelryId={piece.id} />
+                ) : (
+                  <div>
+                    <p className="text-sm text-charcoal/75">Sign in to add {piece.name} to your cart at the retail price.</p>
+                    <Link href={`/account/login?callbackUrl=${encodeURIComponent(`/jewelry/${piece.slug}`)}`}>
+                      <Button variant="primary" className="mt-3">Sign in to add to cart</Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
 
-          <div className="mt-8">
-            <QuoteRequestPanel isAuthenticated={!!session?.user} jewelryId={piece.id} productLabel={piece.name} />
+            <div className="mt-8">
+              <QuoteRequestPanel isAuthenticated={!!session?.user} jewelryId={piece.id} productLabel={piece.name} />
+            </div>
           </div>
 
           <TrustBar messages={trustBarMessages} variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
@@ -152,6 +169,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
         </Reveal>
       )}
       </div>
+      <StickyBuyBar name={piece.name} priceLabel={stickyPriceLabel} />
     </div>
   );
 }

@@ -5,11 +5,12 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { Menu, X, User, ShoppingBag } from "lucide-react";
+import { Menu, X, User, ShoppingBag, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountMenu, ACCOUNT_MENU_LINKS } from "@/components/layout/AccountMenu";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
+import { HeaderSearch } from "@/components/layout/HeaderSearch";
 import { signOutAction } from "@/actions/auth";
 import type { AppLocale } from "@/i18n/request";
 
@@ -204,6 +205,7 @@ export function Navbar({
         </nav>
 
         <div className="hidden items-center gap-5 md:flex">
+          <HeaderSearch transparent={transparent} />
           <Link
             href={user ? "/account/retail-cart" : "/account/login?callbackUrl=%2Faccount%2Fretail-cart"}
             aria-label={t("cart")}
@@ -264,6 +266,14 @@ export function Navbar({
 
       {open && (
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto border-t border-border-subtle bg-ivory px-5 py-4 md:hidden">
+          <form action="/search" method="get" className="mb-2 flex items-center gap-2 border-b border-border-subtle pb-3">
+            <Search size={16} className="shrink-0 text-charcoal/40" />
+            <input
+              name="q"
+              placeholder="Search gems, jewelry..."
+              className="w-full bg-transparent text-sm text-charcoal outline-none placeholder:text-charcoal/40"
+            />
+          </form>
           {navLinks.map((link) => (
             <Link
               key={link.href}

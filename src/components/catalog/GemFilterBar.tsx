@@ -1,5 +1,6 @@
 import { Input, Label } from "@/components/ui/Field";
 import { Button, HardLinkButton } from "@/components/ui/Button";
+import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 import { GEM_COLOR_FAMILIES } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
@@ -31,11 +32,19 @@ function CheckboxGroup({
   name,
   options,
   active,
+  showShapeIcons,
 }: {
   label: string;
   name: string;
   options: { value: string; label: string }[];
   active: Set<string>;
+  /** Cut/shape options only — renders each one's actual faceted outline
+   * (the same procedural GemVisualizer the rest of the catalog uses, just
+   * neutral-toned) beside its label, the "visual shape picker" pattern
+   * competitor sites (Blue Nile, Brilliant Earth) use instead of a plain
+   * text list. Reuses the real renderer rather than hand-drawn icons, so
+   * it can never drift out of sync with how a cut actually looks. */
+  showShapeIcons?: boolean;
 }) {
   if (options.length === 0) return null;
   return (
@@ -50,6 +59,25 @@ function CheckboxGroup({
         {options.map((opt) => (
           <label key={opt.value} className="flex items-center gap-2 text-sm text-charcoal/75">
             <input type="checkbox" name={name} value={opt.value} defaultChecked={active.has(opt.value)} className="accent-gold" />
+            {showShapeIcons && (
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-ivory-soft">
+                {/* resolveGemColor floors saturation at 35% (gems never
+                    render fully desaturated), so true grayscale isn't
+                    achievable here — a muted gold tone instead, which
+                    doubles as reading like the site's own accent colour
+                    rather than an arbitrary neutral. */}
+                <GemVisualizer
+                  cutSlug={opt.value}
+                  hue={40}
+                  darkness={45}
+                  saturation={30}
+                  claritySlug="loupe-clean"
+                  caratWeight={1}
+                  seedKey={opt.value}
+                  className="h-7 w-7"
+                />
+              </span>
+            )}
             {opt.label}
           </label>
         ))}
@@ -76,7 +104,7 @@ export function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origin
         </div>
 
         <CheckboxGroup label="Mineral" name="mineral" active={toSet(current.mineral)} options={minerals.map((m) => ({ value: m.slug, label: m.name }))} />
-        <CheckboxGroup label="Shape / Cut" name="cut" active={toSet(current.cut)} options={cuts.map((c) => ({ value: c.slug, label: c.name }))} />
+        <CheckboxGroup label="Shape / Cut" name="cut" active={toSet(current.cut)} options={cuts.map((c) => ({ value: c.slug, label: c.name }))} showShapeIcons />
         <CheckboxGroup label="Colour" name="color" active={toSet(current.color)} options={GEM_COLOR_FAMILIES.map((c) => ({ value: c.key, label: c.label }))} />
         <CheckboxGroup label="Treatment" name="treatment" active={toSet(current.treatment)} options={treatments.map((t) => ({ value: t.slug, label: t.name }))} />
         <CheckboxGroup label="Purity / Clarity" name="clarity" active={toSet(current.clarity)} options={clarityGrades.map((c) => ({ value: c.slug, label: c.name }))} />

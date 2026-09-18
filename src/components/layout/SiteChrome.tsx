@@ -6,6 +6,7 @@ import { Footer } from "./Footer";
 import { IntroLoader } from "./IntroLoader";
 import { NavigationOverlay } from "./NavigationOverlay";
 import { FloatingChatButton } from "./FloatingChatButton";
+import { BackToTop } from "./BackToTop";
 import type { AppLocale } from "@/i18n/request";
 import type { FooterMessages, TrustBarMessages } from "@/lib/i18n-messages";
 
@@ -77,6 +78,7 @@ export function SiteChrome({
       />
       {children}
       <Footer messages={footerMessages} trustBarMessages={trustBarMessages} />
+      <BackToTop />
       {user && <FloatingChatButton />}
     </>
   );

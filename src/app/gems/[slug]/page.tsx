@@ -16,9 +16,12 @@ import { GemCard } from "@/components/catalog/GemCard";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/layout/Reveal";
 import { TrustBar } from "@/components/layout/TrustBar";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { CardSlider } from "@/components/ui/CardSlider";
 import { HeritageSideArt } from "@/components/catalog/HeritageSideArt";
+import { StickyBuyBar } from "@/components/catalog/StickyBuyBar";
 import { getTrustBarMessages } from "@/lib/i18n-messages";
+import { formatPrice } from "@/lib/utils";
 
 export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -45,6 +48,11 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
 
   const dimensions = [gem.lengthMm, gem.widthMm, gem.depthMm].filter(Boolean).join(" x ");
   const verifyUrl = buildCertVerifyUrl(gem.certLab?.verifyUrlTemplate, gem.certReportNumber);
+  // Same price precedence CardPrice/ProductPrice use for display — see
+  // StickyBuyBar's own comment for why this is a plain label rather than
+  // reusing ProductPrice itself (that component isn't meant for a compact bar).
+  const displayPrice = promotion?.promoPrice ?? gem.retailPrice ?? (gem.showPrice ? gem.price : null);
+  const stickyPriceLabel = displayPrice != null ? formatPrice(displayPrice) : "Request a Quote";
 
   return (
     <div className="relative overflow-hidden">
@@ -55,6 +63,14 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
       <HeritageSideArt side="left" className="absolute left-0 top-0 h-full w-48" />
       <HeritageSideArt side="right" className="absolute right-0 top-0 h-full w-48" />
       <div className="relative mx-auto max-w-6xl px-5 py-12 sm:px-8">
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Gems", href: "/gems" },
+          { label: gem.mineral.name, href: `/gems?mineral=${gem.mineral.slug}` },
+          { label: gem.name },
+        ]}
+      />
       <div className="grid gap-12 lg:grid-cols-2">
         <Reveal y={16}>
           <MediaGallery media={gem.media} fallbackLabel={gem.name} />
@@ -125,27 +141,29 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
             </div>
           )}
 
-          {gem.retailPrice != null && (
-            <div className="mt-8">
-              {session?.user ? (
-                <AddToCartButton gemstoneId={gem.id} />
-              ) : (
-                <div>
-                  <p className="text-sm text-charcoal/75">Sign in to add {gem.name} to your cart at the retail price.</p>
-                  <Link href={`/account/login?callbackUrl=${encodeURIComponent(`/gems/${gem.slug}`)}`}>
-                    <Button variant="primary" className="mt-3">Sign in to add to cart</Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          )}
+          <div id="buy-box">
+            {gem.retailPrice != null && (
+              <div className="mt-8">
+                {session?.user ? (
+                  <AddToCartButton gemstoneId={gem.id} />
+                ) : (
+                  <div>
+                    <p className="text-sm text-charcoal/75">Sign in to add {gem.name} to your cart at the retail price.</p>
+                    <Link href={`/account/login?callbackUrl=${encodeURIComponent(`/gems/${gem.slug}`)}`}>
+                      <Button variant="primary" className="mt-3">Sign in to add to cart</Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
 
-          <div className="mt-8">
-            <QuoteRequestPanel
-              isAuthenticated={!!session?.user}
-              gemstoneId={gem.id}
-              productLabel={gem.name}
-            />
+            <div className="mt-8">
+              <QuoteRequestPanel
+                isAuthenticated={!!session?.user}
+                gemstoneId={gem.id}
+                productLabel={gem.name}
+              />
+            </div>
           </div>
 
           <TrustBar messages={trustBarMessages} variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
@@ -187,6 +205,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
         </Reveal>
       )}
       </div>
+      <StickyBuyBar name={gem.name} priceLabel={stickyPriceLabel} />
     </div>
   );
 }

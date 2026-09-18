@@ -1,5 +1,6 @@
-import { Select, Input, Label } from "@/components/ui/Field";
+import { Input, Label } from "@/components/ui/Field";
 import { Button, HardLinkButton } from "@/components/ui/Button";
+import { GEM_COLOR_FAMILIES } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
 interface GemFilterBarProps {
@@ -8,105 +9,129 @@ interface GemFilterBarProps {
   clarityGrades: { slug: string; name: string }[];
   treatments: { slug: string; name: string }[];
   origins: { slug: string; name: string }[];
-  current: Record<string, string | undefined>;
+  current: Record<string, string | string[] | undefined>;
+}
+
+function toSet(value: string | string[] | undefined): Set<string> {
+  if (value === undefined) return new Set();
+  return new Set(Array.isArray(value) ? value : [value]);
+}
+
+function first(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+// One collapsible checkbox group — <details>/<summary> rather than a client
+// component with useState, so every group works (and submits normally)
+// without any JS at all, matching the rest of this form. Open by default
+// when it already has an active selection, so a filter an admin/customer
+// just applied doesn't look like it silently vanished after a reload.
+function CheckboxGroup({
+  label,
+  name,
+  options,
+  active,
+}: {
+  label: string;
+  name: string;
+  options: { value: string; label: string }[];
+  active: Set<string>;
+}) {
+  if (options.length === 0) return null;
+  return (
+    <details className="group rounded-lg border border-border-subtle p-3" open={active.size > 0}>
+      <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-medium uppercase tracking-wide text-charcoal/70">
+        {label}
+        {active.size > 0 && <span className="rounded-full bg-gold/20 px-1.5 py-0.5 text-[10px] text-charcoal">{active.size}</span>}
+        <span className="ml-auto text-charcoal/40 group-open:hidden">+</span>
+        <span className="hidden text-charcoal/40 group-open:inline">−</span>
+      </summary>
+      <div className="mt-3 flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
+        {options.map((opt) => (
+          <label key={opt.value} className="flex items-center gap-2 text-sm text-charcoal/75">
+            <input type="checkbox" name={name} value={opt.value} defaultChecked={active.has(opt.value)} className="accent-gold" />
+            {opt.label}
+          </label>
+        ))}
+      </div>
+    </details>
+  );
 }
 
 export function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origins, current }: GemFilterBarProps) {
   // `page` alone (no real filter set) shouldn't count as "something to
   // clear" — it'd make the button appear just from paging through an
   // unfiltered catalog, which has nothing to do with what it's for.
-  const hasActiveFilters = Object.entries(current).some(([key, value]) => key !== "page" && !!value);
+  const hasActiveFilters = Object.entries(current).some(([key, value]) => {
+    if (key === "page") return false;
+    return Array.isArray(value) ? value.length > 0 : !!value;
+  });
 
   return (
-    <form method="get" className="grid grid-cols-2 gap-4 rounded-xl border border-border-subtle bg-surface p-5 sm:grid-cols-3 lg:grid-cols-5">
-      <div className="col-span-2 sm:col-span-3 lg:col-span-5">
-        <Label htmlFor="q">Search</Label>
-        <Input id="q" name="q" defaultValue={current.q} placeholder="Sapphire, ruby, oval cut..." />
+    <form method="get" className="rounded-xl border border-border-subtle bg-surface p-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="sm:col-span-2 lg:col-span-4">
+          <Label htmlFor="q">Search</Label>
+          <Input id="q" name="q" defaultValue={first(current.q)} placeholder="Sapphire, ruby, oval cut..." />
+        </div>
+
+        <CheckboxGroup label="Mineral" name="mineral" active={toSet(current.mineral)} options={minerals.map((m) => ({ value: m.slug, label: m.name }))} />
+        <CheckboxGroup label="Shape / Cut" name="cut" active={toSet(current.cut)} options={cuts.map((c) => ({ value: c.slug, label: c.name }))} />
+        <CheckboxGroup label="Colour" name="color" active={toSet(current.color)} options={GEM_COLOR_FAMILIES.map((c) => ({ value: c.key, label: c.label }))} />
+        <CheckboxGroup label="Treatment" name="treatment" active={toSet(current.treatment)} options={treatments.map((t) => ({ value: t.slug, label: t.name }))} />
+        <CheckboxGroup label="Purity / Clarity" name="clarity" active={toSet(current.clarity)} options={clarityGrades.map((c) => ({ value: c.slug, label: c.name }))} />
+        <CheckboxGroup label="Origin" name="origin" active={toSet(current.origin)} options={origins.map((o) => ({ value: o.slug, label: o.name }))} />
+
+        <div className="rounded-lg border border-border-subtle p-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">Price ($)</p>
+          <div className="mt-3 flex items-center gap-2">
+            <Input name="minPrice" type="number" min={0} step="1" placeholder="Min" defaultValue={first(current.minPrice)} className="text-sm" />
+            <span className="text-charcoal/40">–</span>
+            <Input name="maxPrice" type="number" min={0} step="1" placeholder="Max" defaultValue={first(current.maxPrice)} className="text-sm" />
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-border-subtle p-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">Carat</p>
+          <div className="mt-3 flex items-center gap-2">
+            <Input name="minCarat" type="number" min={0} step="0.1" placeholder="Min" defaultValue={first(current.minCarat)} className="text-sm" />
+            <span className="text-charcoal/40">–</span>
+            <Input name="maxCarat" type="number" min={0} step="0.1" placeholder="Max" defaultValue={first(current.maxCarat)} className="text-sm" />
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="sort">Sort by</Label>
+          <select
+            id="sort"
+            name="sort"
+            defaultValue={first(current.sort) ?? "newest"}
+            className="w-full rounded-md border border-border-subtle bg-surface px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/50"
+          >
+            <option value="newest">Newest</option>
+            <option value="carat">Carat weight</option>
+            <option value="az">Alphabetical</option>
+            <option value="price-low">Price: low to high</option>
+            <option value="price-high">Price: high to low</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col justify-end gap-2">
+          <label className="flex items-center gap-2 text-sm text-charcoal/75">
+            <input type="checkbox" name="inStockOnly" value="1" defaultChecked={first(current.inStockOnly) === "1"} className="accent-gold" />
+            In stock only
+          </label>
+          <label className="flex items-center gap-2 text-sm text-charcoal/75">
+            <input type="checkbox" name="promotional" value="1" defaultChecked={first(current.promotional) === "1"} className="accent-gold" />
+            On promotion
+          </label>
+        </div>
       </div>
 
-      <div>
-        <Label htmlFor="mineral">Mineral</Label>
-        <Select id="mineral" name="mineral" defaultValue={current.mineral ?? ""}>
-          <option value="">All minerals</option>
-          {minerals.map((m) => (
-            <option key={m.slug} value={m.slug}>{m.name}</option>
-          ))}
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="cut">Cut</Label>
-        <Select id="cut" name="cut" defaultValue={current.cut ?? ""}>
-          <option value="">All cuts</option>
-          {cuts.map((c) => (
-            <option key={c.slug} value={c.slug}>{c.name}</option>
-          ))}
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="clarity">Clarity</Label>
-        <Select id="clarity" name="clarity" defaultValue={current.clarity ?? ""}>
-          <option value="">All clarities</option>
-          {clarityGrades.map((c) => (
-            <option key={c.slug} value={c.slug}>{c.name}</option>
-          ))}
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="treatment">Treatment</Label>
-        <Select id="treatment" name="treatment" defaultValue={current.treatment ?? ""}>
-          <option value="">All treatments</option>
-          {treatments.map((t) => (
-            <option key={t.slug} value={t.slug}>{t.name}</option>
-          ))}
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="origin">Origin</Label>
-        <Select id="origin" name="origin" defaultValue={current.origin ?? ""}>
-          <option value="">All origins</option>
-          {origins.map((o) => (
-            <option key={o.slug} value={o.slug}>{o.name}</option>
-          ))}
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="minCarat">Min carat</Label>
-        <Input id="minCarat" name="minCarat" type="number" step="0.1" min={0} defaultValue={current.minCarat} />
-      </div>
-
-      <div>
-        <Label htmlFor="maxCarat">Max carat</Label>
-        <Input id="maxCarat" name="maxCarat" type="number" step="0.1" min={0} defaultValue={current.maxCarat} />
-      </div>
-
-      <div>
-        <Label htmlFor="sort">Sort by</Label>
-        <Select id="sort" name="sort" defaultValue={current.sort ?? "newest"}>
-          <option value="newest">Newest</option>
-          <option value="carat">Carat weight</option>
-          <option value="az">Alphabetical</option>
-        </Select>
-      </div>
-
-      <label className="flex items-end gap-2 pb-2.5 text-sm text-charcoal/75">
-        <input type="checkbox" name="inStockOnly" value="1" defaultChecked={current.inStockOnly === "1"} className="accent-gold" />
-        In stock only
-      </label>
-
-      <label className="flex items-end gap-2 pb-2.5 text-sm text-charcoal/75">
-        <input type="checkbox" name="promotional" value="1" defaultChecked={current.promotional === "1"} className="accent-gold" />
-        On promotion
-      </label>
-
-      <div className={cn("col-span-2 flex items-end gap-3", hasActiveFilters ? "sm:col-span-2" : "sm:col-span-1")}>
-        <Button type="submit" variant="primary" className={hasActiveFilters ? "flex-1" : "w-full"}>Filter</Button>
+      <div className={cn("mt-5 flex gap-3", hasActiveFilters ? "" : "sm:w-56")}>
+        <Button type="submit" variant="primary" className="flex-1 sm:flex-none sm:px-10">Filter</Button>
         {hasActiveFilters && (
-          <HardLinkButton href="/gems" variant="outline" className="flex-1">Clear Filters</HardLinkButton>
+          <HardLinkButton href="/gems" variant="outline" className="flex-1 sm:flex-none sm:px-10">Clear Filters</HardLinkButton>
         )}
       </div>
     </form>

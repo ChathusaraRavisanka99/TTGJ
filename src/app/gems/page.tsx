@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getGemstones, getMasterData } from "@/lib/catalog";
+import { getGemstones, getMasterData, type GemColorFamily } from "@/lib/catalog";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
 import { GemFilterBar } from "@/components/catalog/GemFilterBar";
 import { GemResults } from "@/components/catalog/GemResults";
@@ -10,19 +10,30 @@ export const metadata: Metadata = { title: "Shop Gemstones" };
 export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
   const sp = await searchParams;
   const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : undefined);
+  // Checkbox filter groups repeat the same query-string key once per
+  // checked box (mineral=a&mineral=b) — Next.js already hands that back
+  // as a string[] in searchParams, same shape Pagination already expects.
+  const getAll = (key: string): string[] => {
+    const v = sp[key];
+    if (v === undefined) return [];
+    return Array.isArray(v) ? v : [v];
+  };
 
   const filters = {
     q: get("q"),
-    mineral: get("mineral"),
-    cut: get("cut"),
-    clarity: get("clarity"),
-    treatment: get("treatment"),
-    origin: get("origin"),
+    mineral: getAll("mineral"),
+    cut: getAll("cut"),
+    clarity: getAll("clarity"),
+    treatment: getAll("treatment"),
+    origin: getAll("origin"),
+    color: getAll("color") as GemColorFamily[],
     minCarat: get("minCarat") ? Number(get("minCarat")) : undefined,
     maxCarat: get("maxCarat") ? Number(get("maxCarat")) : undefined,
+    minPrice: get("minPrice") ? Number(get("minPrice")) : undefined,
+    maxPrice: get("maxPrice") ? Number(get("maxPrice")) : undefined,
     inStockOnly: get("inStockOnly") === "1",
     promotionalOnly: get("promotional") === "1",
-    sort: (get("sort") as "newest" | "carat" | "az" | undefined) ?? "newest",
+    sort: (get("sort") as "newest" | "carat" | "az" | "price-low" | "price-high" | undefined) ?? "newest",
     page: get("page") ? Number(get("page")) : undefined,
   };
 
@@ -53,7 +64,7 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
           clarityGrades={masterData.clarityGrades}
           treatments={masterData.treatments}
           origins={masterData.origins}
-          current={sp as Record<string, string | undefined>}
+          current={sp}
         />
       </div>
 

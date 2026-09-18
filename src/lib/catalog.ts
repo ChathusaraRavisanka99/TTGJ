@@ -13,45 +13,110 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
+// A gem's colour is stored as free-form HSL (colorHue/colorSaturation/
+// colorLightness — the same fields GemVisualizer renders from), not a
+// discrete category, so "filter by colour" needs a bucketing scheme.
+// Approximate by nature (colour is a spectrum), but close enough for
+// "show me the green stones" browsing. Brown is the one family that isn't
+// a hue range at all — it's a desaturated, darker orange/red rather than
+// its own point on the wheel, so it layers saturation/lightness caps on
+// top of an orange-ish hue instead.
+export const GEM_COLOR_FAMILIES = [
+  { key: "red", label: "Red" },
+  { key: "orange", label: "Orange" },
+  { key: "yellow", label: "Yellow" },
+  { key: "green", label: "Green" },
+  { key: "blue", label: "Blue" },
+  { key: "violet", label: "Violet" },
+  { key: "pink", label: "Pink" },
+  { key: "brown", label: "Brown" },
+] as const;
+
+export type GemColorFamily = (typeof GEM_COLOR_FAMILIES)[number]["key"];
+
+function colorFamilyWhere(family: GemColorFamily): Prisma.GemstoneWhereInput {
+  switch (family) {
+    case "red":
+      return { OR: [{ colorHue: { gte: 350 } }, { colorHue: { lte: 10 } }] };
+    case "orange":
+      return { colorHue: { gt: 10, lte: 40 } };
+    case "yellow":
+      return { colorHue: { gt: 40, lte: 65 } };
+    case "green":
+      return { colorHue: { gt: 65, lte: 170 } };
+    case "blue":
+      return { colorHue: { gt: 170, lte: 250 } };
+    case "violet":
+      return { colorHue: { gt: 250, lte: 290 } };
+    case "pink":
+      return { colorHue: { gt: 290, lte: 350 } };
+    case "brown":
+      return { colorHue: { gt: 10, lte: 50 }, colorSaturation: { lte: 45 }, colorLightness: { lte: 45 } };
+  }
+}
+
 export interface GemFilters {
   q?: string;
-  mineral?: string;
-  cut?: string;
-  clarity?: string;
-  treatment?: string;
-  origin?: string;
+  mineral?: string[];
+  cut?: string[];
+  clarity?: string[];
+  treatment?: string[];
+  origin?: string[];
+  color?: GemColorFamily[];
   minCarat?: number;
   maxCarat?: number;
+  /** Matches whichever price is actually shown for an item — retailPrice
+   * when set, else the quote-reference price when showPrice is on — same
+   * precedence CardPrice/ProductPrice use for display. An item with
+   * neither never matches a price filter, same as it never shows a price
+   * on its card. */
+  minPrice?: number;
+  maxPrice?: number;
   inStockOnly?: boolean;
   /** Only items in the currently *live* promotional collection — see
    * getActivePromotionMaps. Off (or nothing live right now) means no
    * filtering by this at all, same as every other optional filter here. */
   promotionalOnly?: boolean;
-  sort?: "newest" | "carat" | "az";
+  sort?: "newest" | "carat" | "az" | "price-low" | "price-high";
   page?: number;
 }
 
 export async function getGemstones(filters: GemFilters) {
   const where: Prisma.GemstoneWhereInput = { isPublished: true };
+  // Separate from `where`'s own top-level fields: several of these filters
+  // (search, colour, price) are themselves OR-blocks, and Prisma ANDs a
+  // where object's own keys together with its `AND` array rather than
+  // merging OR blocks into one, so each has to stay its own array entry
+  // instead of overwriting a single `where.OR`.
+  const andConditions: Prisma.GemstoneWhereInput[] = [];
 
   if (filters.q) {
-    where.OR = [
-      { name: { contains: filters.q, mode: "insensitive" } },
-      { description: { contains: filters.q, mode: "insensitive" } },
-      { variety: { contains: filters.q, mode: "insensitive" } },
-      { mineral: { name: { contains: filters.q, mode: "insensitive" } } },
-    ];
+    andConditions.push({
+      OR: [
+        { name: { contains: filters.q, mode: "insensitive" } },
+        { description: { contains: filters.q, mode: "insensitive" } },
+        { variety: { contains: filters.q, mode: "insensitive" } },
+        { mineral: { name: { contains: filters.q, mode: "insensitive" } } },
+      ],
+    });
   }
-  if (filters.mineral) where.mineral = { slug: filters.mineral };
-  if (filters.cut) where.cut = { slug: filters.cut };
-  if (filters.clarity) where.clarityGrade = { slug: filters.clarity };
-  if (filters.treatment) where.treatment = { slug: filters.treatment };
-  if (filters.origin) where.origin = { slug: filters.origin };
+  if (filters.mineral?.length) where.mineral = { slug: { in: filters.mineral } };
+  if (filters.cut?.length) where.cut = { slug: { in: filters.cut } };
+  if (filters.clarity?.length) where.clarityGrade = { slug: { in: filters.clarity } };
+  if (filters.treatment?.length) where.treatment = { slug: { in: filters.treatment } };
+  if (filters.origin?.length) where.origin = { slug: { in: filters.origin } };
+  if (filters.color?.length) andConditions.push({ OR: filters.color.map(colorFamilyWhere) });
   if (filters.minCarat || filters.maxCarat) {
     where.caratWeight = {
       gte: filters.minCarat ?? undefined,
       lte: filters.maxCarat ?? undefined,
     };
+  }
+  if (filters.minPrice != null || filters.maxPrice != null) {
+    const range = { gte: filters.minPrice ?? undefined, lte: filters.maxPrice ?? undefined };
+    andConditions.push({
+      OR: [{ retailPrice: range }, { AND: [{ retailPrice: null }, { showPrice: true }, { price: range }] }],
+    });
   }
   if (filters.inStockOnly) where.stockStatus = "AVAILABLE";
   if (filters.promotionalOnly) {
@@ -61,9 +126,14 @@ export async function getGemstones(filters: GemFilters) {
     // same as any other filter that happens to match nothing.
     where.id = { in: [...gemstonePrices.keys()] };
   }
+  if (andConditions.length) where.AND = andConditions;
 
   const orderBy: Prisma.GemstoneOrderByWithRelationInput =
-    filters.sort === "carat" ? { caratWeight: "desc" } : filters.sort === "az" ? { name: "asc" } : { createdAt: "desc" };
+    filters.sort === "carat" ? { caratWeight: "desc" }
+    : filters.sort === "az" ? { name: "asc" }
+    : filters.sort === "price-low" ? { retailPrice: "asc" }
+    : filters.sort === "price-high" ? { retailPrice: "desc" }
+    : { createdAt: "desc" };
 
   const page = Math.max(1, filters.page ?? 1);
 
@@ -128,33 +198,51 @@ export async function getRelatedGemstones(gem: { id: string; mineralId: string }
 
 export interface JewelryFilters {
   q?: string;
-  pieceType?: string;
-  metalType?: string;
+  pieceType?: string[];
+  metalType?: string[];
+  minPrice?: number;
+  maxPrice?: number;
   inStockOnly?: boolean;
   /** See GemFilters.promotionalOnly — same rule, the jewelry side. */
   promotionalOnly?: boolean;
-  sort?: "newest" | "az";
+  sort?: "newest" | "az" | "price-low" | "price-high";
   page?: number;
 }
 
 export async function getJewelry(filters: JewelryFilters) {
   const where: Prisma.JewelryPieceWhereInput = { isPublished: true };
+  // See GemFilters' own getGemstones for why search/price live in their
+  // own AND entries rather than directly on `where`.
+  const andConditions: Prisma.JewelryPieceWhereInput[] = [];
 
   if (filters.q) {
-    where.OR = [
-      { name: { contains: filters.q, mode: "insensitive" } },
-      { description: { contains: filters.q, mode: "insensitive" } },
-    ];
+    andConditions.push({
+      OR: [
+        { name: { contains: filters.q, mode: "insensitive" } },
+        { description: { contains: filters.q, mode: "insensitive" } },
+      ],
+    });
   }
-  if (filters.pieceType) where.pieceType = filters.pieceType as never;
-  if (filters.metalType) where.metalType = filters.metalType as never;
+  if (filters.pieceType?.length) where.pieceType = { in: filters.pieceType as never[] };
+  if (filters.metalType?.length) where.metalType = { in: filters.metalType as never[] };
+  if (filters.minPrice != null || filters.maxPrice != null) {
+    const range = { gte: filters.minPrice ?? undefined, lte: filters.maxPrice ?? undefined };
+    andConditions.push({
+      OR: [{ retailPrice: range }, { AND: [{ retailPrice: null }, { showPrice: true }, { price: range }] }],
+    });
+  }
   if (filters.inStockOnly) where.stockStatus = "AVAILABLE";
   if (filters.promotionalOnly) {
     const { jewelryPrices } = await getActivePromotionMaps();
     where.id = { in: [...jewelryPrices.keys()] };
   }
+  if (andConditions.length) where.AND = andConditions;
 
-  const orderBy: Prisma.JewelryPieceOrderByWithRelationInput = filters.sort === "az" ? { name: "asc" } : { createdAt: "desc" };
+  const orderBy: Prisma.JewelryPieceOrderByWithRelationInput =
+    filters.sort === "az" ? { name: "asc" }
+    : filters.sort === "price-low" ? { retailPrice: "asc" }
+    : filters.sort === "price-high" ? { retailPrice: "desc" }
+    : { createdAt: "desc" };
 
   const page = Math.max(1, filters.page ?? 1);
 

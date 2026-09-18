@@ -10,14 +10,21 @@ export const metadata: Metadata = { title: "Shop Jewelry" };
 export default async function JewelryPage({ searchParams }: PageProps<"/jewelry">) {
   const sp = await searchParams;
   const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : undefined);
+  const getAll = (key: string): string[] => {
+    const v = sp[key];
+    if (v === undefined) return [];
+    return Array.isArray(v) ? v : [v];
+  };
 
   const filters = {
     q: get("q"),
-    pieceType: get("pieceType"),
-    metalType: get("metalType"),
+    pieceType: getAll("pieceType"),
+    metalType: getAll("metalType"),
+    minPrice: get("minPrice") ? Number(get("minPrice")) : undefined,
+    maxPrice: get("maxPrice") ? Number(get("maxPrice")) : undefined,
     inStockOnly: get("inStockOnly") === "1",
     promotionalOnly: get("promotional") === "1",
-    sort: (get("sort") as "newest" | "az" | undefined) ?? "newest",
+    sort: (get("sort") as "newest" | "az" | "price-low" | "price-high" | undefined) ?? "newest",
     page: get("page") ? Number(get("page")) : undefined,
   };
 
@@ -41,7 +48,7 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
       </div>
 
       <div className="mb-10">
-        <JewelryFilterBar current={sp as Record<string, string | undefined>} />
+        <JewelryFilterBar current={sp} />
       </div>
 
       {pieces.length === 0 ? (

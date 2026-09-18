@@ -1,3 +1,30 @@
+// A small faceted gem cluster above the wordmark — same shapes and sparkle
+// motif as GemMinerScene (the 404/unauthorized illustration), scaled down.
+// Reusing that established language rather than inventing a new loading
+// spinner: a shopper browsing gemstones already has a stone catching the
+// light as the site's visual signature for "look here."
+function LoaderGem() {
+  return (
+    <svg viewBox="0 0 58 42" className="h-9 w-12" aria-hidden>
+      <polygon points="27,10 35,23 27,38 19,23" className="fill-gold stroke-gold-soft" strokeWidth="1.2" />
+      <polygon points="43,15 48,23 43,32 38,23" className="fill-gold-soft stroke-gold" strokeWidth="1" />
+      <polygon points="12,17 16,23 12,30 8,23" className="fill-gold/70 stroke-gold-soft" strokeWidth="1" />
+      {[
+        { x: 27, y: 4, delay: "0s" },
+        { x: 51, y: 22, delay: "0.6s" },
+        { x: 4, y: 27, delay: "1.2s" },
+      ].map((s, i) => (
+        <path
+          key={i}
+          d={`M${s.x},${s.y - 3.5} L${s.x + 1},${s.y - 1} L${s.x + 3.5},${s.y} L${s.x + 1},${s.y + 1} L${s.x},${s.y + 3.5} L${s.x - 1},${s.y + 1} L${s.x - 3.5},${s.y} L${s.x - 1},${s.y - 1} Z`}
+          className="animate-gem-sparkle fill-gold-soft"
+          style={{ animationDelay: s.delay }}
+        />
+      ))}
+    </svg>
+  );
+}
+
 /**
  * Next.js mounts this automatically (as a Suspense fallback) any time a
  * route segment's data fetch takes long enough to be perceptible — no
@@ -14,6 +41,13 @@
  * it exists to cover for — a JS-library-driven animation can itself be
  * delayed by that same slow load, which showed up as a real, confirmed
  * blank-charcoal flash under a throttled-network test.
+ *
+ * A flat, edge-to-edge charcoal fill read as the page abruptly going
+ * blank rather than a deliberate moment, especially for a navigation that
+ * only briefly interrupts a mid-scroll page — the radial glow behind the
+ * mark and the gem cluster above it are both here to make this read as a
+ * designed beat (the site's own "catching the light" motif) instead of a
+ * blackout.
  *
  * The wordmark/kicker/rule glow-and-dim on an unending loop (rather than
  * just sitting there once loader-in's one-shot entrance finishes) so a
@@ -38,8 +72,14 @@ export function PageLoader() {
     // layout box directly instead of going through that percentage
     // resolution at all, so it always matches exactly.
     <div className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto bg-charcoal py-24">
-      <div className="animate-loader-in flex flex-col items-center">
-        <p className="animate-loader-text-glow mb-4 text-[10px] uppercase tracking-[0.35em] text-gold-soft">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(42% 48% at 50% 44%, rgba(179,145,90,0.16), transparent 72%)" }}
+      />
+      <div className="animate-loader-in relative flex flex-col items-center">
+        <LoaderGem />
+        <p className="animate-loader-text-glow mb-4 mt-3 text-[10px] uppercase tracking-[0.35em] text-gold-soft">
           Ceylon Gemstones
         </p>
         <h1 className="animate-loader-text-glow font-serif text-3xl tracking-[0.12em] text-ivory sm:text-4xl">

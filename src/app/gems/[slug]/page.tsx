@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/layout/Reveal";
 import { TrustBar } from "@/components/layout/TrustBar";
 import { CardSlider } from "@/components/ui/CardSlider";
+import { HeritageSideArt } from "@/components/catalog/HeritageSideArt";
 
 export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -46,21 +47,11 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
   return (
     <div className="relative overflow-hidden">
       {/* On a wide desktop viewport, the max-w-6xl content column leaves a
-          lot of bare ivory in the side gutters. Rather than stretch the
-          layout (a two-column gallery/details grid reads worse much wider
-          than this), fill that space with an ambient glow colour-matched
-          to this exact stone (colorHue/colorLightness — the same fields
-          GemVisualizer renders from), so the empty margin reads as
-          deliberate spotlighting rather than unfinished whitespace. Purely
-          decorative and far too blurred to read as a shape; hidden from
-          screen readers. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-20 left-1/2 h-[920px] w-[1700px] max-w-none -translate-x-1/2 rounded-full blur-3xl"
-        style={{
-          background: `radial-gradient(closest-side, hsla(${gem.colorHue}, 62%, ${Math.min(70, Math.max(35, gem.colorLightness))}%, 0.28), transparent 70%)`,
-        }}
-      />
+          lot of bare ivory in the side gutters — filled with Sri Lankan
+          heritage linework rather than a plain colour wash (see
+          HeritageSideArt's own comment for the motif). */}
+      <HeritageSideArt side="left" className="absolute left-0 top-0 h-full w-48" />
+      <HeritageSideArt side="right" className="absolute right-0 top-0 h-full w-48" />
       <div className="relative mx-auto max-w-6xl px-5 py-12 sm:px-8">
       <div className="grid gap-12 lg:grid-cols-2">
         <Reveal y={16}>

@@ -13,6 +13,7 @@ import { HeroSlideshow } from "@/components/layout/HeroSlideshow";
 import { HeroScrollCue } from "@/components/layout/HeroScrollCue";
 import { SectionArrow } from "@/components/layout/SectionArrow";
 import { CardSlider } from "@/components/ui/CardSlider";
+import { TrustBar } from "@/components/layout/TrustBar";
 
 const MINERAL_MARQUEE = [
   { label: "Blue Sapphire", color: "#3a5f9e" },
@@ -58,6 +59,7 @@ export default async function HomePage() {
     showFeaturedJewelry ? "featured-jewelry" : null,
     "editorial",
     "heritage-sourcing",
+    "promise",
     "closing-cta",
   ].filter((id): id is string => id !== null);
   const prevSection = (id: string) => {
@@ -304,6 +306,30 @@ export default async function HomePage() {
         </Reveal>
         <SectionArrow target={prevSection("heritage-sourcing")} direction="up" tone="light" />
         <SectionArrow target={nextSection("heritage-sourcing")} direction="down" tone="light" />
+      </section>
+
+      {/* ---------- The Ratnavue Promise ---------- */}
+      {/* A dedicated beat for the site's trust signals, right where a
+          shopper who's just read the heritage story and is warming up to
+          the closing CTA still has one real question left: "but is it
+          genuine, and what if it isn't right for me?" Answers it before
+          they ever have to ask. */}
+      <section id="promise" className="relative flex min-h-dvh w-full snap-start flex-col justify-center px-5 py-24 sm:px-8 sm:py-32 lg:px-12 xl:px-16">
+        <Reveal className="mx-auto max-w-5xl text-center">
+          <p className="text-xs uppercase tracking-[0.3em] text-gold">The Ratnavue Promise</p>
+          <h2 className="mx-auto mt-3 max-w-2xl font-serif text-4xl text-charcoal sm:text-5xl">
+            Buy with complete confidence.
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl text-charcoal/65">
+            A gemstone is a once-in-a-lifetime purchase for most people who make one — every stone and setting we
+            sell is backed by the same four commitments, no exceptions.
+          </p>
+        </Reveal>
+        <Reveal delay={0.1} className="mx-auto mt-14 w-full max-w-5xl">
+          <TrustBar />
+        </Reveal>
+        <SectionArrow target={prevSection("promise")} direction="up" tone="dark" />
+        <SectionArrow target={nextSection("promise")} direction="down" tone="dark" />
       </section>
 
       {/* ---------- Closing CTA ---------- */}

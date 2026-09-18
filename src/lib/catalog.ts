@@ -103,6 +103,29 @@ export async function getGemstoneBySlug(slug: string) {
   });
 }
 
+// "You May Also Like" on a gem's own detail page — same mineral first
+// (a shopper looking at a sapphire is shown other sapphires, not a
+// disconnected ruby), topped up with other recent published gems if that
+// mineral alone doesn't have enough in stock to fill the row. Excludes the
+// gem itself either way.
+export async function getRelatedGemstones(gem: { id: string; mineralId: string }, take = 4) {
+  const sameVariety = await prisma.gemstone.findMany({
+    where: { isPublished: true, id: { not: gem.id }, mineralId: gem.mineralId },
+    orderBy: { createdAt: "desc" },
+    take,
+    include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true, media: { orderBy: { sortOrder: "asc" } } },
+  });
+  if (sameVariety.length >= take) return sameVariety;
+
+  const fallback = await prisma.gemstone.findMany({
+    where: { isPublished: true, id: { notIn: [gem.id, ...sameVariety.map((g) => g.id)] } },
+    orderBy: { createdAt: "desc" },
+    take: take - sameVariety.length,
+    include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true, media: { orderBy: { sortOrder: "asc" } } },
+  });
+  return [...sameVariety, ...fallback];
+}
+
 export interface JewelryFilters {
   q?: string;
   pieceType?: string;
@@ -160,6 +183,27 @@ export async function getJewelryBySlug(slug: string) {
       gemstones: { include: { gemstone: true } },
     },
   });
+}
+
+// Same idea as getRelatedGemstones, for a jewelry piece's own detail page —
+// same piece type first (a shopper looking at a ring is shown other rings),
+// topped up with other recent published pieces if needed.
+export async function getRelatedJewelry(piece: { id: string; pieceType: string }, take = 4) {
+  const samePieceType = await prisma.jewelryPiece.findMany({
+    where: { isPublished: true, id: { not: piece.id }, pieceType: piece.pieceType as never },
+    orderBy: { createdAt: "desc" },
+    take,
+    include: { media: { orderBy: { sortOrder: "asc" } } },
+  });
+  if (samePieceType.length >= take) return samePieceType;
+
+  const fallback = await prisma.jewelryPiece.findMany({
+    where: { isPublished: true, id: { notIn: [piece.id, ...samePieceType.map((p) => p.id)] } },
+    orderBy: { createdAt: "desc" },
+    take: take - samePieceType.length,
+    include: { media: { orderBy: { sortOrder: "asc" } } },
+  });
+  return [...samePieceType, ...fallback];
 }
 
 export async function getMasterData() {

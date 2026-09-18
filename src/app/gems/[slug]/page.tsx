@@ -2,18 +2,21 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ShieldCheck, FileText, ExternalLink } from "lucide-react";
-import { getGemstoneBySlug } from "@/lib/catalog";
+import { ShieldCheck, FileText, ExternalLink, Sparkles } from "lucide-react";
+import { getGemstoneBySlug, getRelatedGemstones } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
-import { getActivePromotion } from "@/lib/promotion-items";
+import { getActivePromotion, getActivePromotionMaps } from "@/lib/promotion-items";
 import { buildCertVerifyUrl } from "@/lib/utils";
 import { StockBadge } from "@/components/ui/Badge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { ProductPrice } from "@/components/catalog/ProductPrice";
 import { AddToCartButton } from "@/components/catalog/AddToCartButton";
+import { GemCard } from "@/components/catalog/GemCard";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/layout/Reveal";
+import { TrustBar } from "@/components/layout/TrustBar";
+import { CardSlider } from "@/components/ui/CardSlider";
 
 export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -31,7 +34,11 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
 
   if (!gem || !gem.isPublished) notFound();
 
-  const promotion = await getActivePromotion({ gemstoneId: gem.id });
+  const [promotion, relatedGems, { gemstonePrices }] = await Promise.all([
+    getActivePromotion({ gemstoneId: gem.id }),
+    getRelatedGemstones(gem),
+    getActivePromotionMaps(),
+  ]);
 
   const dimensions = [gem.lengthMm, gem.widthMm, gem.depthMm].filter(Boolean).join(" x ");
   const verifyUrl = buildCertVerifyUrl(gem.certLab?.verifyUrlTemplate, gem.certReportNumber);
@@ -57,6 +64,16 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
           <h1 className="mt-2 font-serif text-4xl text-charcoal">{gem.name}</h1>
           <ProductPrice price={gem.price} showPrice={gem.showPrice} retailPrice={gem.retailPrice} promotion={promotion} />
           {gem.description && <p className="mt-4 leading-relaxed text-charcoal/70">{gem.description}</p>}
+
+          {/* Honest urgency, not a manufactured countdown: Gemstone rows
+              carry no quantity field (see schema.prisma), so this really is
+              the one and only piece — once it sells, the listing is gone
+              for good, not restocked. */}
+          {gem.stockStatus === "AVAILABLE" && (
+            <p className="mt-4 flex items-center gap-1.5 text-xs font-medium text-gold">
+              <Sparkles size={13} /> This is the only one — a single natural stone, not a reproducible design.
+            </p>
+          )}
 
           <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border-subtle py-6">
             <Spec label="Cut" value={gem.cut.name} />
@@ -120,8 +137,45 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
               productLabel={gem.name}
             />
           </div>
+
+          <TrustBar variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
         </Reveal>
       </div>
+
+      {relatedGems.length > 0 && (
+        <Reveal className="mt-20 border-t border-border-subtle pt-14 sm:mt-28 sm:pt-16">
+          <p className="text-xs uppercase tracking-[0.3em] text-gold">More From the Collection</p>
+          <h2 className="mt-2 font-serif text-3xl text-charcoal sm:text-4xl">You May Also Love</h2>
+          <div className="mt-8">
+            <CardSlider>
+              {relatedGems.map((related) => (
+                <div key={related.id} className="w-[calc(50%-12px)] shrink-0 snap-start sm:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)]">
+                  <GemCard
+                    slug={related.slug}
+                    name={related.name}
+                    mineralName={related.mineral.name}
+                    cutSlug={related.cut.slug}
+                    cutName={related.cut.name}
+                    caratWeight={related.caratWeight}
+                    colorHue={related.colorHue}
+                    colorLightness={related.colorLightness}
+                    claritySlug={related.clarityGrade.slug}
+                    clarityName={related.clarityGrade.name}
+                    treatmentName={related.treatment.name}
+                    isCeylon={related.origin.isCeylon}
+                    stockStatus={related.stockStatus}
+                    primaryImageUrl={related.media.find((m) => m.isPrimary)?.url ?? related.media[0]?.url}
+                    price={related.price}
+                    showPrice={related.showPrice}
+                    retailPrice={related.retailPrice}
+                    promoPrice={gemstonePrices.get(related.id)}
+                  />
+                </div>
+              ))}
+            </CardSlider>
+          </div>
+        </Reveal>
+      )}
     </div>
   );
 }

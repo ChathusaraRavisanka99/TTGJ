@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TrustBar } from "./TrustBar";
 
 // `year` comes in as a prop computed once on the server (see RootLayout),
 // rather than calling `new Date().getFullYear()` here — Footer has no "use
@@ -13,7 +14,8 @@ export function Footer({ year }: { year: number }) {
   return (
     <footer className="border-t border-border-subtle bg-ivory-soft">
       <div className="mx-auto max-w-[120rem] px-5 py-14 sm:px-8 lg:px-12 xl:px-16">
-        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+        <TrustBar className="border-b border-border-subtle pb-12" />
+        <div className="mt-12 grid gap-10 sm:grid-cols-2 md:grid-cols-4">
           <div>
             <p className="font-serif text-xl text-charcoal">Ratnavue</p>
             <p className="mt-3 text-sm leading-relaxed text-charcoal/65">

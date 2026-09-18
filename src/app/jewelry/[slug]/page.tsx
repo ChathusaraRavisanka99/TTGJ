@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getJewelryBySlug } from "@/lib/catalog";
+import { Sparkles } from "lucide-react";
+import { getJewelryBySlug, getRelatedJewelry } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
-import { getActivePromotion } from "@/lib/promotion-items";
+import { getActivePromotion, getActivePromotionMaps } from "@/lib/promotion-items";
 import { StockBadge } from "@/components/ui/Badge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { ProductPrice } from "@/components/catalog/ProductPrice";
 import { AddToCartButton } from "@/components/catalog/AddToCartButton";
+import { JewelryCard } from "@/components/catalog/JewelryCard";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/layout/Reveal";
+import { TrustBar } from "@/components/layout/TrustBar";
+import { CardSlider } from "@/components/ui/CardSlider";
 
 const METAL_LABELS: Record<string, string> = {
   GOLD: "Gold",
@@ -33,7 +37,11 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 
   if (!piece || !piece.isPublished) notFound();
 
-  const promotion = await getActivePromotion({ jewelryId: piece.id });
+  const [promotion, relatedJewelry, { jewelryPrices }] = await Promise.all([
+    getActivePromotion({ jewelryId: piece.id }),
+    getRelatedJewelry(piece),
+    getActivePromotionMaps(),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
@@ -52,6 +60,14 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
           <h1 className="mt-2 font-serif text-4xl text-charcoal">{piece.name}</h1>
           <ProductPrice price={piece.price} showPrice={piece.showPrice} retailPrice={piece.retailPrice} promotion={promotion} />
           {piece.description && <p className="mt-4 leading-relaxed text-charcoal/70">{piece.description}</p>}
+
+          {/* Same honest "won't be restocked" reasoning as the gem detail
+              page — JewelryPiece rows have no quantity field either. */}
+          {piece.stockStatus === "AVAILABLE" && (
+            <p className="mt-4 flex items-center gap-1.5 text-xs font-medium text-gold">
+              <Sparkles size={13} /> One piece, handcrafted — once it sells, it won&apos;t be made again.
+            </p>
+          )}
 
           <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border-subtle py-6">
             <Spec label="Metal" value={METAL_LABELS[piece.metalType]} />
@@ -98,8 +114,37 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
           <div className="mt-8">
             <QuoteRequestPanel isAuthenticated={!!session?.user} jewelryId={piece.id} productLabel={piece.name} />
           </div>
+
+          <TrustBar variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
         </Reveal>
       </div>
+
+      {relatedJewelry.length > 0 && (
+        <Reveal className="mt-20 border-t border-border-subtle pt-14 sm:mt-28 sm:pt-16">
+          <p className="text-xs uppercase tracking-[0.3em] text-gold">More From the Collection</p>
+          <h2 className="mt-2 font-serif text-3xl text-charcoal sm:text-4xl">You May Also Love</h2>
+          <div className="mt-8">
+            <CardSlider>
+              {relatedJewelry.map((related) => (
+                <div key={related.id} className="w-[calc(50%-12px)] shrink-0 snap-start sm:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)]">
+                  <JewelryCard
+                    slug={related.slug}
+                    name={related.name}
+                    pieceType={related.pieceType}
+                    metalType={related.metalType}
+                    stockStatus={related.stockStatus}
+                    primaryImageUrl={related.media.find((m) => m.isPrimary)?.url ?? related.media[0]?.url}
+                    price={related.price}
+                    showPrice={related.showPrice}
+                    retailPrice={related.retailPrice}
+                    promoPrice={jewelryPrices.get(related.id)}
+                  />
+                </div>
+              ))}
+            </CardSlider>
+          </div>
+        </Reveal>
+      )}
     </div>
   );
 }

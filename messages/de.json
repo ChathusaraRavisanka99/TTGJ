@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "gems": "Edelsteine",
+    "jewelry": "Schmuck",
+    "configurator": "Gestalte deinen Edelstein",
+    "sourcing": "Beschaffung",
+    "about": "Unsere Geschichte",
+    "promotions": "Aktionen",
+    "auctions": "Auktionen",
+    "cart": "Warenkorb",
+    "signIn": "Anmelden",
+    "signOut": "Abmelden",
+    "toggleMenu": "Menü öffnen",
+    "notifications": "Benachrichtigungen"
+  },
+  "footer": {
+    "tagline": "Ceylon-Edelsteine und feiner Schmuck, sorgfältig aus Sri Lanka bezogen und bewertet.",
+    "explore": "Entdecken",
+    "gemstones": "Edelsteine",
+    "jewelry": "Schmuck",
+    "designYourGem": "Gestalte deinen Edelstein",
+    "gemSourcing": "Edelstein-Beschaffung",
+    "company": "Unternehmen",
+    "ourStory": "Unsere Geschichte",
+    "myAccount": "Mein Konto",
+    "pricingNoteTitle": "Ein Hinweis zu Preisen",
+    "pricingNoteBody": "Jedes Stück wird individuell von unseren Gemmologen bewertet. Wird ein Preis angezeigt, steht er direkt dabei — andernfalls stöbern Sie frei und fordern ein Angebot an.",
+    "rights": "© {year} Ratnavue. Alle Rechte vorbehalten."
+  },
+  "trustBar": {
+    "certifiedTitle": "Zertifiziert und Unabhängig Bewertet",
+    "certifiedDetail": "Jeder Stein wird von einem akkreditierten gemmologischen Labor geprüft",
+    "uniqueTitle": "Unikat, Garantiert",
+    "uniqueDetail": "Keine Massenproduktion — jedes Stück ist ein einzigartiger, unwiederholbarer Fund",
+    "shippingTitle": "Vollständig Versicherter Versand",
+    "shippingDetail": "Diskret, verfolgbar und versichert von Sri Lanka bis zu Ihrer Tür",
+    "returnsTitle": "30-Tage-Rückgaberecht",
+    "returnsDetail": "Nicht das Richtige? Senden Sie es für eine vollständige Rückerstattung zurück, ohne Fragen"
+  },
+  "localeSwitcher": {
+    "label": "Sprache"
+  }
+}

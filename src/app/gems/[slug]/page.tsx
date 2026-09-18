@@ -18,6 +18,7 @@ import { Reveal } from "@/components/layout/Reveal";
 import { TrustBar } from "@/components/layout/TrustBar";
 import { CardSlider } from "@/components/ui/CardSlider";
 import { HeritageSideArt } from "@/components/catalog/HeritageSideArt";
+import { getTrustBarMessages } from "@/lib/i18n-messages";
 
 export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -35,10 +36,11 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
 
   if (!gem || !gem.isPublished) notFound();
 
-  const [promotion, relatedGems, { gemstonePrices }] = await Promise.all([
+  const [promotion, relatedGems, { gemstonePrices }, trustBarMessages] = await Promise.all([
     getActivePromotion({ gemstoneId: gem.id }),
     getRelatedGemstones(gem),
     getActivePromotionMaps(),
+    getTrustBarMessages(),
   ]);
 
   const dimensions = [gem.lengthMm, gem.widthMm, gem.depthMm].filter(Boolean).join(" x ");
@@ -146,7 +148,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
             />
           </div>
 
-          <TrustBar variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
+          <TrustBar messages={trustBarMessages} variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
         </Reveal>
       </div>
 

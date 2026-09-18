@@ -16,6 +16,7 @@ import { Reveal } from "@/components/layout/Reveal";
 import { TrustBar } from "@/components/layout/TrustBar";
 import { CardSlider } from "@/components/ui/CardSlider";
 import { HeritageSideArt } from "@/components/catalog/HeritageSideArt";
+import { getTrustBarMessages } from "@/lib/i18n-messages";
 
 const METAL_LABELS: Record<string, string> = {
   GOLD: "Gold",
@@ -38,10 +39,11 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 
   if (!piece || !piece.isPublished) notFound();
 
-  const [promotion, relatedJewelry, { jewelryPrices }] = await Promise.all([
+  const [promotion, relatedJewelry, { jewelryPrices }, trustBarMessages] = await Promise.all([
     getActivePromotion({ jewelryId: piece.id }),
     getRelatedJewelry(piece),
     getActivePromotionMaps(),
+    getTrustBarMessages(),
   ]);
 
   return (
@@ -119,7 +121,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
             <QuoteRequestPanel isAuthenticated={!!session?.user} jewelryId={piece.id} productLabel={piece.name} />
           </div>
 
-          <TrustBar variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
+          <TrustBar messages={trustBarMessages} variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
         </Reveal>
       </div>
 

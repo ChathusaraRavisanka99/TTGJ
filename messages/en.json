@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "gems": "Gems",
+    "jewelry": "Jewelry",
+    "configurator": "Design Your Gem",
+    "sourcing": "Sourcing",
+    "about": "Our Story",
+    "promotions": "Promotions",
+    "auctions": "Auctions",
+    "cart": "Cart",
+    "signIn": "Sign in",
+    "signOut": "Sign Out",
+    "toggleMenu": "Toggle menu",
+    "notifications": "Notifications"
+  },
+  "footer": {
+    "tagline": "Ceylon gemstones and fine jewelry, sourced and quoted with care from Sri Lanka.",
+    "explore": "Explore",
+    "gemstones": "Gemstones",
+    "jewelry": "Jewelry",
+    "designYourGem": "Design Your Gem",
+    "gemSourcing": "Gem Sourcing",
+    "company": "Company",
+    "ourStory": "Our Story",
+    "myAccount": "My Account",
+    "pricingNoteTitle": "A note on pricing",
+    "pricingNoteBody": "Every piece is individually assessed by our gemologists. Where a price is shown, it's listed directly — otherwise, browse freely and request a quote.",
+    "rights": "© {year} Ratnavue. All rights reserved."
+  },
+  "trustBar": {
+    "certifiedTitle": "Certified & Independently Graded",
+    "certifiedDetail": "Every stone verified by an accredited gemological lab",
+    "uniqueTitle": "One of a Kind, Guaranteed",
+    "uniqueDetail": "No mass production — each piece is a single, unrepeated find",
+    "shippingTitle": "Fully Insured Shipping",
+    "shippingDetail": "Discreet, tracked, and insured from Sri Lanka to your door",
+    "returnsTitle": "30-Day Return Promise",
+    "returnsDetail": "Not the one? Send it back for a full refund, no questions asked"
+  },
+  "localeSwitcher": {
+    "label": "Language"
+  }
+}

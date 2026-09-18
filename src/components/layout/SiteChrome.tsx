@@ -6,6 +6,8 @@ import { Footer } from "./Footer";
 import { IntroLoader } from "./IntroLoader";
 import { NavigationOverlay } from "./NavigationOverlay";
 import { FloatingChatButton } from "./FloatingChatButton";
+import type { AppLocale } from "@/i18n/request";
+import type { FooterMessages, TrustBarMessages } from "@/lib/i18n-messages";
 
 interface SiteChromeUser {
   name?: string | null;
@@ -20,18 +22,22 @@ interface SiteChromeUser {
  */
 export function SiteChrome({
   user,
-  year,
+  footerMessages,
+  trustBarMessages,
   showPromotions,
   showAuction,
   cartItemCount,
   promotionsThemeIsDark,
+  locale,
   children,
 }: {
   user: SiteChromeUser | null;
-  /** Computed once on the server (RootLayout) and threaded through as a
-   * plain prop — see Footer.tsx for why this can't just call
-   * `new Date().getFullYear()` itself. */
-  year: number;
+  /** Resolved once on the server (RootLayout) and threaded through as a
+   * plain prop — see src/lib/i18n-messages.ts for why Footer (rendered
+   * from this Client Component) can't call getTranslations itself. */
+  footerMessages: FooterMessages;
+  /** Same reasoning, forwarded through Footer to TrustBar. */
+  trustBarMessages: TrustBarMessages;
   /** Whether the seasonal promotions page is Coming Soon or Live —
    * fetched once server-side in RootLayout (see PageVisibility) rather
    * than Navbar querying it itself, same "compute where it's cheap,
@@ -46,6 +52,10 @@ export function SiteChrome({
    * SeasonalThemeDef.isDark. Navbar needs this to know whether /promotions
    * can safely use the transparent-over-hero nav treatment. */
   promotionsThemeIsDark: boolean;
+  /** The active UI language — read once in RootLayout (see src/i18n/request.ts)
+   * and threaded down as a plain prop, same "compute where it's cheap"
+   * reasoning as `year`. Navbar needs it for LocaleSwitcher's own highlight. */
+  locale: AppLocale;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -63,9 +73,10 @@ export function SiteChrome({
         showAuction={showAuction}
         cartItemCount={cartItemCount}
         promotionsThemeIsDark={promotionsThemeIsDark}
+        locale={locale}
       />
       {children}
-      <Footer year={year} />
+      <Footer messages={footerMessages} trustBarMessages={trustBarMessages} />
       {user && <FloatingChatButton />}
     </>
   );

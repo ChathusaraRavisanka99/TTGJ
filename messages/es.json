@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "gems": "Gemas",
+    "jewelry": "Joyería",
+    "configurator": "Diseña tu Gema",
+    "sourcing": "Abastecimiento",
+    "about": "Nuestra Historia",
+    "promotions": "Promociones",
+    "auctions": "Subastas",
+    "cart": "Carrito",
+    "signIn": "Iniciar sesión",
+    "signOut": "Cerrar sesión",
+    "toggleMenu": "Abrir menú",
+    "notifications": "Notificaciones"
+  },
+  "footer": {
+    "tagline": "Gemas de Ceilán y joyería fina, obtenidas y cotizadas con esmero desde Sri Lanka.",
+    "explore": "Explorar",
+    "gemstones": "Gemas",
+    "jewelry": "Joyería",
+    "designYourGem": "Diseña tu Gema",
+    "gemSourcing": "Abastecimiento de Gemas",
+    "company": "Empresa",
+    "ourStory": "Nuestra Historia",
+    "myAccount": "Mi Cuenta",
+    "pricingNoteTitle": "Una nota sobre los precios",
+    "pricingNoteBody": "Cada pieza es evaluada individualmente por nuestros gemólogos. Cuando se muestra un precio, aparece directamente; de lo contrario, explore libremente y solicite una cotización.",
+    "rights": "© {year} Ratnavue. Todos los derechos reservados."
+  },
+  "trustBar": {
+    "certifiedTitle": "Certificado y Graduado de Forma Independiente",
+    "certifiedDetail": "Cada piedra es verificada por un laboratorio gemológico acreditado",
+    "uniqueTitle": "Pieza Única, Garantizada",
+    "uniqueDetail": "Sin producción en masa: cada pieza es un hallazgo único e irrepetible",
+    "shippingTitle": "Envío Totalmente Asegurado",
+    "shippingDetail": "Discreto, rastreado y asegurado desde Sri Lanka hasta su puerta",
+    "returnsTitle": "Garantía de Devolución de 30 Días",
+    "returnsDetail": "¿No es la indicada? Devuélvala para un reembolso completo, sin preguntas"
+  },
+  "localeSwitcher": {
+    "label": "Idioma"
+  }
+}

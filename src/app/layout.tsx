@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import "./globals.css";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -8,6 +10,8 @@ import { getSeasonalContent } from "@/lib/page-content";
 import { SEASONAL_THEMES } from "@/lib/seasonal-themes";
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { MainWrapper } from "@/components/layout/MainWrapper";
+import { getFooterMessages, getTrustBarMessages } from "@/lib/i18n-messages";
+import type { AppLocale } from "@/i18n/request";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -30,10 +34,11 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [session, visibilities, seasonalContent] = await Promise.all([
+  const [session, visibilities, seasonalContent, locale] = await Promise.all([
     auth(),
     getPageVisibilities(["seasonal", "auction"]),
     getSeasonalContent(),
+    getLocale(),
   ]);
   // Navbar's transparent-over-hero treatment on /promotions is only safe
   // when that season's hero is actually dark (Halloween) — Spring/Summer/
@@ -43,9 +48,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // itself, same "compute where it's cheap" reasoning as cartItemCount.
   const promotionsThemeIsDark = SEASONAL_THEMES[seasonalContent.activeTheme]?.isDark ?? false;
   // Computed once here (a Server Component, so this only ever runs on the
-  // server) and threaded down through SiteChrome to Footer as a plain
-  // prop — see Footer.tsx for why Footer can't just compute this itself.
-  const year = new Date().getFullYear();
+  // server) and threaded down through SiteChrome to Footer as plain
+  // prop values — see src/lib/i18n-messages.ts for why Footer can't
+  // resolve its own translations.
+  const [footerMessages, trustBarMessages] = await Promise.all([
+    getFooterMessages(new Date().getFullYear()),
+    getTrustBarMessages(),
+  ]);
   // Same reasoning for the nav's cart badge — cheap enough to read fresh
   // on every navigation rather than push it into the session/JWT. Summed
   // quantity, not a row count, to match the cart page's own "N items"
@@ -58,18 +67,22 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     : 0;
 
   return (
-    <html lang="en" className={`${cormorant.variable} ${inter.variable} h-full antialiased`}>
+    <html lang={locale} className={`${cormorant.variable} ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-ivory text-charcoal">
-        <SiteChrome
-          user={session?.user ?? null}
-          year={year}
-          showPromotions={visibilities.seasonal !== "HIDDEN"}
-          showAuction={visibilities.auction !== "HIDDEN"}
-          cartItemCount={cartItemCount}
-          promotionsThemeIsDark={promotionsThemeIsDark}
-        >
-          <MainWrapper>{children}</MainWrapper>
-        </SiteChrome>
+        <NextIntlClientProvider>
+          <SiteChrome
+            user={session?.user ?? null}
+            footerMessages={footerMessages}
+            trustBarMessages={trustBarMessages}
+            showPromotions={visibilities.seasonal !== "HIDDEN"}
+            showAuction={visibilities.auction !== "HIDDEN"}
+            cartItemCount={cartItemCount}
+            promotionsThemeIsDark={promotionsThemeIsDark}
+            locale={locale as AppLocale}
+          >
+            <MainWrapper>{children}</MainWrapper>
+          </SiteChrome>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

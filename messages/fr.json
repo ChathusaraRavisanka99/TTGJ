@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "gems": "Gemmes",
+    "jewelry": "Bijoux",
+    "configurator": "Concevez votre Gemme",
+    "sourcing": "Approvisionnement",
+    "about": "Notre Histoire",
+    "promotions": "Promotions",
+    "auctions": "Enchères",
+    "cart": "Panier",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "toggleMenu": "Ouvrir le menu",
+    "notifications": "Notifications"
+  },
+  "footer": {
+    "tagline": "Pierres précieuses de Ceylan et bijoux fins, sourcés et estimés avec soin depuis le Sri Lanka.",
+    "explore": "Explorer",
+    "gemstones": "Gemmes",
+    "jewelry": "Bijoux",
+    "designYourGem": "Concevez votre Gemme",
+    "gemSourcing": "Approvisionnement en Gemmes",
+    "company": "Société",
+    "ourStory": "Notre Histoire",
+    "myAccount": "Mon Compte",
+    "pricingNoteTitle": "Une note sur les prix",
+    "pricingNoteBody": "Chaque pièce est évaluée individuellement par nos gemmologues. Lorsqu'un prix est affiché, il est indiqué directement — sinon, parcourez librement et demandez un devis.",
+    "rights": "© {year} Ratnavue. Tous droits réservés."
+  },
+  "trustBar": {
+    "certifiedTitle": "Certifié et Évalué de Façon Indépendante",
+    "certifiedDetail": "Chaque pierre est vérifiée par un laboratoire gemmologique accrédité",
+    "uniqueTitle": "Pièce Unique, Garantie",
+    "uniqueDetail": "Aucune production de masse — chaque pièce est une trouvaille unique et non reproductible",
+    "shippingTitle": "Expédition Entièrement Assurée",
+    "shippingDetail": "Discrète, suivie et assurée du Sri Lanka jusqu'à votre porte",
+    "returnsTitle": "Garantie de Retour sous 30 Jours",
+    "returnsDetail": "Ce n'est pas la bonne ? Renvoyez-la pour un remboursement complet, sans question"
+  },
+  "localeSwitcher": {
+    "label": "Langue"
+  }
+}

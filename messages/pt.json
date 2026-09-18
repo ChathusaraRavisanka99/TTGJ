@@ -1,0 +1,43 @@
+{
+  "nav": {
+    "gems": "Gemas",
+    "jewelry": "Joias",
+    "configurator": "Crie sua Gema",
+    "sourcing": "Abastecimento",
+    "about": "Nossa História",
+    "promotions": "Promoções",
+    "auctions": "Leilões",
+    "cart": "Carrinho",
+    "signIn": "Entrar",
+    "signOut": "Sair",
+    "toggleMenu": "Abrir menu",
+    "notifications": "Notificações"
+  },
+  "footer": {
+    "tagline": "Gemas do Ceilão e joias finas, obtidas e avaliadas com cuidado a partir do Sri Lanka.",
+    "explore": "Explorar",
+    "gemstones": "Gemas",
+    "jewelry": "Joias",
+    "designYourGem": "Crie sua Gema",
+    "gemSourcing": "Abastecimento de Gemas",
+    "company": "Empresa",
+    "ourStory": "Nossa História",
+    "myAccount": "Minha Conta",
+    "pricingNoteTitle": "Uma nota sobre os preços",
+    "pricingNoteBody": "Cada peça é avaliada individualmente por nossos gemólogos. Quando um preço é exibido, ele aparece diretamente — caso contrário, navegue livremente e solicite um orçamento.",
+    "rights": "© {year} Ratnavue. Todos os direitos reservados."
+  },
+  "trustBar": {
+    "certifiedTitle": "Certificado e Avaliado de Forma Independente",
+    "certifiedDetail": "Cada pedra é verificada por um laboratório gemológico credenciado",
+    "uniqueTitle": "Peça Única, Garantida",
+    "uniqueDetail": "Sem produção em massa — cada peça é um achado único e irrepetível",
+    "shippingTitle": "Envio Totalmente Segurado",
+    "shippingDetail": "Discreto, rastreado e segurado do Sri Lanka até a sua porta",
+    "returnsTitle": "Garantia de Devolução em 30 Dias",
+    "returnsDetail": "Não é a ideal? Devolva para um reembolso total, sem perguntas"
+  },
+  "localeSwitcher": {
+    "label": "Idioma"
+  }
+}

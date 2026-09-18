@@ -14,6 +14,7 @@ import { HeroScrollCue } from "@/components/layout/HeroScrollCue";
 import { SectionArrow } from "@/components/layout/SectionArrow";
 import { CardSlider } from "@/components/ui/CardSlider";
 import { TrustBar } from "@/components/layout/TrustBar";
+import { getTrustBarMessages } from "@/lib/i18n-messages";
 
 const MINERAL_MARQUEE = [
   { label: "Blue Sapphire", color: "#3a5f9e" },
@@ -27,7 +28,7 @@ const MINERAL_MARQUEE = [
 ];
 
 export default async function HomePage() {
-  const [featuredGems, featuredJewelry, content, { gemstonePrices, jewelryPrices }] = await Promise.all([
+  const [featuredGems, featuredJewelry, content, { gemstonePrices, jewelryPrices }, trustBarMessages] = await Promise.all([
     prisma.gemstone.findMany({
       where: { isPublished: true, isFeatured: true },
       orderBy: { createdAt: "desc" },
@@ -42,6 +43,7 @@ export default async function HomePage() {
     }),
     getPageContent("home", DEFAULT_HOME_CONTENT),
     getActivePromotionMaps(),
+    getTrustBarMessages(),
   ]);
 
   // Each of these two sections is curated by admins (feature specific items
@@ -326,7 +328,7 @@ export default async function HomePage() {
           </p>
         </Reveal>
         <Reveal delay={0.1} className="mx-auto mt-14 w-full max-w-5xl">
-          <TrustBar />
+          <TrustBar messages={trustBarMessages} />
         </Reveal>
         <SectionArrow target={prevSection("promise")} direction="up" tone="dark" />
         <SectionArrow target={nextSection("promise")} direction="down" tone="dark" />

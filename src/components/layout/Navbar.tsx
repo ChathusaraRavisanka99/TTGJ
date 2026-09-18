@@ -4,22 +4,28 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
+import { useTranslations } from "next-intl";
 import { Menu, X, User, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountMenu, ACCOUNT_MENU_LINKS } from "@/components/layout/AccountMenu";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { signOutAction } from "@/actions/auth";
+import type { AppLocale } from "@/i18n/request";
 
+// `key` looks up the label in messages/*.json's "nav" namespace (see
+// useTranslations("nav") below) — kept separate from `href` since a route
+// path is never itself translated, only the link text is.
 const BASE_NAV_LINKS = [
-  { href: "/gems", label: "Gems" },
-  { href: "/jewelry", label: "Jewelry" },
-  { href: "/configurator", label: "Design Your Gem" },
-  { href: "/sourcing", label: "Sourcing" },
-  { href: "/about", label: "Our Story" },
-];
+  { href: "/gems", key: "gems" },
+  { href: "/jewelry", key: "jewelry" },
+  { href: "/configurator", key: "configurator" },
+  { href: "/sourcing", key: "sourcing" },
+  { href: "/about", key: "about" },
+] as const;
 
-const PROMOTIONS_LINK = { href: "/promotions", label: "Promotions" };
-const AUCTION_LINK = { href: "/auction", label: "Auctions" };
+const PROMOTIONS_LINK = { href: "/promotions", key: "promotions" } as const;
+const AUCTION_LINK = { href: "/auction", key: "auctions" } as const;
 
 // Solidify almost as soon as the page moves, on the home page specifically
 // — its hero's own headline sits well within the first ~150px, so a
@@ -57,6 +63,7 @@ export function Navbar({
   showAuction,
   cartItemCount,
   promotionsThemeIsDark,
+  locale,
 }: {
   user: { name?: string | null; email?: string | null } | null;
   /** True when the seasonal promotions page is Coming Soon or Live (see
@@ -74,7 +81,10 @@ export function Navbar({
    * legible over /promotions and /promotions/collection. Halloween is
    * dark; Spring/Summer/Autumn/Winter are light. */
   promotionsThemeIsDark: boolean;
+  /** The active UI language — see SiteChrome's own comment. */
+  locale: AppLocale;
 }) {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const navLinks = [
@@ -175,7 +185,7 @@ export function Navbar({
                   active && (transparent ? "text-ivory" : "text-charcoal font-medium")
                 )}
               >
-                {link.label}
+                {t(link.key)}
                 {/* Shared layoutId — Framer Motion tracks this element's
                     identity across renders and animates it from wherever it
                     was (under the previously active link) to wherever it now
@@ -196,7 +206,7 @@ export function Navbar({
         <div className="hidden items-center gap-5 md:flex">
           <Link
             href={user ? "/account/retail-cart" : "/account/login?callbackUrl=%2Faccount%2Fretail-cart"}
-            aria-label="Cart"
+            aria-label={t("cart")}
             className={cn(
               "relative transition-colors duration-300",
               transparent ? "text-ivory/85 hover:text-ivory" : "text-charcoal/80 hover:text-charcoal"
@@ -221,15 +231,16 @@ export function Navbar({
               )}
             >
               <User size={16} />
-              Sign in
+              {t("signIn")}
             </Link>
           )}
+          <LocaleSwitcher locale={locale} transparent={transparent} />
         </div>
 
         <div className="flex items-center gap-4 md:hidden">
           <Link
             href={user ? "/account/retail-cart" : "/account/login?callbackUrl=%2Faccount%2Fretail-cart"}
-            aria-label="Cart"
+            aria-label={t("cart")}
             className={cn("relative transition-colors duration-300", transparent ? "text-ivory" : "text-charcoal")}
           >
             <ShoppingBag size={21} />
@@ -240,10 +251,11 @@ export function Navbar({
             )}
           </Link>
           {user && <NotificationBell transparent={transparent} size={21} />}
+          <LocaleSwitcher locale={locale} transparent={transparent} />
           <button
             className={cn("transition-colors duration-300", transparent ? "text-ivory" : "text-charcoal")}
             onClick={() => setOpen((v) => !v)}
-            aria-label="Toggle menu"
+            aria-label={t("toggleMenu")}
           >
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -262,7 +274,7 @@ export function Navbar({
               )}
               onClick={() => setOpen(false)}
             >
-              {link.label}
+              {t(link.key)}
             </Link>
           ))}
           {user ? (
@@ -297,13 +309,13 @@ export function Navbar({
                   replacing the whole page — no manual close needed. */}
               <form action={signOutAction}>
                 <button type="submit" className="py-3 text-left text-sm text-charcoal/60">
-                  Sign Out
+                  {t("signOut")}
                 </button>
               </form>
             </>
           ) : (
             <Link href="/account/login" className="py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
-              Sign in
+              {t("signIn")}
             </Link>
           )}
         </nav>

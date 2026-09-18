@@ -1,52 +1,42 @@
 import Link from "next/link";
 import { TrustBar } from "./TrustBar";
+import type { FooterMessages, TrustBarMessages } from "@/lib/i18n-messages";
 
-// `year` comes in as a prop computed once on the server (see RootLayout),
-// rather than calling `new Date().getFullYear()` here — Footer has no "use
-// client" of its own, but it's imported and rendered directly by
-// SiteChrome, which does, so its code ships to and re-runs on the client
-// during hydration. Computing the year there risked React's hydration
-// diff genuinely disagreeing with the server's render (different
-// timezones, or a request landing right on a New Year's boundary) and
-// throwing the "server/client text didn't match" warning on this exact
-// line. A plain number prop can't disagree with itself.
-export function Footer({ year }: { year: number }) {
+// Both message bundles come in as plain props, pre-resolved server-side in
+// RootLayout — see src/lib/i18n-messages.ts for why Footer (rendered from
+// SiteChrome, a Client Component) can't call getTranslations itself.
+export function Footer({ messages, trustBarMessages }: { messages: FooterMessages; trustBarMessages: TrustBarMessages }) {
   return (
     <footer className="border-t border-border-subtle bg-ivory-soft">
       <div className="mx-auto max-w-[120rem] px-5 py-14 sm:px-8 lg:px-12 xl:px-16">
-        <TrustBar className="border-b border-border-subtle pb-12" />
+        <TrustBar messages={trustBarMessages} className="border-b border-border-subtle pb-12" />
         <div className="mt-12 grid gap-10 sm:grid-cols-2 md:grid-cols-4">
           <div>
             <p className="font-serif text-xl text-charcoal">Ratnavue</p>
-            <p className="mt-3 text-sm leading-relaxed text-charcoal/65">
-              Ceylon gemstones and fine jewelry, sourced and quoted with care from Sri Lanka.
-            </p>
+            <p className="mt-3 text-sm leading-relaxed text-charcoal/65">{messages.tagline}</p>
           </div>
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-charcoal/50">Explore</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-charcoal/50">{messages.explore}</p>
             <ul className="mt-3 space-y-2 text-sm text-charcoal/70">
-              <li><Link href="/gems" className="hover:text-charcoal">Gemstones</Link></li>
-              <li><Link href="/jewelry" className="hover:text-charcoal">Jewelry</Link></li>
-              <li><Link href="/configurator" className="hover:text-charcoal">Design Your Gem</Link></li>
-              <li><Link href="/sourcing" className="hover:text-charcoal">Gem Sourcing</Link></li>
+              <li><Link href="/gems" className="hover:text-charcoal">{messages.gemstones}</Link></li>
+              <li><Link href="/jewelry" className="hover:text-charcoal">{messages.jewelry}</Link></li>
+              <li><Link href="/configurator" className="hover:text-charcoal">{messages.designYourGem}</Link></li>
+              <li><Link href="/sourcing" className="hover:text-charcoal">{messages.gemSourcing}</Link></li>
             </ul>
           </div>
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-charcoal/50">Company</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-charcoal/50">{messages.company}</p>
             <ul className="mt-3 space-y-2 text-sm text-charcoal/70">
-              <li><Link href="/about" className="hover:text-charcoal">Our Story</Link></li>
-              <li><Link href="/account" className="hover:text-charcoal">My Account</Link></li>
+              <li><Link href="/about" className="hover:text-charcoal">{messages.ourStory}</Link></li>
+              <li><Link href="/account" className="hover:text-charcoal">{messages.myAccount}</Link></li>
             </ul>
           </div>
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-charcoal/50">A note on pricing</p>
-            <p className="mt-3 text-sm leading-relaxed text-charcoal/65">
-              Every piece is individually assessed by our gemologists. Where a price is shown, it&apos;s listed
-              directly — otherwise, browse freely and request a quote.
-            </p>
+            <p className="text-xs font-medium uppercase tracking-wide text-charcoal/50">{messages.pricingNoteTitle}</p>
+            <p className="mt-3 text-sm leading-relaxed text-charcoal/65">{messages.pricingNoteBody}</p>
           </div>
         </div>
-        <p className="mt-12 text-xs text-charcoal/40">© {year} Ratnavue. All rights reserved.</p>
+        <p className="mt-12 text-xs text-charcoal/40">{messages.rights}</p>
       </div>
     </footer>
   );

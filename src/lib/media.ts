@@ -1,6 +1,14 @@
 import sharp from "sharp";
 import { randomUUID } from "crypto";
-import { HeadBucketCommand, CreateBucketCommand, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import {
+  HeadBucketCommand,
+  CreateBucketCommand,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { storageClient, MEDIA_BUCKET } from "@/lib/supabase";
 import { writeCached, deleteCached } from "@/lib/media-cache";
 
@@ -112,6 +120,77 @@ export async function saveUploadedMedia(file: File): Promise<SavedMedia> {
   const filename = `${id}.${ext}`;
   const url = await upload(filename, buffer, file.type);
   return { url, type: "VIDEO" };
+}
+
+// ---------- Direct-to-storage uploads (product photos & videos) ----------
+//
+// Routing a file through a Server Action caps it at the action body limit
+// (1MB by default, ~4.5MB on Vercel regardless) — fine for a logo, but a
+// phone photo is several MB and a product video is tens. So for the gallery
+// the browser uploads straight to Storage with a short-lived presigned PUT
+// URL; the server only signs the request (admin-only) and afterwards
+// verifies the object actually landed before recording it.
+
+// Supabase's per-object limit on the free tier is 50MB.
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+
+const DIRECT_IMAGE_EXT: Record<string, string> = { "image/webp": "webp", "image/jpeg": "jpg" };
+const DIRECT_VIDEO_EXT: Record<string, string> = { "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov" };
+
+// Only keys this module itself would generate — registering an arbitrary
+// key would let a caller attach some *other* stored file to a product.
+const DIRECT_KEY = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(webp|jpg|mp4|webm|mov)$/;
+
+export function isDirectUploadKey(key: string): boolean {
+  return DIRECT_KEY.test(key);
+}
+
+export async function createDirectUpload(
+  contentType: string,
+  size: number,
+): Promise<{ key: string; uploadUrl: string; type: "IMAGE" | "VIDEO" }> {
+  const imageExt = DIRECT_IMAGE_EXT[contentType];
+  const videoExt = DIRECT_VIDEO_EXT[contentType];
+  if (!imageExt && !videoExt) {
+    throw new Error("Unsupported file type. Please upload a JPEG/PNG/WEBP image or an MP4/WEBM/MOV video.");
+  }
+  const type = imageExt ? "IMAGE" : "VIDEO";
+  if (size <= 0) throw new Error("The file is empty.");
+  if (type === "IMAGE" && size > MAX_IMAGE_BYTES) throw new Error("That image is still too large after compression.");
+  if (type === "VIDEO" && size > MAX_VIDEO_BYTES) {
+    throw new Error(`Videos can be at most ${MAX_VIDEO_BYTES / 1024 / 1024}MB — trim or compress it and try again.`);
+  }
+
+  await ensureBucket();
+  const key = `${randomUUID()}.${imageExt ?? videoExt}`;
+  const uploadUrl = await getSignedUrl(
+    storageClient(),
+    new PutObjectCommand({ Bucket: MEDIA_BUCKET, Key: key, ContentType: contentType }),
+    { expiresIn: 600 },
+  );
+  return { key, uploadUrl, type };
+}
+
+// Confirms a direct upload really exists in Storage (and re-checks its
+// size server-side, since the client-reported size was only a claim).
+export async function inspectDirectUpload(key: string): Promise<{ url: string; type: "IMAGE" | "VIDEO" }> {
+  if (!isDirectUploadKey(key)) throw new Error("Invalid upload reference.");
+  const head = await storageClient().send(new HeadObjectCommand({ Bucket: MEDIA_BUCKET, Key: key }));
+  const type = /\.(mp4|webm|mov)$/.test(key) ? "VIDEO" : "IMAGE";
+  const size = head.ContentLength ?? 0;
+  if (size <= 0) throw new Error("The upload didn't complete — please try again.");
+  if (type === "VIDEO" && size > MAX_VIDEO_BYTES) throw new Error("Video is too large.");
+  if (type === "IMAGE" && size > MAX_IMAGE_BYTES) throw new Error("Image is too large.");
+  return { url: `/media/${key}`, type };
+}
+
+// Videos are served by redirecting to a short-lived signed Storage URL:
+// /media/[filename] otherwise buffers the whole object into one response,
+// which a serverless host caps at ~4.5MB and which can't do Range requests
+// (seeking) at all. Storage itself handles both natively.
+export async function signedReadUrl(filename: string, expiresIn = 3600): Promise<string> {
+  return getSignedUrl(storageClient(), new GetObjectCommand({ Bucket: MEDIA_BUCKET, Key: filename }), { expiresIn });
 }
 
 const CERT_DOCUMENT_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);

@@ -3,22 +3,42 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
-import { saveUploadedMedia, deleteUploadedFile } from "@/lib/media";
+import { deleteUploadedFile, createDirectUpload, inspectDirectUpload } from "@/lib/media";
 import type { ActionResult } from "./auth";
 
-export async function uploadProductMedia(formData: FormData): Promise<ActionResult> {
+// Step 1 of a product photo/video upload: hands back a short-lived signed
+// URL the browser PUTs the file to directly — see lib/media.ts's
+// "Direct-to-storage uploads" comment for why the file itself doesn't go
+// through a Server Action.
+export async function requestProductMediaUpload(input: {
+  contentType: string;
+  size: number;
+}): Promise<{ ok: true; key: string; uploadUrl: string } | { ok: false; error: string }> {
+  await requireAdmin();
+  try {
+    const { key, uploadUrl } = await createDirectUpload(input.contentType, input.size);
+    return { ok: true, key, uploadUrl };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not start the upload." };
+  }
+}
+
+// Step 2: after the browser's PUT succeeds, verify the object exists and
+// attach it to the product.
+export async function registerProductMedia(input: {
+  key: string;
+  gemstoneId?: string;
+  jewelryId?: string;
+  altText?: string;
+}): Promise<ActionResult> {
   await requireAdmin();
 
-  const file = formData.get("file") as File | null;
-  const gemstoneId = formData.get("gemstoneId") as string | null;
-  const jewelryId = formData.get("jewelryId") as string | null;
-  const altText = (formData.get("altText") as string | null) ?? "";
-
-  if (!file || file.size === 0) return { ok: false, error: "No file provided." };
+  const { gemstoneId, jewelryId } = input;
+  const altText = (input.altText ?? "").slice(0, 200);
   if (!gemstoneId && !jewelryId) return { ok: false, error: "Missing product reference." };
 
   try {
-    const saved = await saveUploadedMedia(file);
+    const saved = await inspectDirectUpload(input.key);
 
     const existingCount = await prisma.mediaAsset.count({
       where: gemstoneId ? { gemstoneId } : { jewelryId },

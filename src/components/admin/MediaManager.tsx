@@ -4,10 +4,13 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Star, Trash2, Video } from "lucide-react";
-import { uploadProductMedia, deleteProductMedia, setPrimaryMedia } from "@/actions/media";
+import { requestProductMediaUpload, registerProductMedia, deleteProductMedia, setPrimaryMedia } from "@/actions/media";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
+import { compressImage, putWithProgress } from "@/lib/client-image";
 import { cn } from "@/lib/utils";
+
+const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 
 interface MediaItem {
   id: string;
@@ -21,25 +24,58 @@ export function MediaManager({ media, gemstoneId, jewelryId }: { media: MediaIte
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const altInput = useRef<HTMLInputElement>(null);
 
-  function handleUpload() {
-    const file = fileInput.current?.files?.[0];
-    if (!file) return;
+  // One file at a time, straight from the browser to Storage (see
+  // lib/media.ts) — a Server Action would cap each file at the action body
+  // limit, which a phone photo or any video blows past. Every step's failure
+  // is caught and shown; the old single-action version threw before it ever
+  // reached its own error handling, so a too-big file just did nothing.
+  async function uploadOne(file: File, altText: string, label: string) {
+    const isVideo = VIDEO_TYPES.includes(file.type);
+    if (!isVideo && !file.type.startsWith("image/")) {
+      throw new Error(`${file.name}: unsupported file type. Use JPEG/PNG/WEBP images or MP4/WEBM/MOV videos.`);
+    }
+
+    setStatus(`${label} Preparing ${file.name}...`);
+    const prepared = isVideo
+      ? { blob: file as Blob, contentType: file.type }
+      : await compressImage(file);
+
+    const signed = await requestProductMediaUpload({ contentType: prepared.contentType, size: prepared.blob.size });
+    if (!signed.ok) throw new Error(`${file.name}: ${signed.error}`);
+
+    await putWithProgress(signed.uploadUrl, prepared.blob, prepared.contentType, (f) =>
+      setStatus(`${label} Uploading ${file.name} — ${Math.round(f * 100)}%`),
+    );
+
+    const registered = await registerProductMedia({ key: signed.key, gemstoneId, jewelryId, altText });
+    if (!registered.ok) throw new Error(`${file.name}: ${registered.error}`);
+  }
+
+  async function handleUpload() {
+    const files = Array.from(fileInput.current?.files ?? []);
+    if (files.length === 0) return;
     setError(null);
-    const formData = new FormData();
-    formData.set("file", file);
-    formData.set("altText", altInput.current?.value ?? "");
-    if (gemstoneId) formData.set("gemstoneId", gemstoneId);
-    if (jewelryId) formData.set("jewelryId", jewelryId);
-    startTransition(async () => {
-      const result = await uploadProductMedia(formData);
-      if (!result.ok) setError(result.error);
-      if (fileInput.current) fileInput.current.value = "";
-      if (altInput.current) altInput.current.value = "";
-      router.refresh();
-    });
+    setUploading(true);
+    const altText = altInput.current?.value ?? "";
+    const failures: string[] = [];
+    for (const [i, file] of files.entries()) {
+      try {
+        await uploadOne(file, altText, files.length > 1 ? `(${i + 1}/${files.length})` : "");
+      } catch (e) {
+        failures.push(e instanceof Error ? e.message : `${file.name}: upload failed.`);
+      }
+    }
+    setUploading(false);
+    setStatus(null);
+    if (failures.length) setError(failures.join(" "));
+    if (fileInput.current) fileInput.current.value = "";
+    if (altInput.current) altInput.current.value = "";
+    router.refresh();
   }
 
   return (
@@ -79,16 +115,20 @@ export function MediaManager({ media, gemstoneId, jewelryId }: { media: MediaIte
       <div className="mt-4 flex flex-wrap items-end gap-3">
         <div>
           <Label htmlFor="media-file">File</Label>
-          <input id="media-file" ref={fileInput} type="file" accept="image/*,video/*" className="text-sm" />
+          <input id="media-file" ref={fileInput} type="file" multiple accept="image/*,video/mp4,video/webm,video/quicktime" className="text-sm" />
         </div>
         <div>
           <Label htmlFor="media-alt">Alt text</Label>
           <Input id="media-alt" ref={altInput} placeholder="Describe the image for screen readers" className="w-64" />
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={handleUpload} disabled={pending}>
-          {pending ? "Uploading..." : "Upload"}
+        <Button type="button" variant="outline" size="sm" onClick={handleUpload} disabled={pending || uploading}>
+          {uploading ? "Uploading..." : "Upload"}
         </Button>
       </div>
+      <p className="mt-2 text-xs text-charcoal/50">
+        Select one or several photos and videos at once. Photos are resized automatically; videos can be up to 50MB (MP4, WEBM or MOV).
+      </p>
+      {status && <p className="mt-2 text-xs text-charcoal/70">{status}</p>}
       {error && <p className="mt-2 text-xs text-red-700">{error}</p>}
     </div>
   );

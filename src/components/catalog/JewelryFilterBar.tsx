@@ -1,5 +1,6 @@
 import { Input, Label } from "@/components/ui/Field";
 import { Button, HardLinkButton } from "@/components/ui/Button";
+import { FilterCollapse } from "@/components/catalog/FilterCollapse";
 import { PIECE_TYPES, METAL_TYPES } from "@/lib/gem-constants";
 import { cn } from "@/lib/utils";
 
@@ -58,14 +59,21 @@ export function JewelryFilterBar({ current }: JewelryFilterBarProps) {
     return Array.isArray(value) ? value.length > 0 : !!value;
   });
 
+  // See GemFilterBar — what the mobile "Filters" button's badge counts.
+  const activeCount = Object.entries(current).reduce((n, [key, value]) => {
+    if (key === "q" || key === "sort" || key === "page" || !value) return n;
+    return n + (Array.isArray(value) ? value.length : 1);
+  }, 0);
+
   return (
     <form method="get" className="rounded-xl border border-border-subtle bg-surface p-5">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="sm:col-span-2 lg:col-span-4">
-          <Label htmlFor="q">Search</Label>
-          <Input id="q" name="q" defaultValue={first(current.q)} placeholder="Ring, necklace, sapphire..." />
-        </div>
+      <div className="mb-4">
+        <Label htmlFor="q">Search</Label>
+        <Input id="q" name="q" defaultValue={first(current.q)} placeholder="Ring, necklace, sapphire..." />
+      </div>
 
+      <FilterCollapse activeCount={activeCount}>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CheckboxGroup
           label="Piece type"
           name="pieceType"
@@ -109,6 +117,7 @@ export function JewelryFilterBar({ current }: JewelryFilterBarProps) {
           </label>
         </div>
       </div>
+      </FilterCollapse>
 
       <div className={cn("mt-5 flex gap-3", hasActiveFilters ? "" : "sm:w-56")}>
         <Button type="submit" variant="primary" className="flex-1 sm:flex-none sm:px-10">Filter</Button>

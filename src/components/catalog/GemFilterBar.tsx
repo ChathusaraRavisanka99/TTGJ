@@ -1,6 +1,7 @@
 import { Input, Label } from "@/components/ui/Field";
 import { Button, HardLinkButton } from "@/components/ui/Button";
 import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
+import { FilterCollapse } from "@/components/catalog/FilterCollapse";
 import { GEM_COLOR_FAMILIES } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
@@ -95,14 +96,22 @@ export function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origin
     return Array.isArray(value) ? value.length > 0 : !!value;
   });
 
+  // Everything except the search text, sort, and page — what the mobile
+  // "Filters" button's badge counts as "narrowing" the catalog.
+  const activeCount = Object.entries(current).reduce((n, [key, value]) => {
+    if (key === "q" || key === "sort" || key === "page" || !value) return n;
+    return n + (Array.isArray(value) ? value.length : 1);
+  }, 0);
+
   return (
     <form method="get" className="rounded-xl border border-border-subtle bg-surface p-5">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="sm:col-span-2 lg:col-span-4">
-          <Label htmlFor="q">Search</Label>
-          <Input id="q" name="q" defaultValue={first(current.q)} placeholder="Sapphire, ruby, oval cut..." />
-        </div>
+      <div className="mb-4">
+        <Label htmlFor="q">Search</Label>
+        <Input id="q" name="q" defaultValue={first(current.q)} placeholder="Sapphire, ruby, oval cut..." />
+      </div>
 
+      <FilterCollapse activeCount={activeCount}>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CheckboxGroup label="Mineral" name="mineral" active={toSet(current.mineral)} options={minerals.map((m) => ({ value: m.slug, label: m.name }))} />
         <CheckboxGroup label="Shape / Cut" name="cut" active={toSet(current.cut)} options={cuts.map((c) => ({ value: c.slug, label: c.name }))} showShapeIcons />
         <CheckboxGroup label="Colour" name="color" active={toSet(current.color)} options={GEM_COLOR_FAMILIES.map((c) => ({ value: c.key, label: c.label }))} />
@@ -155,6 +164,7 @@ export function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origin
           </label>
         </div>
       </div>
+      </FilterCollapse>
 
       <div className={cn("mt-5 flex gap-3", hasActiveFilters ? "" : "sm:w-56")}>
         <Button type="submit" variant="primary" className="flex-1 sm:flex-none sm:px-10">Filter</Button>

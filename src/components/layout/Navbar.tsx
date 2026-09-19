@@ -239,7 +239,7 @@ export function Navbar({
           <LocaleSwitcher locale={locale} transparent={transparent} />
         </div>
 
-        <div className="flex items-center gap-4 md:hidden">
+        <div className="flex items-center gap-3 min-[360px]:gap-4 md:hidden">
           <Link
             href={user ? "/account/retail-cart" : "/account/login?callbackUrl=%2Faccount%2Fretail-cart"}
             aria-label={t("cart")}

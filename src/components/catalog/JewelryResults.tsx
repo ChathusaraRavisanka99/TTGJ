@@ -32,7 +32,7 @@ export function JewelryResults({ pieces }: { pieces: JewelryResultItem[] }) {
         <ViewToggle view={view} onChange={setView} />
       </div>
 
-      <RevealGroup className={cn(view === "grid" ? "grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" : "flex flex-col gap-3")}>
+      <RevealGroup className={cn(view === "grid" ? "grid grid-cols-1 gap-4 min-[360px]:grid-cols-2 sm:gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" : "flex flex-col gap-3")}>
         {pieces.map((piece, i) => (
           <RevealItem key={piece.id}>
             <JewelryCard

@@ -156,16 +156,19 @@ function GemCardGrid(props: GemCardProps) {
       className="group flex h-full flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface transition-shadow hover:shadow-lg hover:shadow-charcoal/5"
     >
       <Thumbnail props={props} className="aspect-square" sizes="(min-width: 1280px) 18vw, (min-width: 1024px) 23vw, (min-width: 640px) 30vw, 45vw">
-        <div className="absolute right-3 top-3">
+        {/* Tighter inset and smaller pills on phones: in the 2-column
+            mobile grid a card is only ~130-160px wide, where the stock
+            pill (right) and Ceylon pill (left) at full size overlapped. */}
+        <div className="absolute right-2 top-2 max-sm:[&>span]:px-2 max-sm:[&>span]:text-[10px] sm:right-3 sm:top-3">
           <StockBadge status={props.stockStatus} />
         </div>
         {/* Stacked, not side-by-side — Promotion and Ceylon can both apply
             to the same gem at once, and this corner isn't wide enough for
             two pills next to each other without crowding the photo. */}
-        <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
+        <div className="absolute left-2 top-2 flex flex-col items-start gap-1.5 sm:left-3 sm:top-3">
           {props.promoPrice != null && <PromotionBadge />}
           {props.isCeylon && (
-            <span className="rounded-full bg-charcoal/85 px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-ivory">
+            <span className="rounded-full bg-charcoal/85 px-2 py-0.5 text-[10px] font-medium tracking-wide text-ivory sm:px-2.5 sm:text-[11px]">
               Ceylon
             </span>
           )}

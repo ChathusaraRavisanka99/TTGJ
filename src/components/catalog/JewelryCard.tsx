@@ -130,10 +130,12 @@ function JewelryCardGrid(props: JewelryCardProps) {
       className="group flex h-full flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface transition-shadow hover:shadow-lg hover:shadow-charcoal/5"
     >
       <Thumbnail props={props} className="aspect-square" sizes="(min-width: 1280px) 18vw, (min-width: 1024px) 23vw, (min-width: 640px) 30vw, 45vw">
-        <div className="absolute right-3 top-3">
+        <div className="absolute right-2 top-2 max-sm:[&>span]:px-2 max-sm:[&>span]:text-[10px] sm:right-3 sm:top-3">
           <StockBadge status={props.stockStatus} />
         </div>
-        {props.promoPrice != null && <PromotionBadge className="absolute left-3 top-3" />}
+        {props.promoPrice != null && (
+          <PromotionBadge className="absolute left-2 top-2 max-sm:px-2 max-sm:text-[10px] sm:left-3 sm:top-3" />
+        )}
       </Thumbnail>
       <div className="flex flex-1 flex-col p-4">
         <p className="line-clamp-2 font-serif text-lg leading-snug text-charcoal">{props.name}</p>

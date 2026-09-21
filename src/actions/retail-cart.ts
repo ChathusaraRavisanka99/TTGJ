@@ -21,7 +21,9 @@ export async function addToRetailCart(input: { gemstoneId?: string; jewelryId?: 
   // dollars everywhere else. A piece with no price for this market is
   // quote-only there.
   const unitPrice = market === "lk" ? item?.lkrRetailPrice : item?.retailPrice;
-  if (!item || unitPrice == null) return { ok: false, error: "This item isn't available for direct purchase." };
+  // A listing from the other storefront can't be bought here (the catalogs
+  // don't overlap), even if someone crafts the request by hand.
+  if (!item || item.market !== market || unitPrice == null) return { ok: false, error: "This item isn't available for direct purchase." };
   // Every catalog item here is one-of-a-kind (natural gemstones, bespoke
   // jewelry) — there's no quantity/units field anywhere in the schema —
   // so once it's SOLD/RESERVED there's nothing left to add another unit

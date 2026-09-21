@@ -5,7 +5,7 @@ import { getMarket } from "@/lib/market";
 import { priceForMarket } from "@/lib/market-pricing";
 import { getPageVisibility, getPageVisibilities } from "@/lib/page-visibility";
 import { getAllSubcultureContent } from "@/lib/subculture-content";
-import { getCollectionItems, toCollectionCardData } from "@/lib/subculture-items";
+import { getCollectionItems, getCollectionKeysWithItems, toCollectionCardData } from "@/lib/subculture-items";
 import { SUBCULTURE_KEYS, SUBCULTURE_COLLECTIONS, type SubcultureKey } from "@/lib/subculture-collections";
 import { AlternativeCollectionPage } from "@/components/collections/AlternativeCollectionPage";
 
@@ -76,9 +76,15 @@ export default async function SubcultureCollectionPage({ params }: PageProps<"/c
   // doc comment: defaults to HIDDEN until an admin turns a page on).
   if (visibility === "HIDDEN") notFound();
 
-  const [rawRows, visibilities, session, market] = await Promise.all([getCollectionItems(key), getPageVisibilities([...SUBCULTURE_KEYS]), auth(), getMarket()]);
-  // The themed collections are shared across storefronts, but the prices on
-  // their cards are the visitor's own market's (rupees on /lk).
+  const [allRows, visibilities, session, market] = await Promise.all([getCollectionItems(key), getPageVisibilities([...SUBCULTURE_KEYS]), auth(), getMarket()]);
+  // The international and Sri Lanka catalogs never overlap, so a collection
+  // shows only the items that belong to the visitor's own storefront — with
+  // that storefront's prices (rupees on /lk).
+  const rawRows = allRows.filter((row) => (row.gemstone ?? row.jewelry)?.market === market);
+  // A collection nobody has stocked on the Sri Lanka store doesn't exist
+  // there (a plain 404), rather than showing an empty themed page.
+  if (market === "lk" && rawRows.length === 0) notFound();
+  const withItems = market === "lk" ? await getCollectionKeysWithItems(market) : null;
   const rows = rawRows.map((row) => ({
     ...row,
     gemstone: row.gemstone && priceForMarket(row.gemstone, market),
@@ -87,7 +93,7 @@ export default async function SubcultureCollectionPage({ params }: PageProps<"/c
 
   const content = all[key];
   const items = rows.map(toCollectionCardData).filter((item) => item !== null);
-  const liveKeys = SUBCULTURE_KEYS.filter((k) => visibilities[k] === "LIVE") as SubcultureKey[];
+  const liveKeys = SUBCULTURE_KEYS.filter((k) => visibilities[k] === "LIVE" && (!withItems || withItems.has(k))) as SubcultureKey[];
   // Every collection's current public slug, for the cross-collection
   // footer's links — must read from `all` (this request's live content),
   // never a collection's fixed code-level `slug` field, which won't

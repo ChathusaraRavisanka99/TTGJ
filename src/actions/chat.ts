@@ -239,9 +239,12 @@ export async function getChatTagOptions() {
   const session = await auth();
   if (!session?.user) return { gemstones: [], jewelry: [] };
 
+  // An admin (who sits outside both storefronts) sees everything; a customer
+  // can only tag items from the storefront they're on.
+  const market = session.user.role === "ADMIN" ? undefined : await getMarket();
   const [gemstones, jewelry] = await Promise.all([
-    prisma.gemstone.findMany({ where: { isPublished: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
-    prisma.jewelryPiece.findMany({ where: { isPublished: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.gemstone.findMany({ where: { isPublished: true, ...(market ? { market } : {}) }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    prisma.jewelryPiece.findMany({ where: { isPublished: true, ...(market ? { market } : {}) }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
   return { gemstones, jewelry };
 }

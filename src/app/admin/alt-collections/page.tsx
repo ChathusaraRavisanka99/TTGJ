@@ -20,20 +20,24 @@ export default async function AdminAltCollectionsPage() {
     getAllSubcultureContent(),
     getPageVisibilities([...SUBCULTURE_KEYS]),
     prisma.gemstone.findMany({
-      select: { id: true, name: true, caratWeight: true, mineral: { select: { name: true } }, cut: { select: { name: true } } },
+      select: { id: true, name: true, market: true, caratWeight: true, mineral: { select: { name: true } }, cut: { select: { name: true } } },
       orderBy: { name: "asc" },
     }),
     prisma.jewelryPiece.findMany({
-      select: { id: true, name: true, pieceType: true, metalType: true, metalPurity: true },
+      select: { id: true, name: true, market: true, pieceType: true, metalType: true, metalPurity: true },
       orderBy: { name: "asc" },
     }),
     getCollectionItems(),
   ]);
 
-  const gemstones = gemstoneRows.map((g) => ({ id: g.id, name: g.name, specs: `${g.caratWeight}ct ${g.mineral.name}, ${g.cut.name}` }));
+  // Each item is tagged with its store: a collection page shows a visitor only
+  // the items of their own storefront, so the same collection can hold
+  // international items (shown on the main site) and Sri Lanka items (on /lk).
+  const storeTag = (market: string) => (market === "lk" ? " [Sri Lanka]" : " [International]");
+  const gemstones = gemstoneRows.map((g) => ({ id: g.id, name: g.name + storeTag(g.market), specs: `${g.caratWeight}ct ${g.mineral.name}, ${g.cut.name}` }));
   const jewelry = jewelryRows.map((j) => ({
     id: j.id,
-    name: j.name,
+    name: j.name + storeTag(j.market),
     specs: `${pieceTypeLabel(j.pieceType)}, ${metalTypeLabel(j.metalType)}${j.metalPurity ? ` ${j.metalPurity}` : ""}`,
   }));
 

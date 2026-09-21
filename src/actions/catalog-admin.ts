@@ -31,6 +31,7 @@ export async function createGemstone(formData: FormData): Promise<ActionResult> 
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid gemstone data." };
 
   const data = parsed.data;
+  const lk = data.market === "lk";
   const slug = await uniqueSlug(data.name, async (s) => !!(await prisma.gemstone.findUnique({ where: { slug: s } })));
 
   const gem = await prisma.gemstone.create({
@@ -57,16 +58,19 @@ export async function createGemstone(formData: FormData): Promise<ActionResult> 
       certLabId: data.certLabId || undefined,
       certReportNumber: data.certReportNumber || undefined,
       certFileUrl: data.certFileUrl || undefined,
-      price: data.price,
-      showPrice: data.showPrice,
-      retailPrice: data.retailPrice,
+      market: data.market,
+      // A listing is priced in its own store's currency only: a Sri Lanka
+      // listing carries rupee prices (retail mandatory) and no dollar ones, an
+      // international listing the reverse. costPrice is in that same currency.
+      price: lk ? undefined : data.price,
+      showPrice: lk ? false : data.showPrice,
+      retailPrice: lk ? undefined : data.retailPrice,
       costPrice: data.costPrice,
-      lkrRetailPrice: data.lkrRetailPrice,
-      lkrPrice: data.lkrPrice,
+      lkrRetailPrice: lk ? data.lkrRetailPrice : undefined,
+      lkrPrice: lk ? data.lkrPrice : undefined,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
-      isFeaturedLk: data.isFeaturedLk,
     },
   });
 
@@ -77,10 +81,15 @@ export async function createGemstone(formData: FormData): Promise<ActionResult> 
 export async function updateGemstone(id: string, formData: FormData): Promise<ActionResult> {
   await requireAdmin();
 
-  const parsed = gemstoneSchema.safeParse(formToObject(formData));
+  const existing = await prisma.gemstone.findUnique({ where: { id }, select: { market: true } });
+  if (!existing) return { ok: false, error: "Gemstone not found." };
+  // The store is fixed when the listing is created, so it comes from the saved
+  // row — never from the form (see StoreField).
+  const parsed = gemstoneSchema.safeParse({ ...formToObject(formData), market: existing.market });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid gemstone data." };
 
   const data = parsed.data;
+  const lk = data.market === "lk";
   await prisma.gemstone.update({
     where: { id },
     data: {
@@ -109,18 +118,17 @@ export async function updateGemstone(id: string, formData: FormData): Promise<Ac
       certLabId: data.certLabId || null,
       certReportNumber: data.certReportNumber || undefined,
       certFileUrl: data.certFileUrl || undefined,
-      price: data.price,
-      showPrice: data.showPrice,
-      retailPrice: data.retailPrice,
+      // Only the price fields of the listing's own store are used; the other
+      // store's are cleared (null, not undefined, so they really clear).
+      price: lk ? null : data.price,
+      showPrice: lk ? false : data.showPrice,
+      retailPrice: lk ? null : data.retailPrice,
       costPrice: data.costPrice,
-      // null (not undefined) so clearing a rupee price actually clears it —
-      // the item goes back to "Request a Quote" on the Sri Lanka store.
-      lkrRetailPrice: data.lkrRetailPrice ?? null,
-      lkrPrice: data.lkrPrice ?? null,
+      lkrRetailPrice: lk ? data.lkrRetailPrice : null,
+      lkrPrice: lk ? data.lkrPrice : null,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
-      isFeaturedLk: data.isFeaturedLk,
     },
   });
 
@@ -140,19 +148,13 @@ export async function deleteGemstone(id: string): Promise<ActionResult> {
 
 // Quick per-row toggle on the admin gems list, so curating the homepage's
 // Featured Gemstones section doesn't require opening the full edit form.
-export async function toggleGemstoneFeatured(id: string, featured: boolean, market: "intl" | "lk" = "intl"): Promise<ActionResult> {
+export async function toggleGemstoneFeatured(id: string, featured: boolean): Promise<ActionResult> {
   await requireAdmin();
-  await prisma.gemstone.update({ where: { id }, data: market === "lk" ? { isFeaturedLk: featured } : { isFeatured: featured } });
+  await prisma.gemstone.update({ where: { id }, data: { isFeatured: featured } });
   revalidatePath("/admin/gems");
-  revalidatePath(market === "lk" ? "/lk" : "/");
+  revalidatePath("/");
+  revalidatePath("/lk");
   return { ok: true };
-}
-
-// Bindable variants (`.bind(null, id)`) for the Sri Lanka star column — the admin
-// lists are Server Components, which can hand a client button a bound server
-// action but not an inline function.
-export async function toggleGemstoneFeaturedLk(id: string, featured: boolean): Promise<ActionResult> {
-  return toggleGemstoneFeatured(id, featured, "lk");
 }
 
 export async function uploadCertificateFile(gemstoneId: string, formData: FormData): Promise<ActionResult> {
@@ -201,6 +203,7 @@ export async function createJewelry(formData: FormData): Promise<ActionResult> {
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid jewelry data." };
 
   const data = parsed.data;
+  const lk = data.market === "lk";
   const slug = await uniqueSlug(data.name, async (s) => !!(await prisma.jewelryPiece.findUnique({ where: { slug: s } })));
 
   const piece = await prisma.jewelryPiece.create({
@@ -214,16 +217,19 @@ export async function createJewelry(formData: FormData): Promise<ActionResult> {
       metalWeightG: data.metalWeightG,
       ringSize: data.ringSize || undefined,
       styleTags: data.styleTags ? data.styleTags.split(",").map((t) => t.trim()).filter(Boolean) : [],
-      price: data.price,
-      showPrice: data.showPrice,
-      retailPrice: data.retailPrice,
+      market: data.market,
+      // A listing is priced in its own store's currency only: a Sri Lanka
+      // listing carries rupee prices (retail mandatory) and no dollar ones, an
+      // international listing the reverse. costPrice is in that same currency.
+      price: lk ? undefined : data.price,
+      showPrice: lk ? false : data.showPrice,
+      retailPrice: lk ? undefined : data.retailPrice,
       costPrice: data.costPrice,
-      lkrRetailPrice: data.lkrRetailPrice,
-      lkrPrice: data.lkrPrice,
+      lkrRetailPrice: lk ? data.lkrRetailPrice : undefined,
+      lkrPrice: lk ? data.lkrPrice : undefined,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
-      isFeaturedLk: data.isFeaturedLk,
     },
   });
 
@@ -234,10 +240,13 @@ export async function createJewelry(formData: FormData): Promise<ActionResult> {
 export async function updateJewelry(id: string, formData: FormData): Promise<ActionResult> {
   await requireAdmin();
 
-  const parsed = jewelrySchema.safeParse(formToObject(formData));
+  const existing = await prisma.jewelryPiece.findUnique({ where: { id }, select: { market: true } });
+  if (!existing) return { ok: false, error: "Jewelry piece not found." };
+  const parsed = jewelrySchema.safeParse({ ...formToObject(formData), market: existing.market });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid jewelry data." };
 
   const data = parsed.data;
+  const lk = data.market === "lk";
   await prisma.jewelryPiece.update({
     where: { id },
     data: {
@@ -249,16 +258,15 @@ export async function updateJewelry(id: string, formData: FormData): Promise<Act
       metalWeightG: data.metalWeightG,
       ringSize: data.ringSize || undefined,
       styleTags: data.styleTags ? data.styleTags.split(",").map((t) => t.trim()).filter(Boolean) : [],
-      price: data.price,
-      showPrice: data.showPrice,
-      retailPrice: data.retailPrice,
+      price: lk ? null : data.price,
+      showPrice: lk ? false : data.showPrice,
+      retailPrice: lk ? null : data.retailPrice,
       costPrice: data.costPrice,
-      lkrRetailPrice: data.lkrRetailPrice ?? null,
-      lkrPrice: data.lkrPrice ?? null,
+      lkrRetailPrice: lk ? data.lkrRetailPrice : null,
+      lkrPrice: lk ? data.lkrPrice : null,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
-      isFeaturedLk: data.isFeaturedLk,
     },
   });
 
@@ -278,16 +286,13 @@ export async function deleteJewelry(id: string): Promise<ActionResult> {
 
 // Quick per-row toggle on the admin jewelry list, mirroring
 // toggleGemstoneFeatured above.
-export async function toggleJewelryFeatured(id: string, featured: boolean, market: "intl" | "lk" = "intl"): Promise<ActionResult> {
+export async function toggleJewelryFeatured(id: string, featured: boolean): Promise<ActionResult> {
   await requireAdmin();
-  await prisma.jewelryPiece.update({ where: { id }, data: market === "lk" ? { isFeaturedLk: featured } : { isFeatured: featured } });
+  await prisma.jewelryPiece.update({ where: { id }, data: { isFeatured: featured } });
   revalidatePath("/admin/jewelry");
-  revalidatePath(market === "lk" ? "/lk" : "/");
+  revalidatePath("/");
+  revalidatePath("/lk");
   return { ok: true };
-}
-
-export async function toggleJewelryFeaturedLk(id: string, featured: boolean): Promise<ActionResult> {
-  return toggleJewelryFeatured(id, featured, "lk");
 }
 
 export async function linkGemstoneToJewelry(jewelryId: string, gemstoneId: string | null, freeformDesc: string | null): Promise<ActionResult> {

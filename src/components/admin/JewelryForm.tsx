@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { createJewelry, updateJewelry, deleteJewelry } from "@/actions/catalog-admin";
 import { Input, Textarea, Select, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
-import { SriLankaStoreFields } from "@/components/admin/SriLankaStoreFields";
+import { StoreField, type ListingMarket } from "@/components/admin/StoreField";
+import { LkPricingFields } from "@/components/admin/LkPricingFields";
 import { PIECE_TYPES, METAL_TYPES } from "@/lib/gem-constants";
 
 interface JewelryFormProps {
@@ -26,14 +27,18 @@ interface JewelryFormProps {
     stockStatus: string;
     isPublished: boolean;
     isFeatured: boolean;
+    market: string;
     lkrRetailPrice: number | null;
     lkrPrice: number | null;
-    isFeaturedLk: boolean;
   };
+  /** Which store a NEW piece starts on (from the list page's "Add Sri Lanka" button). */
+  defaultMarket?: ListingMarket;
 }
 
-export function JewelryForm({ initial }: JewelryFormProps) {
+export function JewelryForm({ initial, defaultMarket }: JewelryFormProps) {
   const router = useRouter();
+  const [market, setMarket] = useState<ListingMarket>((initial?.market as ListingMarket | undefined) ?? defaultMarket ?? "intl");
+  const lk = market === "lk";
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -58,6 +63,8 @@ export function JewelryForm({ initial }: JewelryFormProps) {
 
   return (
     <form action={handleSubmit} className="max-w-2xl space-y-8">
+      <StoreField market={market} onChange={setMarket} locked={!!initial} noun="piece" />
+
       <section className="grid gap-5 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <Label htmlFor="name">Name</Label>
@@ -106,6 +113,8 @@ export function JewelryForm({ initial }: JewelryFormProps) {
             <option value="SOLD">Sold</option>
           </Select>
         </div>
+        {!lk && (
+        <>
         <div>
           <Label htmlFor="price">Price (USD)</Label>
           <Input id="price" name="price" type="number" step="0.01" min="0" defaultValue={initial?.price ?? ""} placeholder="E.g. 6800" />
@@ -119,8 +128,11 @@ export function JewelryForm({ initial }: JewelryFormProps) {
           <input type="checkbox" name="showPrice" value="true" defaultChecked={initial?.showPrice ?? false} className="accent-gold" />
           Show price publicly (otherwise this piece stays quote-only)
         </label>
+        </>
+        )}
       </section>
 
+      {!lk && (
       <section className="grid gap-5 sm:grid-cols-2 border-t border-border-subtle pt-5">
         <div>
           <Label htmlFor="retailPrice">Retail Price (USD)</Label>
@@ -139,6 +151,9 @@ export function JewelryForm({ initial }: JewelryFormProps) {
           </p>
         </div>
       </section>
+      )}
+
+      {lk && <LkPricingFields initial={initial} noun="piece" />}
 
       <label className="flex items-center gap-2 text-sm text-charcoal/75">
         <input type="hidden" name="isPublished" value="false" />
@@ -149,10 +164,8 @@ export function JewelryForm({ initial }: JewelryFormProps) {
       <label className="flex items-center gap-2 text-sm text-charcoal/75">
         <input type="hidden" name="isFeatured" value="false" />
         <input type="checkbox" name="isFeatured" value="true" defaultChecked={initial?.isFeatured ?? false} className="accent-gold" />
-        Featured (shown in the homepage&apos;s Featured Jewelry section)
+        Featured (shown in the {lk ? "Sri Lanka" : "international"} home page&apos;s Featured Jewelry section)
       </label>
-
-      <SriLankaStoreFields initial={initial} noun="piece" featuredSection="Featured Jewelry" />
 
       <FieldError>{error ?? undefined}</FieldError>
 

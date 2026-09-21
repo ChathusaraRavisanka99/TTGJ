@@ -7,7 +7,8 @@ import { hueAtPercent, percentAtHue, resolveGemColor } from "@/components/gem-vi
 import { createGemstone, updateGemstone, deleteGemstone } from "@/actions/catalog-admin";
 import { Input, Textarea, Select, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
-import { SriLankaStoreFields } from "@/components/admin/SriLankaStoreFields";
+import { StoreField, type ListingMarket } from "@/components/admin/StoreField";
+import { LkPricingFields } from "@/components/admin/LkPricingFields";
 
 interface Option {
   id: string;
@@ -55,14 +56,18 @@ interface GemstoneFormProps {
     stockStatus: string;
     isPublished: boolean;
     isFeatured: boolean;
+    market: string;
     lkrRetailPrice: number | null;
     lkrPrice: number | null;
-    isFeaturedLk: boolean;
   };
+  /** Which store a NEW gemstone starts on (from the list page's "Add Sri Lanka" button). */
+  defaultMarket?: ListingMarket;
 }
 
-export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origins, certificationLabs, initial }: GemstoneFormProps) {
+export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origins, certificationLabs, initial, defaultMarket }: GemstoneFormProps) {
   const router = useRouter();
+  const [market, setMarket] = useState<ListingMarket>((initial?.market as ListingMarket | undefined) ?? defaultMarket ?? "intl");
+  const lk = market === "lk";
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -137,6 +142,8 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
       </div>
 
       <form action={handleSubmit} className="space-y-8">
+        <StoreField market={market} onChange={setMarket} locked={!!initial} noun="gemstone" />
+
         <section className="grid gap-5 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label htmlFor="name">Name</Label>
@@ -273,6 +280,8 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
           </div>
         </section>
 
+        {!lk && (
+        <>
         <section className="grid gap-5 sm:grid-cols-2">
           <div>
             <Label htmlFor="price">Price (USD)</Label>
@@ -308,6 +317,11 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
           </div>
         </section>
 
+        </>
+        )}
+
+        {lk && <LkPricingFields initial={initial} noun="gemstone" />}
+
         <label className="flex items-center gap-2 text-sm text-charcoal/75">
           <input type="hidden" name="isPublished" value="false" />
           <input type="checkbox" name="isPublished" value="true" defaultChecked={initial?.isPublished ?? true} className="accent-gold" />
@@ -317,10 +331,8 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
         <label className="flex items-center gap-2 text-sm text-charcoal/75">
           <input type="hidden" name="isFeatured" value="false" />
           <input type="checkbox" name="isFeatured" value="true" defaultChecked={initial?.isFeatured ?? false} className="accent-gold" />
-          Featured (shown in the homepage&apos;s Featured Gemstones section)
+          Featured (shown in the {lk ? "Sri Lanka" : "international"} home page&apos;s Featured Gemstones section)
         </label>
-
-        <SriLankaStoreFields initial={initial} noun="gemstone" featuredSection="Featured Gemstones" />
 
         <FieldError>{error ?? undefined}</FieldError>
 

@@ -274,12 +274,20 @@ model Gemstone {
   retailPrice Float?
   costPrice   Float?
 
-  // Sri Lanka store (/lk) — entered per item in rupees, never converted
-  // from the USD fields above. lkrRetailPrice is the buy-now price and
-  // lkrPrice the quote-reference price (shown when showPrice is on), same
-  // roles as retailPrice/price. An item with neither is "Request a Quote"
-  // on /lk; isFeaturedLk curates the /lk home page independently of
-  // isFeatured.
+  // Which storefront this listing belongs to: "intl" (the international
+  // site, dollars) or "lk" (the Sri Lanka store, rupees). Every listing
+  // belongs to exactly ONE — the two catalogs never overlap, so an item is
+  // only ever shown, searched, added to a cart or curated on its own
+  // storefront. Set when the listing is created and not changed afterwards.
+  // A "lk" listing must have lkrRetailPrice (enforced in the admin actions).
+  market String @default("intl")
+
+  // Prices for a "lk" listing, entered in rupees — nothing is converted
+  // from the USD fields above, which a "lk" listing leaves empty.
+  // lkrRetailPrice is the buy-now price (mandatory for "lk"); lkrPrice is
+  // an optional quote-reference price. costPrice on a "lk" listing is in
+  // rupees too. isFeaturedLk is no longer used: isFeatured curates the home
+  // page of whichever storefront the listing belongs to.
   lkrRetailPrice Float?
   lkrPrice       Float?
   isFeaturedLk   Boolean @default(false)
@@ -312,6 +320,7 @@ model Gemstone {
   @@index([stockStatus])
   @@index([isFeatured])
   @@index([isFeaturedLk])
+  @@index([market])
 }
 
 enum PieceType {
@@ -353,7 +362,8 @@ model JewelryPiece {
   retailPrice Float?
   costPrice   Float?
 
-  // Sri Lanka store (/lk) prices and curation — see Gemstone.
+  // Storefront ("intl" | "lk") and rupee prices — see Gemstone.
+  market         String  @default("intl")
   lkrRetailPrice Float?
   lkrPrice       Float?
   isFeaturedLk   Boolean @default(false)
@@ -383,6 +393,7 @@ model JewelryPiece {
   @@index([stockStatus])
   @@index([isFeatured])
   @@index([isFeaturedLk])
+  @@index([market])
 }
 
 model JewelryGemstoneLink {

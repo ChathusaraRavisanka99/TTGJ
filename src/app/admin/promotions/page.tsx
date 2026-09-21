@@ -25,7 +25,10 @@ export default async function AdminPromotionsPage({ searchParams }: PageProps<"/
   const [content, visibility, gemstoneRows, jewelryRows, promoItems] = await Promise.all([
     getSeasonalContent(market),
     getPageVisibility(visibilityKey),
+    // Only the items that belong to this store — the catalogs don't overlap, so
+    // a promotion can only ever feature its own store's listings.
     prisma.gemstone.findMany({
+      where: { market },
       select: {
         id: true,
         name: true,
@@ -39,6 +42,7 @@ export default async function AdminPromotionsPage({ searchParams }: PageProps<"/
       orderBy: { name: "asc" },
     }),
     prisma.jewelryPiece.findMany({
+      where: { market },
       select: { id: true, name: true, price: true, lkrPrice: true, showPrice: true, pieceType: true, metalType: true, metalPurity: true },
       orderBy: { name: "asc" },
     }),

@@ -91,7 +91,9 @@ export interface GemFilters {
 export async function getGemstones(filters: GemFilters) {
   const market = filters.market ?? "intl";
   const cols = priceColumns(market);
-  const where: Prisma.GemstoneWhereInput = { isPublished: true };
+  // Each storefront lists only its own items — the international and Sri Lanka
+  // catalogs never overlap (see Gemstone.market).
+  const where: Prisma.GemstoneWhereInput = { isPublished: true, market };
   // Separate from `where`'s own top-level fields: several of these filters
   // (search, colour, price) are themselves OR-blocks, and Prisma ANDs a
   // where object's own keys together with its `AND` array rather than
@@ -180,7 +182,9 @@ export async function getGemstoneBySlug(slug: string, market: Market = "intl") {
       media: { orderBy: { sortOrder: "asc" } },
     },
   });
-  return gem && priceForMarket(gem, market);
+  // An item from the other storefront doesn't exist here: /lk/gems/<intl item>
+  // and /gems/<lk item> are plain 404s.
+  return gem && gem.market === market ? priceForMarket(gem, market) : null;
 }
 
 // "You May Also Like" on a gem's own detail page — same mineral first
@@ -190,7 +194,7 @@ export async function getGemstoneBySlug(slug: string, market: Market = "intl") {
 // gem itself either way.
 export async function getRelatedGemstones(gem: { id: string; mineralId: string }, take = 4, market: Market = "intl") {
   const sameVariety = await prisma.gemstone.findMany({
-    where: { isPublished: true, id: { not: gem.id }, mineralId: gem.mineralId },
+    where: { isPublished: true, market, id: { not: gem.id }, mineralId: gem.mineralId },
     orderBy: { createdAt: "desc" },
     take,
     include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true, media: { orderBy: { sortOrder: "asc" } } },
@@ -198,7 +202,7 @@ export async function getRelatedGemstones(gem: { id: string; mineralId: string }
   if (sameVariety.length >= take) return pricesForMarket(sameVariety, market);
 
   const fallback = await prisma.gemstone.findMany({
-    where: { isPublished: true, id: { notIn: [gem.id, ...sameVariety.map((g) => g.id)] } },
+    where: { isPublished: true, market, id: { notIn: [gem.id, ...sameVariety.map((g) => g.id)] } },
     orderBy: { createdAt: "desc" },
     take: take - sameVariety.length,
     include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true, media: { orderBy: { sortOrder: "asc" } } },
@@ -224,7 +228,7 @@ export interface JewelryFilters {
 export async function getJewelry(filters: JewelryFilters) {
   const market = filters.market ?? "intl";
   const cols = priceColumns(market);
-  const where: Prisma.JewelryPieceWhereInput = { isPublished: true };
+  const where: Prisma.JewelryPieceWhereInput = { isPublished: true, market };
   // See GemFilters' own getGemstones for why search/price live in their
   // own AND entries rather than directly on `where`.
   const andConditions: Prisma.JewelryPieceWhereInput[] = [];
@@ -285,7 +289,7 @@ export async function getJewelryBySlug(slug: string, market: Market = "intl") {
       gemstones: { include: { gemstone: true } },
     },
   });
-  return piece && priceForMarket(piece, market);
+  return piece && piece.market === market ? priceForMarket(piece, market) : null;
 }
 
 // Same idea as getRelatedGemstones, for a jewelry piece's own detail page —
@@ -293,7 +297,7 @@ export async function getJewelryBySlug(slug: string, market: Market = "intl") {
 // topped up with other recent published pieces if needed.
 export async function getRelatedJewelry(piece: { id: string; pieceType: string }, take = 4, market: Market = "intl") {
   const samePieceType = await prisma.jewelryPiece.findMany({
-    where: { isPublished: true, id: { not: piece.id }, pieceType: piece.pieceType as never },
+    where: { isPublished: true, market, id: { not: piece.id }, pieceType: piece.pieceType as never },
     orderBy: { createdAt: "desc" },
     take,
     include: { media: { orderBy: { sortOrder: "asc" } } },
@@ -301,7 +305,7 @@ export async function getRelatedJewelry(piece: { id: string; pieceType: string }
   if (samePieceType.length >= take) return pricesForMarket(samePieceType, market);
 
   const fallback = await prisma.jewelryPiece.findMany({
-    where: { isPublished: true, id: { notIn: [piece.id, ...samePieceType.map((p) => p.id)] } },
+    where: { isPublished: true, market, id: { notIn: [piece.id, ...samePieceType.map((p) => p.id)] } },
     orderBy: { createdAt: "desc" },
     take: take - samePieceType.length,
     include: { media: { orderBy: { sortOrder: "asc" } } },

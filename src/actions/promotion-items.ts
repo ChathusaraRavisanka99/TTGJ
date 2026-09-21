@@ -23,6 +23,14 @@ export async function addPromotionItem(input: {
   if (input.gemstoneId && input.jewelryId) return { ok: false, error: "Pick only one item — a gemstone or a jewelry piece, not both." };
   if (!Number.isFinite(input.promoPrice) || input.promoPrice <= 0) return { ok: false, error: "Enter a promotional price greater than zero." };
 
+  // A promotion can only feature a listing from its own store (the catalogs
+  // don't overlap) — enforced here, not just by the admin picker.
+  const target = input.gemstoneId
+    ? await prisma.gemstone.findUnique({ where: { id: input.gemstoneId }, select: { market: true } })
+    : await prisma.jewelryPiece.findUnique({ where: { id: input.jewelryId! }, select: { market: true } });
+  if (!target) return { ok: false, error: "That item no longer exists." };
+  if (target.market !== market) return { ok: false, error: "That item belongs to the other store's catalog." };
+
   // Scoped to this theme — the same item can already be promoted under a
   // different theme (that's the point: one gemstone can headline both
   // the Spring and Summer collections, at whatever price fits each), so

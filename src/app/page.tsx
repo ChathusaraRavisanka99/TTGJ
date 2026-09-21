@@ -31,9 +31,9 @@ const MINERAL_MARQUEE = [
 
 export default async function HomePage() {
   const market = await getMarket();
-  // Each storefront curates its own featured items (isFeatured vs
-  // isFeaturedLk) and has its own home copy (see getHomeContent).
-  const featuredWhere = market === "lk" ? { isPublished: true, isFeaturedLk: true } : { isPublished: true, isFeatured: true };
+  // Each storefront features its own listings only (a listing belongs to one
+  // storefront) and has its own home copy (see getHomeContent).
+  const featuredWhere = { isPublished: true, isFeatured: true, market };
   const [rawFeaturedGems, rawFeaturedJewelry, content, { gemstonePrices, jewelryPrices }, trustBarMessages] = await Promise.all([
     prisma.gemstone.findMany({
       where: featuredWhere,

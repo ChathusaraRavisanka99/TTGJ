@@ -9,8 +9,8 @@ const LK = "/lk";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [gems, jewelry, collectionVisibilities, collectionContent] = await Promise.all([
-    prisma.gemstone.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }),
-    prisma.jewelryPiece.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true } }),
+    prisma.gemstone.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true, market: true } }),
+    prisma.jewelryPiece.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true, market: true } }),
     getPageVisibilities([...SUBCULTURE_KEYS]),
     getAllSubcultureContent(),
   ]);
@@ -37,23 +37,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
   ];
 
-  const gemRoutes: MetadataRoute.Sitemap = gems.map((g) => ({
+  const gemRoutes: MetadataRoute.Sitemap = gems.filter((g) => g.market === "intl").map((g) => ({
     url: `${BASE_URL}/gems/${g.slug}`,
     lastModified: g.updatedAt,
     changeFrequency: "weekly",
     priority: 0.7,
   }));
 
-  const jewelryRoutes: MetadataRoute.Sitemap = jewelry.map((j) => ({
+  const jewelryRoutes: MetadataRoute.Sitemap = jewelry.filter((j) => j.market === "intl").map((j) => ({
     url: `${BASE_URL}/jewelry/${j.slug}`,
     lastModified: j.updatedAt,
     changeFrequency: "weekly",
     priority: 0.7,
   }));
 
-  // The Sri Lanka store (/lk) mirrors the same catalog with rupee prices.
-  // Its own home and list pages plus every product page; the collections
-  // and other marketing pages are shared and stay under the main entries.
+  // The Sri Lanka store (/lk) has its own catalog (listings never appear on
+  // both stores): its home and list pages plus its own product pages. The
+  // other marketing pages are shared and stay under the main entries.
   const lkRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE_URL}${LK}`, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE_URL}${LK}/gems`, changeFrequency: "daily", priority: 0.9 },
@@ -61,8 +61,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}${LK}/configurator`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}${LK}/sourcing`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE_URL}${LK}/about`, changeFrequency: "monthly", priority: 0.5 },
-    ...gems.map((g) => ({ url: `${BASE_URL}${LK}/gems/${g.slug}`, lastModified: g.updatedAt, changeFrequency: "weekly" as const, priority: 0.6 })),
-    ...jewelry.map((j) => ({ url: `${BASE_URL}${LK}/jewelry/${j.slug}`, lastModified: j.updatedAt, changeFrequency: "weekly" as const, priority: 0.6 })),
+    ...gems.filter((g) => g.market === "lk").map((g) => ({ url: `${BASE_URL}${LK}/gems/${g.slug}`, lastModified: g.updatedAt, changeFrequency: "weekly" as const, priority: 0.6 })),
+    ...jewelry.filter((j) => j.market === "lk").map((j) => ({ url: `${BASE_URL}${LK}/jewelry/${j.slug}`, lastModified: j.updatedAt, changeFrequency: "weekly" as const, priority: 0.6 })),
   ];
 
   return [...staticRoutes, ...gemRoutes, ...jewelryRoutes, ...collectionRoutes, ...lkRoutes];

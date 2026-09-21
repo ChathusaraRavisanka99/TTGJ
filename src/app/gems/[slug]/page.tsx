@@ -28,7 +28,7 @@ import { MARKETS } from "@/lib/market-shared";
 
 export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const gem = await getGemstoneBySlug(slug);
+  const gem = await getGemstoneBySlug(slug, await getMarket());
   if (!gem) return {};
   return {
     title: gem.name,

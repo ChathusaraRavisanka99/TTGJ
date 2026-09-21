@@ -129,11 +129,10 @@ export async function buildCheckoutBreakdown(input: {
       : item.jewelryId
         ? promotions.jewelryPrices.has(item.jewelryId)
         : false;
-    // costPrice is always recorded in USD; on /lk convert it so the profit
-    // (and so the birthday discount) is computed in rupees against the
-    // rupee price.
-    const costUsd = product?.costPrice ?? null;
-    const costPrice = costUsd != null && lk ? costUsd * settings.usdToLkrRate : costUsd;
+    // costPrice is recorded in the listing's own currency (rupees for a Sri
+    // Lanka listing, dollars for an international one), so it lines up with
+    // the price without any conversion.
+    const costPrice = product?.costPrice ?? null;
     if (birthdayEligible && !isPromotional && costPrice != null) {
       const profit = Math.max(0, unitPrice - costPrice);
       birthdayDiscount += profit * (settings.birthdayDiscountPercent / 100) * item.quantity;

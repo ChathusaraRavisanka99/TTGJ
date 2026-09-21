@@ -34,7 +34,7 @@ const METAL_LABELS: Record<string, string> = {
 
 export async function generateMetadata({ params }: PageProps<"/jewelry/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const piece = await getJewelryBySlug(slug);
+  const piece = await getJewelryBySlug(slug, await getMarket());
   if (!piece) return {};
   return { title: piece.name, description: piece.description ?? undefined };
 }

@@ -19,6 +19,16 @@ const optionalMoney = z.preprocess(
   z.coerce.number().min(0).max(1_000_000_000).optional(),
 );
 
+const listingMarket = z.enum(["intl", "lk"]).default("intl");
+
+// A listing belongs to exactly one storefront, and a Sri Lanka listing must be
+// priced in rupees: every Sri Lanka listing is buyable at a shown LKR price.
+function requireLkPrice(data: { market: "intl" | "lk"; lkrRetailPrice?: number }, ctx: z.RefinementCtx) {
+  if (data.market === "lk" && !(data.lkrRetailPrice && data.lkrRetailPrice > 0)) {
+    ctx.addIssue({ code: "custom", path: ["lkrRetailPrice"], message: "A Sri Lanka listing needs a retail price in LKR." });
+  }
+}
+
 export const gemstoneSchema = z.object({
   name: z.string().min(2).max(150),
   description: z.string().max(4000).optional().or(z.literal("")),
@@ -45,13 +55,13 @@ export const gemstoneSchema = z.object({
   showPrice: formBoolean(false),
   retailPrice: z.coerce.number().min(0).max(10_000_000).optional(),
   costPrice: z.coerce.number().min(0).max(10_000_000).optional(),
+  market: listingMarket,
   lkrRetailPrice: optionalMoney,
   lkrPrice: optionalMoney,
   stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
   isPublished: formBoolean(true),
   isFeatured: formBoolean(false),
-  isFeaturedLk: formBoolean(false),
-});
+}).superRefine(requireLkPrice);
 
 export type GemstoneInput = z.infer<typeof gemstoneSchema>;
 
@@ -68,13 +78,13 @@ export const jewelrySchema = z.object({
   showPrice: formBoolean(false),
   retailPrice: z.coerce.number().min(0).max(10_000_000).optional(),
   costPrice: z.coerce.number().min(0).max(10_000_000).optional(),
+  market: listingMarket,
   lkrRetailPrice: optionalMoney,
   lkrPrice: optionalMoney,
   stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
   isPublished: formBoolean(true),
   isFeatured: formBoolean(false),
-  isFeaturedLk: formBoolean(false),
-});
+}).superRefine(requireLkPrice);
 
 export type JewelryInput = z.infer<typeof jewelrySchema>;
 

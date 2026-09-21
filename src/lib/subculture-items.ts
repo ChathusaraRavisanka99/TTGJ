@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { SubcultureKey } from "@/lib/subculture-collections";
+import type { Market } from "@/lib/market-shared";
 
 // Shared between the public /collections/[slug] page and the admin
 // manager, same reasoning as promotionItemInclude in promotion-items.ts —
@@ -31,6 +32,27 @@ export async function getCollectionItems(collection?: SubcultureKey) {
     orderBy: { sortOrder: "asc" },
     include: subcultureItemInclude,
   });
+}
+
+/** Which collections have at least one published item on a storefront. The
+ * international and Sri Lanka catalogs don't overlap, so a themed collection
+ * can be populated on one storefront and empty on the other. */
+export async function getCollectionKeysWithItems(market: Market): Promise<Set<SubcultureKey>> {
+  const rows = await prisma.subcultureCollectionItem.findMany({
+    select: {
+      collection: true,
+      gemstone: { select: { market: true, isPublished: true } },
+      jewelry: { select: { market: true, isPublished: true } },
+    },
+  });
+  return new Set(
+    rows
+      .filter((row) => {
+        const item = row.gemstone ?? row.jewelry;
+        return item?.isPublished && item.market === market;
+      })
+      .map((row) => row.collection as SubcultureKey),
+  );
 }
 
 /** Cheaper than getCollectionItems when a caller (e.g. the cross-collection

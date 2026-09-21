@@ -55,7 +55,14 @@ export function MainWrapper({ children }: { children: React.ReactNode }) {
     // rendering short with a gap of bare page background around it
     // rather than actually filling this box. absolute positioning reads
     // the parent's real layout box directly, sidestepping that.
-    <main key={pathname} className={cn("animate-page-in relative flex-1", !hasFullBleedHero && !isAdmin && "pt-24")}>
+    // z-[1]: <main> is a stacking context (its entrance animation) and comes
+    // BEFORE the footer in the DOM, so without a z-index any footer element that
+    // creates its own stacking context (an opacity or mask, like the Sri Lanka
+    // ornament band) painted on top of the full-screen page loader inside it —
+    // a line across the loader's logo mid-navigation. Raising <main> keeps the
+    // loader above the footer; the Navbar (z-50) and the chat/overlay layers
+    // (z-40) still sit above <main>.
+    <main key={pathname} className={cn("animate-page-in relative z-[1] flex-1", !hasFullBleedHero && !isAdmin && "pt-24")}>
       {children}
     </main>
   );

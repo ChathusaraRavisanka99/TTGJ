@@ -26,7 +26,13 @@ export function Footer({
   const tMarket = useTranslations("market");
   return (
     <footer className="bg-ivory-soft">
-      {market === "lk" && <KandyanBand className="text-gold opacity-60" />}
+      {/* Transparency comes from the colour's alpha (text-gold/60), NOT the
+          opacity property: an element with opacity < 1 is its own stacking
+          context, and this footer comes after <main> in the DOM, so such a
+          band painted on top of the full-screen page loader (which is
+          trapped inside <main>'s stacking context) and drew a line across
+          the loader's logo mid-navigation. */}
+      {market === "lk" && <KandyanBand className="text-gold/60" />}
       <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 sm:py-14 lg:px-12 xl:px-16">
         {showTrustBar && <TrustBar messages={trustBarMessages} className="mb-10 border-b border-border-subtle pb-10 sm:mb-12 sm:pb-12" />}
         <div className="grid gap-8 sm:grid-cols-2 sm:gap-10 md:grid-cols-4">

@@ -13,6 +13,8 @@ const LANGUAGE_LABELS: Record<AppLocale, { code: string; name: string }> = {
   fr: { code: "FR", name: "Français" },
   de: { code: "DE", name: "Deutsch" },
   pt: { code: "PT", name: "Português" },
+  si: { code: "SI", name: "සිංහල" },
+  ta: { code: "TA", name: "தமிழ்" },
 };
 
 /**

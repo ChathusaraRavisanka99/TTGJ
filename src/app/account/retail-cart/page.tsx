@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getRetailCartWithItems, retailCartItemLabel, retailCartSubtotal, retailCartUnitPrice } from "@/lib/retail-cart";
 import { getMarket } from "@/lib/market";
+import { getTranslations } from "next-intl/server";
 import { MARKETS } from "@/lib/market-shared";
 import { isBirthdayEligible } from "@/lib/birthday-promo";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
@@ -18,7 +19,7 @@ export default async function RetailCartPage() {
   const session = await auth();
   if (!session?.user) return null; // middleware guards this route
 
-  const market = await getMarket();
+  const [market, t] = await Promise.all([getMarket(), getTranslations("cart")]);
   const currency = MARKETS[market].currency;
   const [cart, user, promotions] = await Promise.all([
     getRetailCartWithItems(session.user.id, market),
@@ -37,20 +38,19 @@ export default async function RetailCartPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-      <p className="text-xs uppercase tracking-widest text-gold-deep">Your Cart</p>
-      <h1 className="mt-2 font-serif text-4xl text-charcoal">Retail Cart</h1>
+      <p className="text-xs uppercase tracking-widest text-gold-deep">{t("kicker")}</p>
+      <h1 className="mt-2 font-serif text-4xl text-charcoal">{t("title")}</h1>
 
       {cart.items.length === 0 ? (
         <div className="mt-10 rounded-xl border border-border-subtle bg-surface p-8 text-center">
-          <p className="text-charcoal/60">Your cart is empty.</p>
-          <LinkButton href="/gems" variant="primary" className="mt-4">Browse Gemstones</LinkButton>
+          <p className="text-charcoal/60">{t("empty")}</p>
+          <LinkButton href="/gems" variant="primary" className="mt-4">{t("browseGems")}</LinkButton>
         </div>
       ) : (
         <>
           {birthdayEligible && hasNonPromoItemWithCost && (
             <div className="mt-6 rounded-xl border border-gold/40 bg-gold/10 p-4 text-sm text-charcoal">
-              🎂 Happy birthday month! You&apos;ll get a discount off the profit margin on eligible items, applied
-              automatically at checkout — once per year.
+              {t("birthday")}
             </div>
           )}
 
@@ -77,29 +77,29 @@ export default async function RetailCartPage() {
 
           <div className="mt-6 flex items-center justify-between border-t border-border-subtle pt-4">
             <p className="text-sm text-charcoal/60">
-              Subtotal ({cart.items.reduce((n, i) => n + i.quantity, 0)} item{cart.items.length === 1 ? "" : "s"})
+              {t("subtotalItems", { count: cart.items.reduce((n, i) => n + i.quantity, 0) })}
             </p>
             <p className="font-serif text-2xl text-charcoal">{formatPrice(subtotal, currency)}</p>
           </div>
-          <p className="mt-1 text-right text-xs text-charcoal/65">Tax, shipping, and handling are calculated at checkout.</p>
+          <p className="mt-1 text-right text-xs text-charcoal/65">{t("taxNote")}</p>
 
           {hasUnavailableItem && (
-            <p className="mt-4 text-right text-sm text-red-700">Remove the unavailable item(s) above to continue to checkout.</p>
+            <p className="mt-4 text-right text-sm text-red-700">{t("removeUnavailable")}</p>
           )}
           <div className="mt-6 flex justify-end">
             {hasUnavailableItem ? (
               <LinkButton href="/checkout" variant="gold" size="lg" aria-disabled className="pointer-events-none opacity-50">
-                Proceed to Checkout
+                {t("proceed")}
               </LinkButton>
             ) : (
-              <LinkButton href="/checkout" variant="gold" size="lg">Proceed to Checkout</LinkButton>
+              <LinkButton href="/checkout" variant="gold" size="lg">{t("proceed")}</LinkButton>
             )}
           </div>
         </>
       )}
 
       <p className="mt-8 text-center text-sm text-charcoal/65">
-        <Link href="/account" className="underline hover:text-charcoal">Back to My Account</Link>
+        <Link href="/account" className="underline hover:text-charcoal">{t("back")}</Link>
       </p>
     </div>
   );

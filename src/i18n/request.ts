@@ -6,7 +6,7 @@ import { cookies, headers } from "next/headers";
 // sitemap.ts all stay untouched. Locale lives in a cookie instead, read
 // here per request, same as any other per-request preference this app
 // reads via next/headers.
-export const SUPPORTED_LOCALES = ["en", "es", "fr", "de", "pt"] as const;
+export const SUPPORTED_LOCALES = ["en", "es", "fr", "de", "pt", "si", "ta"] as const;
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: AppLocale = "en";
 export const LOCALE_COOKIE = "NEXT_LOCALE";

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getGemstones, getMasterData, type GemColorFamily } from "@/lib/catalog";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
 import { getMarket } from "@/lib/market";
+import { getTranslations } from "next-intl/server";
 import { GemFilterBar } from "@/components/catalog/GemFilterBar";
 import { GemResults } from "@/components/catalog/GemResults";
 import { Pagination } from "@/components/ui/Pagination";
@@ -9,7 +10,7 @@ import { Pagination } from "@/components/ui/Pagination";
 export const metadata: Metadata = { title: "Shop Gemstones" };
 
 export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
-  const [sp, market] = await Promise.all([searchParams, getMarket()]);
+  const [sp, market, t] = await Promise.all([searchParams, getMarket(), getTranslations("catalog.gems")]);
   const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : undefined);
   // Checkbox filter groups repeat the same query-string key once per
   // checked box (mineral=a&mineral=b) — Next.js already hands that back
@@ -51,11 +52,10 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
   return (
     <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
       <div className="mb-10">
-        <p className="text-xs uppercase tracking-widest text-gold-deep">Loose Gemstones</p>
-        <h1 className="mt-2 font-serif text-4xl text-charcoal">Shop Ceylon Gemstones</h1>
+        <p className="text-xs uppercase tracking-widest text-gold-deep">{t("kicker")}</p>
+        <h1 className="mt-2 font-serif text-4xl text-charcoal">{t("title")}</h1>
         <p className="mt-3 max-w-2xl text-charcoal/65">
-          Each stone is listed with its full specification — cut, colour, tone, and clarity. Browse freely; request
-          a quote when something catches your eye.
+          {t("intro")}
         </p>
       </div>
 
@@ -71,7 +71,7 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
       </div>
 
       {gems.length === 0 ? (
-        <p className="py-20 text-center text-charcoal/65">No gemstones match your filters yet.</p>
+        <p className="py-20 text-center text-charcoal/65">{t("empty")}</p>
       ) : (
         <GemResults gems={gems.map((gem) => ({ ...gem, promoPrice: promotions.gemstonePrices.get(gem.id) ?? null }))} />
       )}

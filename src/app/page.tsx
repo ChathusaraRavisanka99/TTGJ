@@ -16,6 +16,7 @@ import { HeroScrollCue } from "@/components/layout/HeroScrollCue";
 import { CardSlider } from "@/components/ui/CardSlider";
 import { TrustBar } from "@/components/layout/TrustBar";
 import { getTrustBarMessages } from "@/lib/i18n-messages";
+import { LkStrip } from "@/components/layout/LkStrip";
 
 const MINERAL_MARQUEE = [
   { label: "Blue Sapphire", color: "#3a5f9e" },
@@ -142,6 +143,8 @@ export default async function HomePage() {
       <div className="py-5 text-charcoal">
         <Marquee items={MINERAL_MARQUEE} />
       </div>
+
+      {market === "lk" && <LkStrip />}
 
       {/* ---------- Featured Gemstones ---------- */}
       {/* Curated, not automatic: admins mark items Gemstone.isFeatured from

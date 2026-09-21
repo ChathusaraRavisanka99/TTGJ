@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "@/components/ui/MarketLink";
 import { auth } from "@/lib/auth";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice, cn } from "@/lib/utils";
@@ -18,7 +19,7 @@ export default async function AccountOrdersPage({ searchParams }: PageProps<"/ac
   const session = await auth();
   if (!session?.user) return null;
 
-  const sp = await searchParams;
+  const [sp, t] = await Promise.all([searchParams, getTranslations("orders")]);
   // Set by ReturnStatus's post-payment redirect (?highlight=ORD-...#ORD-...)
   // so a customer coming straight from PayHere lands on the right order
   // without having to scan the whole list — see components/checkout/ReturnStatus.tsx.
@@ -32,14 +33,15 @@ export default async function AccountOrdersPage({ searchParams }: PageProps<"/ac
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-      <p className="text-xs uppercase tracking-widest text-gold-deep">Account</p>
-      <h1 className="mt-2 font-serif text-4xl text-charcoal">My Orders</h1>
+      <p className="text-xs uppercase tracking-widest text-gold-deep">{t("kicker")}</p>
+      <h1 className="mt-2 font-serif text-4xl text-charcoal">{t("title")}</h1>
 
       {orders.length === 0 ? (
         <p className="mt-10 text-charcoal/60">
-          No orders yet. Browse our{" "}
-          <Link href="/gems" className="underline">gemstones</Link> or{" "}
-          <Link href="/jewelry" className="underline">jewelry</Link> to buy directly at their retail price.
+          {t.rich("none", {
+            gems: (chunks) => <Link href="/gems" className="underline">{chunks}</Link>,
+            jewelry: (chunks) => <Link href="/jewelry" className="underline">{chunks}</Link>,
+          })}
         </p>
       ) : (
         <div className="mt-8 space-y-4">
@@ -56,10 +58,10 @@ export default async function AccountOrdersPage({ searchParams }: PageProps<"/ac
                 <div>
                   <p className="font-mono text-sm text-charcoal/60">{o.orderNumber}</p>
                   <p className="mt-1 text-xs text-charcoal/65">
-                    {o.createdAt.toLocaleDateString()} · {o.items.length} item{o.items.length === 1 ? "" : "s"}
+                    {o.createdAt.toLocaleDateString()} · {t("items", { count: o.items.length })}
                   </p>
                 </div>
-                <Badge className={STATUS_STYLES[o.status] ?? ""}>{o.status.replaceAll("_", " ")}</Badge>
+                <Badge className={STATUS_STYLES[o.status] ?? ""}>{t(`status.${o.status}`)}</Badge>
               </div>
               <div className="mt-3 space-y-1">
                 {o.items.map((item) => (
@@ -76,7 +78,7 @@ export default async function AccountOrdersPage({ searchParams }: PageProps<"/ac
                     href={o.paymentMethod === "WIRE_TRANSFER" ? `/checkout/wire?order=${o.id}` : `/checkout/return?order=${o.id}`}
                     className="text-xs text-gold-deep underline"
                   >
-                    {o.paymentMethod === "WIRE_TRANSFER" ? "Payment instructions" : "Check status"}
+                    {o.paymentMethod === "WIRE_TRANSFER" ? t("paymentInstructions") : t("checkStatus")}
                   </Link>
                 )}
               </div>

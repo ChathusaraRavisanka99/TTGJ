@@ -1,6 +1,7 @@
 "use client";
 
 import { cn, formatPrice } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import { useCurrency } from "@/components/providers/MarketProvider";
 
 interface CardPriceProps {
@@ -29,6 +30,7 @@ interface CardPriceProps {
 // behaviour when there's no active promotion at all.
 export function CardPrice({ price, showPrice, retailPrice, promoPrice, priceClassName, quoteClassName }: CardPriceProps) {
   const currency = useCurrency();
+  const t = useTranslations("catalog");
   const displayPrice = retailPrice ?? price;
   const displayable = retailPrice != null || !!showPrice;
 
@@ -48,7 +50,7 @@ export function CardPrice({ price, showPrice, retailPrice, promoPrice, priceClas
 
   return (
     <p className={cn("font-medium text-gold-deep transition-colors group-hover:text-charcoal", quoteClassName)}>
-      Request a Quote →
+      {t("requestQuote")}
     </p>
   );
 }

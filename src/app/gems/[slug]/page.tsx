@@ -7,7 +7,7 @@ import { getGemstoneBySlug, getRelatedGemstones } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
 import { getActivePromotion, getActivePromotionMaps } from "@/lib/promotion-items";
 import { buildCertVerifyUrl } from "@/lib/utils";
-import { StockBadge } from "@/components/ui/Badge";
+import { StorefrontStockBadge as StockBadge } from "@/components/catalog/StorefrontStockBadge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { ProductPrice } from "@/components/catalog/ProductPrice";
@@ -23,6 +23,7 @@ import { StickyBuyBar } from "@/components/catalog/StickyBuyBar";
 import { getTrustBarMessages } from "@/lib/i18n-messages";
 import { formatPrice } from "@/lib/utils";
 import { getMarket } from "@/lib/market";
+import { getTranslations } from "next-intl/server";
 import { MARKETS } from "@/lib/market-shared";
 
 export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): Promise<Metadata> {
@@ -38,7 +39,7 @@ export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): P
 export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]">) {
   const { slug } = await params;
   const market = await getMarket();
-  const [gem, session] = await Promise.all([getGemstoneBySlug(slug, market), auth()]);
+  const [gem, session, t] = await Promise.all([getGemstoneBySlug(slug, market), auth(), getTranslations("product")]);
 
   if (!gem || !gem.isPublished) notFound();
 
@@ -55,7 +56,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
   // StickyBuyBar's own comment for why this is a plain label rather than
   // reusing ProductPrice itself (that component isn't meant for a compact bar).
   const displayPrice = promotion?.promoPrice ?? gem.retailPrice ?? (gem.showPrice ? gem.price : null);
-  const stickyPriceLabel = displayPrice != null ? formatPrice(displayPrice, MARKETS[market].currency) : "Request a Quote";
+  const stickyPriceLabel = displayPrice != null ? formatPrice(displayPrice, MARKETS[market].currency) : t("requestQuote");
 
   return (
     <div className="relative overflow-hidden">
@@ -68,8 +69,8 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
       <div className="relative mx-auto max-w-6xl px-5 py-12 sm:px-8">
       <Breadcrumbs
         items={[
-          { label: "Home", href: "/" },
-          { label: "Gems", href: "/gems" },
+          { label: t("home"), href: "/" },
+          { label: t("gems"), href: "/gems" },
           { label: gem.mineral.name, href: `/gems?mineral=${gem.mineral.slug}` },
           { label: gem.name },
         ]}
@@ -85,7 +86,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
             <StockBadge status={gem.stockStatus} />
             {gem.origin.isCeylon && (
               <span className="rounded-full bg-charcoal/85 px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-ivory">
-                Ceylon Origin
+                {t("ceylonOrigin")}
               </span>
             )}
             {gem.certLab && <CertifiedBadge lab={gem.certLab} />}
@@ -100,22 +101,22 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
               for good, not restocked. */}
           {gem.stockStatus === "AVAILABLE" && (
             <p className="mt-4 flex items-center gap-1.5 text-xs font-medium text-gold-deep">
-              <Sparkles size={13} /> This is the only one — a single natural stone, not a reproducible design.
+              <Sparkles size={13} /> {t("onlyOne")}
             </p>
           )}
 
           <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border-subtle py-6">
-            <Spec label="Cut" value={gem.cut.name} />
-            <Spec label="Carat Weight" value={`${gem.caratWeight} ct`} />
-            {dimensions && <Spec label="Dimensions" value={`${dimensions} mm`} />}
-            <Spec label="Colour" value={gem.colorLabel ?? "—"} />
-            <Spec label="Clarity" value={gem.clarityGrade.name} hint={gem.clarityGrade.description} />
-            <Spec label="Treatment" value={gem.treatment.name} />
-            <Spec label="Origin" value={gem.origin.name} />
-            {gem.variety && <Spec label="Variety" value={gem.variety} />}
-            {gem.symmetryNotes && <Spec label="Symmetry / Polish" value={gem.symmetryNotes} />}
+            <Spec label={t("spec.cut")} value={gem.cut.name} />
+            <Spec label={t("spec.caratWeight")} value={`${gem.caratWeight} ct`} />
+            {dimensions && <Spec label={t("spec.dimensions")} value={`${dimensions} mm`} />}
+            <Spec label={t("spec.colour")} value={gem.colorLabel ?? "—"} />
+            <Spec label={t("spec.clarity")} value={gem.clarityGrade.name} hint={gem.clarityGrade.description} />
+            <Spec label={t("spec.treatment")} value={gem.treatment.name} />
+            <Spec label={t("spec.origin")} value={gem.origin.name} />
+            {gem.variety && <Spec label={t("spec.variety")} value={gem.variety} />}
+            {gem.symmetryNotes && <Spec label={t("spec.symmetry")} value={gem.symmetryNotes} />}
             {(gem.certLab || gem.certReportNumber) && (
-              <Spec label="Certification" value={[gem.certLab?.name, gem.certReportNumber].filter(Boolean).join(" · ")} />
+              <Spec label={t("spec.certification")} value={[gem.certLab?.name, gem.certReportNumber].filter(Boolean).join(" · ")} />
             )}
           </dl>
 
@@ -128,7 +129,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle px-4 py-2 text-xs font-medium text-charcoal/80 transition-colors hover:border-gold hover:text-charcoal"
                 >
-                  <ShieldCheck size={14} /> Verify Certificate <ExternalLink size={12} />
+                  <ShieldCheck size={14} /> {t("verifyCertificate")} <ExternalLink size={12} />
                 </a>
               )}
               {gem.certFileUrl && (
@@ -138,7 +139,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-full border border-border-subtle px-4 py-2 text-xs font-medium text-charcoal/80 transition-colors hover:border-gold hover:text-charcoal"
                 >
-                  <FileText size={14} /> View Certificate
+                  <FileText size={14} /> {t("viewCertificate")}
                 </a>
               )}
             </div>
@@ -151,9 +152,9 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
                   <AddToCartButton gemstoneId={gem.id} />
                 ) : (
                   <div>
-                    <p className="text-sm text-charcoal/75">Sign in to add {gem.name} to your cart at the retail price.</p>
+                    <p className="text-sm text-charcoal/75">{t("signInToAddPrompt", { name: gem.name })}</p>
                     <Link href={`/account/login?callbackUrl=${encodeURIComponent(`/gems/${gem.slug}`)}`}>
-                      <Button variant="primary" className="mt-3">Sign in to add to cart</Button>
+                      <Button variant="primary" className="mt-3">{t("signInToAdd")}</Button>
                     </Link>
                   </div>
                 )}
@@ -175,8 +176,8 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
 
       {relatedGems.length > 0 && (
         <Reveal className="mt-20 border-t border-border-subtle pt-14 sm:mt-28 sm:pt-16">
-          <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">More From the Collection</p>
-          <h2 className="mt-2 font-serif text-3xl text-charcoal sm:text-4xl">You May Also Love</h2>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">{t("moreFrom")}</p>
+          <h2 className="mt-2 font-serif text-3xl text-charcoal sm:text-4xl">{t("youMayLove")}</h2>
           <div className="mt-8">
             <CardSlider>
               {relatedGems.map((related) => (

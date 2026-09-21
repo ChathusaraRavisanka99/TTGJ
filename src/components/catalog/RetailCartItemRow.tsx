@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { removeRetailCartItem } from "@/actions/retail-cart";
 import { formatPrice, cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import { useCurrency } from "@/components/providers/MarketProvider";
 
 interface Item {
@@ -27,6 +28,7 @@ interface Item {
 export function RetailCartItemRow({ item }: { item: Item }) {
   const router = useRouter();
   const currency = useCurrency();
+  const t = useTranslations("cart");
   const [pending, startTransition] = useTransition();
 
   function remove() {
@@ -46,9 +48,9 @@ export function RetailCartItemRow({ item }: { item: Item }) {
           {item.label}
         </Link>
         {item.unavailable ? (
-          <p className="mt-0.5 text-sm font-medium text-red-700">No longer available — please remove it to check out</p>
+          <p className="mt-0.5 text-sm font-medium text-red-700">{t("unavailable")}</p>
         ) : (
-          <p className="mt-0.5 text-sm text-charcoal/60">{formatPrice(item.unitPrice, currency)} each</p>
+          <p className="mt-0.5 text-sm text-charcoal/60">{t("each", { price: formatPrice(item.unitPrice, currency) })}</p>
         )}
       </div>
       {/* Wraps to its own full-width row on narrow screens (basis-full),
@@ -57,7 +59,7 @@ export function RetailCartItemRow({ item }: { item: Item }) {
           on a phone-width viewport. Stays inline, pushed to the right
           edge, from sm: up. */}
       <div className="flex w-full basis-full items-center justify-end gap-4 sm:w-auto sm:basis-auto">
-        <button type="button" title="Remove" disabled={pending} onClick={remove} className="text-charcoal/65 hover:text-red-700">
+        <button type="button" title={t("remove")} disabled={pending} onClick={remove} className="text-charcoal/65 hover:text-red-700">
           <Trash2 size={16} />
         </button>
         <p className="w-20 shrink-0 text-right font-serif text-charcoal sm:w-24">{formatPrice(item.unitPrice * item.quantity, currency)}</p>

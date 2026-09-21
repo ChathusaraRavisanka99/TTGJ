@@ -93,5 +93,166 @@
       "cancelOrder": "Cancel this order",
       "cancelled": "This order has been cancelled and its items released."
     }
+  },
+  "market": {
+    "switchLabel": "Choose your store",
+    "badge": "Sri Lanka",
+    "short": {
+      "lk": "LKR",
+      "intl": "USD"
+    },
+    "name": {
+      "lk": "Sri Lanka",
+      "intl": "International"
+    },
+    "detail": {
+      "lk": "Prices in rupees (LKR)",
+      "intl": "Prices in US dollars (USD)"
+    }
+  },
+  "lk": {
+    "strip": {
+      "pricesTitle": "Priced in rupees",
+      "pricesBody": "Every price on this store is in Sri Lankan rupees, set for Sri Lanka — no currency conversion.",
+      "payTitle": "Pay by bank transfer",
+      "payBody": "Place your order and we hold the piece while your transfer arrives. Card payment and cash on delivery are coming soon.",
+      "deliveryTitle": "Delivered in Sri Lanka",
+      "deliveryBody": "Orders on this store are delivered within Sri Lanka, with delivery shown at checkout."
+    },
+    "footer": {
+      "storeTitle": "Sri Lanka store",
+      "storeBody": "Prices in rupees, delivery within Sri Lanka.",
+      "paymentsTitle": "Payment options",
+      "bankTransfer": "Bank transfer",
+      "card": "Card payment",
+      "cod": "Cash on delivery",
+      "comingSoon": "Coming soon",
+      "switchTitle": "Shopping from abroad?"
+    }
+  },
+  "catalog": {
+    "gems": {
+      "kicker": "Loose Gemstones",
+      "title": "Shop Ceylon Gemstones",
+      "intro": "Each stone is listed with its full specification — cut, colour, tone, and clarity. Browse freely; request a quote when something catches your eye.",
+      "empty": "No gemstones match your filters yet."
+    },
+    "jewelry": {
+      "kicker": "Fine Jewelry",
+      "title": "Shop Jewelry",
+      "intro": "Rings, pendants, and earrings crafted around Ceylon gemstones. Request a quote for any piece, or ask us to set a gem you've configured yourself.",
+      "empty": "No jewelry pieces match your filters yet."
+    },
+    "filters": {
+      "search": "Search",
+      "gemPlaceholder": "Sapphire, ruby, oval cut...",
+      "jewelryPlaceholder": "Ring, necklace, sapphire...",
+      "filtersButton": "Filters",
+      "mineral": "Mineral",
+      "cut": "Shape / Cut",
+      "colour": "Colour",
+      "treatment": "Treatment",
+      "clarity": "Purity / Clarity",
+      "origin": "Origin",
+      "price": "Price",
+      "min": "Min",
+      "max": "Max",
+      "carat": "Carat",
+      "pieceType": "Piece type",
+      "metal": "Metal",
+      "sortBy": "Sort by",
+      "newest": "Newest",
+      "caratWeight": "Carat weight",
+      "alphabetical": "Alphabetical",
+      "priceLow": "Price: low to high",
+      "priceHigh": "Price: high to low",
+      "inStockOnly": "In stock only",
+      "onPromotion": "On promotion",
+      "filter": "Filter",
+      "clear": "Clear Filters"
+    },
+    "stock": {
+      "AVAILABLE": "Available",
+      "RESERVED": "Reserved",
+      "SOLD": "Sold"
+    },
+    "requestQuote": "Request a Quote →"
+  },
+  "product": {
+    "home": "Home",
+    "gems": "Gems",
+    "jewelry": "Jewelry",
+    "ceylonOrigin": "Ceylon Origin",
+    "onlyOne": "This is the only one — a single natural stone, not a reproducible design.",
+    "onlyOneJewelry": "One piece, handcrafted — once it sells, it won't be made again.",
+    "spec": {
+      "cut": "Cut",
+      "caratWeight": "Carat Weight",
+      "dimensions": "Dimensions",
+      "colour": "Colour",
+      "clarity": "Clarity",
+      "treatment": "Treatment",
+      "origin": "Origin",
+      "variety": "Variety",
+      "symmetry": "Symmetry / Polish",
+      "certification": "Certification",
+      "metal": "Metal",
+      "purity": "Purity",
+      "metalWeight": "Metal Weight",
+      "ringSize": "Ring Size",
+      "style": "Style"
+    },
+    "gemstonesSet": "Gemstones Set In This Piece",
+    "verifyCertificate": "Verify Certificate",
+    "viewCertificate": "View Certificate",
+    "signInToAddPrompt": "Sign in to add {name} to your cart at the retail price.",
+    "signInToAdd": "Sign in to add to cart",
+    "addToCart": "Add to Cart",
+    "adding": "Adding...",
+    "added": "Added to Cart",
+    "addedNote": "<link>View Cart</link> to check out, or keep browsing.",
+    "moreFrom": "More From the Collection",
+    "youMayLove": "You May Also Love",
+    "requestQuote": "Request a Quote",
+    "viewOptions": "View Options"
+  },
+  "cart": {
+    "kicker": "Your Cart",
+    "title": "Retail Cart",
+    "empty": "Your cart is empty.",
+    "browseGems": "Browse Gemstones",
+    "birthday": "🎂 Happy birthday month! You'll get a discount off the profit margin on eligible items, applied automatically at checkout — once per year.",
+    "subtotalItems": "Subtotal ({count, plural, one {# item} other {# items}})",
+    "taxNote": "Tax, shipping, and handling are calculated at checkout.",
+    "removeUnavailable": "Remove the unavailable item(s) above to continue to checkout.",
+    "proceed": "Proceed to Checkout",
+    "back": "Back to My Account",
+    "each": "{price} each",
+    "unavailable": "No longer available — please remove it to check out",
+    "remove": "Remove",
+    "discountCode": "Discount code",
+    "apply": "Apply",
+    "applying": "Applying...",
+    "removing": "Removing...",
+    "codeApplied": "Code <mono>{code}</mono> applied"
+  },
+  "orders": {
+    "kicker": "Account",
+    "title": "My Orders",
+    "none": "No orders yet. Browse our <gems>gemstones</gems> or <jewelry>jewelry</jewelry> to buy directly at their retail price.",
+    "status": {
+      "PENDING_PAYMENT": "Pending payment",
+      "PAID": "Paid",
+      "PAYMENT_FAILED": "Payment failed",
+      "CANCELLED": "Cancelled"
+    },
+    "items": "{count, plural, one {# item} other {# items}}",
+    "paymentInstructions": "Payment instructions",
+    "checkStatus": "Check status"
+  },
+  "checkoutPage": {
+    "kicker": "Checkout",
+    "title": "Shipping & Payment",
+    "estimateNote": "Final tax, EMS shipping, and handling fee are calculated after you enter your shipping address below."
   }
 }

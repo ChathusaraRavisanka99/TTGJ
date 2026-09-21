@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { SubcultureDef } from "@/lib/subculture-collections";
 import type { CollectionCardData } from "@/lib/subculture-items";
 import { formatPrice, cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import { useCurrency } from "@/components/providers/MarketProvider";
 
 /** One card style for both product types (gemstone or jewelry), themed
@@ -24,6 +25,7 @@ export function CollectionProductCard({ item, theme, priority }: { item: Collect
   ].filter(Boolean) as string[];
 
   const currency = useCurrency();
+  const t = useTranslations("catalog");
   const displayPrice = item.retailPrice ?? item.price;
   const displayable = item.retailPrice != null || item.showPrice;
 
@@ -80,7 +82,7 @@ export function CollectionProductCard({ item, theme, priority }: { item: Collect
           {displayable && displayPrice != null ? (
             <p className={cn("font-serif text-sm", theme.headingClass)}>{formatPrice(displayPrice, currency)}</p>
           ) : (
-            <p className={cn("text-xs font-medium", theme.accentClass)}>Request a Quote →</p>
+            <p className={cn("text-xs font-medium", theme.accentClass)}>{t("requestQuote")}</p>
           )}
         </div>
       </div>

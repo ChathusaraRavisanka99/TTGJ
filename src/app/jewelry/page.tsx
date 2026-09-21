@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getJewelry } from "@/lib/catalog";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
 import { getMarket } from "@/lib/market";
+import { getTranslations } from "next-intl/server";
 import { JewelryFilterBar } from "@/components/catalog/JewelryFilterBar";
 import { JewelryResults } from "@/components/catalog/JewelryResults";
 import { Pagination } from "@/components/ui/Pagination";
@@ -9,7 +10,7 @@ import { Pagination } from "@/components/ui/Pagination";
 export const metadata: Metadata = { title: "Shop Jewelry" };
 
 export default async function JewelryPage({ searchParams }: PageProps<"/jewelry">) {
-  const [sp, market] = await Promise.all([searchParams, getMarket()]);
+  const [sp, market, t] = await Promise.all([searchParams, getMarket(), getTranslations("catalog.jewelry")]);
   const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : undefined);
   const getAll = (key: string): string[] => {
     const v = sp[key];
@@ -41,11 +42,10 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
   return (
     <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
       <div className="mb-10">
-        <p className="text-xs uppercase tracking-widest text-gold-deep">Fine Jewelry</p>
-        <h1 className="mt-2 font-serif text-4xl text-charcoal">Shop Jewelry</h1>
+        <p className="text-xs uppercase tracking-widest text-gold-deep">{t("kicker")}</p>
+        <h1 className="mt-2 font-serif text-4xl text-charcoal">{t("title")}</h1>
         <p className="mt-3 max-w-2xl text-charcoal/65">
-          Rings, pendants, and earrings crafted around Ceylon gemstones. Request a quote for any piece, or ask us
-          to set a gem you&apos;ve configured yourself.
+          {t("intro")}
         </p>
       </div>
 
@@ -54,7 +54,7 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
       </div>
 
       {pieces.length === 0 ? (
-        <p className="py-20 text-center text-charcoal/65">No jewelry pieces match your filters yet.</p>
+        <p className="py-20 text-center text-charcoal/65">{t("empty")}</p>
       ) : (
         <JewelryResults pieces={pieces.map((piece) => ({ ...piece, promoPrice: promotions.jewelryPrices.get(piece.id) ?? null }))} />
       )}

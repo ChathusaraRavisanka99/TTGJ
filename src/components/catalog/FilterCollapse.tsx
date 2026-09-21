@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 /**
@@ -16,6 +17,7 @@ import { cn } from "@/lib/utils";
  * doesn't silently lose them.
  */
 export function FilterCollapse({ activeCount, children }: { activeCount: number; children: React.ReactNode }) {
+  const t = useTranslations("catalog.filters");
   const [open, setOpen] = useState(false);
 
   return (
@@ -28,7 +30,7 @@ export function FilterCollapse({ activeCount, children }: { activeCount: number;
       >
         <span className="flex items-center gap-2">
           <SlidersHorizontal size={15} />
-          Filters
+          {t("filtersButton")}
           {activeCount > 0 && (
             <span className="rounded-full bg-gold/20 px-1.5 py-0.5 text-[10px] text-charcoal">{activeCount}</span>
           )}

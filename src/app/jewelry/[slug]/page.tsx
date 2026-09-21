@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react";
 import { getJewelryBySlug, getRelatedJewelry } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
 import { getActivePromotion, getActivePromotionMaps } from "@/lib/promotion-items";
-import { StockBadge } from "@/components/ui/Badge";
+import { StorefrontStockBadge as StockBadge } from "@/components/catalog/StorefrontStockBadge";
 import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { ProductPrice } from "@/components/catalog/ProductPrice";
@@ -21,6 +21,7 @@ import { StickyBuyBar } from "@/components/catalog/StickyBuyBar";
 import { getTrustBarMessages } from "@/lib/i18n-messages";
 import { formatPrice } from "@/lib/utils";
 import { getMarket } from "@/lib/market";
+import { getTranslations } from "next-intl/server";
 import { MARKETS } from "@/lib/market-shared";
 
 const METAL_LABELS: Record<string, string> = {
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }: PageProps<"/jewelry/[slug]">)
 export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/[slug]">) {
   const { slug } = await params;
   const market = await getMarket();
-  const [piece, session] = await Promise.all([getJewelryBySlug(slug, market), auth()]);
+  const [piece, session, t] = await Promise.all([getJewelryBySlug(slug, market), auth(), getTranslations("product")]);
 
   if (!piece || !piece.isPublished) notFound();
 
@@ -56,7 +57,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
   // Same price precedence CardPrice/ProductPrice use for display — see
   // StickyBuyBar's own comment for why this is a plain label.
   const displayPrice = promotion?.promoPrice ?? piece.retailPrice ?? (piece.showPrice ? piece.price : null);
-  const stickyPriceLabel = displayPrice != null ? formatPrice(displayPrice, MARKETS[market].currency) : "Request a Quote";
+  const stickyPriceLabel = displayPrice != null ? formatPrice(displayPrice, MARKETS[market].currency) : t("requestQuote");
 
   return (
     <div className="relative overflow-hidden">
@@ -65,8 +66,8 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
       <div className="relative mx-auto max-w-6xl px-5 py-12 sm:px-8">
       <Breadcrumbs
         items={[
-          { label: "Home", href: "/" },
-          { label: "Jewelry", href: "/jewelry" },
+          { label: t("home"), href: "/" },
+          { label: t("jewelry"), href: "/jewelry" },
           { label: pieceTypeLabel, href: `/jewelry?pieceType=${piece.pieceType}` },
           { label: piece.name },
         ]}
@@ -89,21 +90,21 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
               page — JewelryPiece rows have no quantity field either. */}
           {piece.stockStatus === "AVAILABLE" && (
             <p className="mt-4 flex items-center gap-1.5 text-xs font-medium text-gold-deep">
-              <Sparkles size={13} /> One piece, handcrafted — once it sells, it won&apos;t be made again.
+              <Sparkles size={13} /> {t("onlyOneJewelry")}
             </p>
           )}
 
           <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-border-subtle py-6">
-            <Spec label="Metal" value={METAL_LABELS[piece.metalType]} />
-            {piece.metalPurity && <Spec label="Purity" value={piece.metalPurity} />}
-            {piece.metalWeightG && <Spec label="Metal Weight" value={`${piece.metalWeightG} g`} />}
-            {piece.ringSize && <Spec label="Ring Size" value={piece.ringSize} />}
-            {piece.styleTags.length > 0 && <Spec label="Style" value={piece.styleTags.join(", ")} />}
+            <Spec label={t("spec.metal")} value={METAL_LABELS[piece.metalType]} />
+            {piece.metalPurity && <Spec label={t("spec.purity")} value={piece.metalPurity} />}
+            {piece.metalWeightG && <Spec label={t("spec.metalWeight")} value={`${piece.metalWeightG} g`} />}
+            {piece.ringSize && <Spec label={t("spec.ringSize")} value={piece.ringSize} />}
+            {piece.styleTags.length > 0 && <Spec label={t("spec.style")} value={piece.styleTags.join(", ")} />}
           </dl>
 
           {piece.gemstones.length > 0 && (
             <div className="mt-6">
-              <p className="text-xs uppercase tracking-wide text-charcoal/65">Gemstones Set In This Piece</p>
+              <p className="text-xs uppercase tracking-wide text-charcoal/65">{t("gemstonesSet")}</p>
               <ul className="mt-2 space-y-1">
                 {piece.gemstones.map((link) => (
                   <li key={link.id} className="text-sm text-charcoal/75">
@@ -127,9 +128,9 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
                   <AddToCartButton jewelryId={piece.id} />
                 ) : (
                   <div>
-                    <p className="text-sm text-charcoal/75">Sign in to add {piece.name} to your cart at the retail price.</p>
+                    <p className="text-sm text-charcoal/75">{t("signInToAddPrompt", { name: piece.name })}</p>
                     <Link href={`/account/login?callbackUrl=${encodeURIComponent(`/jewelry/${piece.slug}`)}`}>
-                      <Button variant="primary" className="mt-3">Sign in to add to cart</Button>
+                      <Button variant="primary" className="mt-3">{t("signInToAdd")}</Button>
                     </Link>
                   </div>
                 )}
@@ -147,8 +148,8 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 
       {relatedJewelry.length > 0 && (
         <Reveal className="mt-20 border-t border-border-subtle pt-14 sm:mt-28 sm:pt-16">
-          <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">More From the Collection</p>
-          <h2 className="mt-2 font-serif text-3xl text-charcoal sm:text-4xl">You May Also Love</h2>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">{t("moreFrom")}</p>
+          <h2 className="mt-2 font-serif text-3xl text-charcoal sm:text-4xl">{t("youMayLove")}</h2>
           <div className="mt-8">
             <CardSlider>
               {relatedJewelry.map((related) => (

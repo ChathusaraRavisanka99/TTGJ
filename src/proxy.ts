@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 import authConfig from "@/lib/auth.config";
-import { LK_PREFIX, MARKET_HEADER, isLkPath, stripMarket } from "@/lib/market-shared";
+import { APP_PATH_HEADER, LK_PREFIX, MARKET_HEADER, isLkPath, stripMarket } from "@/lib/market-shared";
 
 // Deliberately NOT `import { auth } from "@/lib/auth"` — that config pulls in
 // PrismaAdapter, Prisma Client, and the Credentials/Google providers
@@ -108,6 +108,9 @@ export default auth((req) => {
   // yourself.
   const headers = new Headers(req.headers);
   headers.set(MARKET_HEADER, isLk ? "lk" : "intl");
+  // The market-stripped path, for the root layout's canonical/hreflang tags
+  // (layouts can't read the URL themselves). Overwritten for the same reason.
+  headers.set(APP_PATH_HEADER, pathname);
 
   if (isLk) {
     const rewritten = req.nextUrl.clone();

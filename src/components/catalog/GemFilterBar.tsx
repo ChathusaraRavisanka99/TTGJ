@@ -5,6 +5,7 @@ import { FilterCollapse } from "@/components/catalog/FilterCollapse";
 import { GEM_COLOR_FAMILIES } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 import { CurrencySymbol } from "@/components/ui/CurrencySymbol";
+import { getTranslations } from "next-intl/server";
 
 interface GemFilterBarProps {
   minerals: { slug: string; name: string }[];
@@ -88,7 +89,8 @@ function CheckboxGroup({
   );
 }
 
-export function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origins, current }: GemFilterBarProps) {
+export async function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origins, current }: GemFilterBarProps) {
+  const t = await getTranslations("catalog.filters");
   // `page` alone (no real filter set) shouldn't count as "something to
   // clear" — it'd make the button appear just from paging through an
   // unfiltered catalog, which has nothing to do with what it's for.
@@ -107,70 +109,70 @@ export function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origin
   return (
     <form method="get" className="rounded-xl border border-border-subtle bg-surface p-5">
       <div className="mb-4">
-        <Label htmlFor="q">Search</Label>
-        <Input id="q" name="q" defaultValue={first(current.q)} placeholder="Sapphire, ruby, oval cut..." />
+        <Label htmlFor="q">{t("search")}</Label>
+        <Input id="q" name="q" defaultValue={first(current.q)} placeholder={t("gemPlaceholder")} />
       </div>
 
       <FilterCollapse activeCount={activeCount}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <CheckboxGroup label="Mineral" name="mineral" active={toSet(current.mineral)} options={minerals.map((m) => ({ value: m.slug, label: m.name }))} />
-        <CheckboxGroup label="Shape / Cut" name="cut" active={toSet(current.cut)} options={cuts.map((c) => ({ value: c.slug, label: c.name }))} showShapeIcons />
-        <CheckboxGroup label="Colour" name="color" active={toSet(current.color)} options={GEM_COLOR_FAMILIES.map((c) => ({ value: c.key, label: c.label }))} />
-        <CheckboxGroup label="Treatment" name="treatment" active={toSet(current.treatment)} options={treatments.map((t) => ({ value: t.slug, label: t.name }))} />
-        <CheckboxGroup label="Purity / Clarity" name="clarity" active={toSet(current.clarity)} options={clarityGrades.map((c) => ({ value: c.slug, label: c.name }))} />
-        <CheckboxGroup label="Origin" name="origin" active={toSet(current.origin)} options={origins.map((o) => ({ value: o.slug, label: o.name }))} />
+        <CheckboxGroup label={t("mineral")} name="mineral" active={toSet(current.mineral)} options={minerals.map((m) => ({ value: m.slug, label: m.name }))} />
+        <CheckboxGroup label={t("cut")} name="cut" active={toSet(current.cut)} options={cuts.map((c) => ({ value: c.slug, label: c.name }))} showShapeIcons />
+        <CheckboxGroup label={t("colour")} name="color" active={toSet(current.color)} options={GEM_COLOR_FAMILIES.map((c) => ({ value: c.key, label: c.label }))} />
+        <CheckboxGroup label={t("treatment")} name="treatment" active={toSet(current.treatment)} options={treatments.map((t) => ({ value: t.slug, label: t.name }))} />
+        <CheckboxGroup label={t("clarity")} name="clarity" active={toSet(current.clarity)} options={clarityGrades.map((c) => ({ value: c.slug, label: c.name }))} />
+        <CheckboxGroup label={t("origin")} name="origin" active={toSet(current.origin)} options={origins.map((o) => ({ value: o.slug, label: o.name }))} />
 
         <div className="rounded-lg border border-border-subtle p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">Price (<CurrencySymbol />)</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">{t("price")} (<CurrencySymbol />)</p>
           <div className="mt-3 flex items-center gap-2">
-            <Input name="minPrice" type="number" min={0} step="1" placeholder="Min" defaultValue={first(current.minPrice)} className="text-sm" />
+            <Input name="minPrice" type="number" min={0} step="1" placeholder={t("min")} defaultValue={first(current.minPrice)} className="text-sm" />
             <span className="text-charcoal/65">–</span>
-            <Input name="maxPrice" type="number" min={0} step="1" placeholder="Max" defaultValue={first(current.maxPrice)} className="text-sm" />
+            <Input name="maxPrice" type="number" min={0} step="1" placeholder={t("max")} defaultValue={first(current.maxPrice)} className="text-sm" />
           </div>
         </div>
 
         <div className="rounded-lg border border-border-subtle p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">Carat</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">{t("carat")}</p>
           <div className="mt-3 flex items-center gap-2">
-            <Input name="minCarat" type="number" min={0} step="0.1" placeholder="Min" defaultValue={first(current.minCarat)} className="text-sm" />
+            <Input name="minCarat" type="number" min={0} step="0.1" placeholder={t("min")} defaultValue={first(current.minCarat)} className="text-sm" />
             <span className="text-charcoal/65">–</span>
-            <Input name="maxCarat" type="number" min={0} step="0.1" placeholder="Max" defaultValue={first(current.maxCarat)} className="text-sm" />
+            <Input name="maxCarat" type="number" min={0} step="0.1" placeholder={t("max")} defaultValue={first(current.maxCarat)} className="text-sm" />
           </div>
         </div>
 
         <div>
-          <Label htmlFor="sort">Sort by</Label>
+          <Label htmlFor="sort">{t("sortBy")}</Label>
           <select
             id="sort"
             name="sort"
             defaultValue={first(current.sort) ?? "newest"}
             className="w-full rounded-md border border-border-subtle bg-surface px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/50"
           >
-            <option value="newest">Newest</option>
-            <option value="carat">Carat weight</option>
-            <option value="az">Alphabetical</option>
-            <option value="price-low">Price: low to high</option>
-            <option value="price-high">Price: high to low</option>
+            <option value="newest">{t("newest")}</option>
+            <option value="carat">{t("caratWeight")}</option>
+            <option value="az">{t("alphabetical")}</option>
+            <option value="price-low">{t("priceLow")}</option>
+            <option value="price-high">{t("priceHigh")}</option>
           </select>
         </div>
 
         <div className="flex flex-col justify-end gap-2">
           <label className="flex items-center gap-2 text-sm text-charcoal/75">
             <input type="checkbox" name="inStockOnly" value="1" defaultChecked={first(current.inStockOnly) === "1"} className="accent-gold" />
-            In stock only
+            {t("inStockOnly")}
           </label>
           <label className="flex items-center gap-2 text-sm text-charcoal/75">
             <input type="checkbox" name="promotional" value="1" defaultChecked={first(current.promotional) === "1"} className="accent-gold" />
-            On promotion
+            {t("onPromotion")}
           </label>
         </div>
       </div>
       </FilterCollapse>
 
       <div className={cn("mt-5 flex gap-3", hasActiveFilters ? "" : "sm:w-56")}>
-        <Button type="submit" variant="primary" className="flex-1 sm:flex-none sm:px-10">Filter</Button>
+        <Button type="submit" variant="primary" className="flex-1 sm:flex-none sm:px-10">{t("filter")}</Button>
         {hasActiveFilters && (
-          <HardLinkButton href="/gems" variant="outline" className="flex-1 sm:flex-none sm:px-10">Clear Filters</HardLinkButton>
+          <HardLinkButton href="/gems" variant="outline" className="flex-1 sm:flex-none sm:px-10">{t("clear")}</HardLinkButton>
         )}
       </div>
     </form>

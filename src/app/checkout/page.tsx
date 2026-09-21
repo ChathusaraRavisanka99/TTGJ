@@ -29,7 +29,7 @@ export default async function CheckoutPage() {
 
   const lines = cart.items.map((item) => ({ item, unitPrice: retailCartUnitPrice(item, market) }));
   const subtotal = retailCartSubtotal(lines.map(({ item, unitPrice }) => ({ unitPrice, quantity: item.quantity })));
-  const t = await getTranslations("checkout");
+  const [t, tPage] = await Promise.all([getTranslations("checkout"), getTranslations("checkoutPage")]);
 
   // The Sri Lanka store always ships domestically with no gateway fee, so
   // the full total is known up front and worth showing before the customer
@@ -48,8 +48,8 @@ export default async function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-16 sm:px-8">
-      <p className="text-xs uppercase tracking-widest text-gold-deep">Checkout</p>
-      <h1 className="mt-2 font-serif text-4xl text-charcoal">Shipping &amp; Payment</h1>
+      <p className="text-xs uppercase tracking-widest text-gold-deep">{tPage("kicker")}</p>
+      <h1 className="mt-2 font-serif text-4xl text-charcoal">{tPage("title")}</h1>
 
       <div className="mt-6 rounded-xl border border-border-subtle bg-surface p-5">
         <p className="text-xs uppercase tracking-wide text-charcoal/65">{t("summary.title")}</p>
@@ -80,7 +80,7 @@ export default async function CheckoutPage() {
           <p className="mt-2 text-sm text-red-700">{breakdownError}</p>
         ) : (
           <p className="mt-1 text-xs text-charcoal/65">
-            Final tax, EMS shipping, and handling fee are calculated after you enter your shipping address below.
+            {tPage("estimateNote")}
           </p>
         )}
       </div>

@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { AUCTION_STATE_LABELS, type AuctionDisplayState } from "@/lib/auctions";
 
-const STOCK_STYLES: Record<string, string> = {
+export const STOCK_STYLES: Record<string, string> = {
   AVAILABLE: "bg-emerald-50 text-emerald-800 border-emerald-200",
   RESERVED: "bg-amber-50 text-amber-800 border-amber-200",
   SOLD: "bg-charcoal/5 text-charcoal/60 border-charcoal/15",

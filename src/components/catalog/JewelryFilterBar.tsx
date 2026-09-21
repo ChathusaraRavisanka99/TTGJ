@@ -4,6 +4,7 @@ import { FilterCollapse } from "@/components/catalog/FilterCollapse";
 import { PIECE_TYPES, METAL_TYPES } from "@/lib/gem-constants";
 import { cn } from "@/lib/utils";
 import { CurrencySymbol } from "@/components/ui/CurrencySymbol";
+import { getTranslations } from "next-intl/server";
 
 interface JewelryFilterBarProps {
   current: Record<string, string | string[] | undefined>;
@@ -51,7 +52,8 @@ function CheckboxGroup({
   );
 }
 
-export function JewelryFilterBar({ current }: JewelryFilterBarProps) {
+export async function JewelryFilterBar({ current }: JewelryFilterBarProps) {
+  const t = await getTranslations("catalog.filters");
   // `page` alone (no real filter set) shouldn't count as "something to
   // clear" — it'd make the button appear just from paging through an
   // unfiltered catalog, which has nothing to do with what it's for.
@@ -69,61 +71,61 @@ export function JewelryFilterBar({ current }: JewelryFilterBarProps) {
   return (
     <form method="get" className="rounded-xl border border-border-subtle bg-surface p-5">
       <div className="mb-4">
-        <Label htmlFor="q">Search</Label>
-        <Input id="q" name="q" defaultValue={first(current.q)} placeholder="Ring, necklace, sapphire..." />
+        <Label htmlFor="q">{t("search")}</Label>
+        <Input id="q" name="q" defaultValue={first(current.q)} placeholder={t("jewelryPlaceholder")} />
       </div>
 
       <FilterCollapse activeCount={activeCount}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CheckboxGroup
-          label="Piece type"
+          label={t("pieceType")}
           name="pieceType"
           active={toSet(current.pieceType)}
           options={PIECE_TYPES.map((p) => ({ value: p, label: p.charAt(0) + p.slice(1).toLowerCase() }))}
         />
-        <CheckboxGroup label="Metal" name="metalType" active={toSet(current.metalType)} options={METAL_TYPES.map((m) => ({ value: m.value, label: m.label }))} />
+        <CheckboxGroup label={t("metal")} name="metalType" active={toSet(current.metalType)} options={METAL_TYPES.map((m) => ({ value: m.value, label: m.label }))} />
 
         <div className="rounded-lg border border-border-subtle p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">Price (<CurrencySymbol />)</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">{t("price")} (<CurrencySymbol />)</p>
           <div className="mt-3 flex items-center gap-2">
-            <Input name="minPrice" type="number" min={0} step="1" placeholder="Min" defaultValue={first(current.minPrice)} className="text-sm" />
+            <Input name="minPrice" type="number" min={0} step="1" placeholder={t("min")} defaultValue={first(current.minPrice)} className="text-sm" />
             <span className="text-charcoal/65">–</span>
-            <Input name="maxPrice" type="number" min={0} step="1" placeholder="Max" defaultValue={first(current.maxPrice)} className="text-sm" />
+            <Input name="maxPrice" type="number" min={0} step="1" placeholder={t("max")} defaultValue={first(current.maxPrice)} className="text-sm" />
           </div>
         </div>
 
         <div>
-          <Label htmlFor="sort">Sort by</Label>
+          <Label htmlFor="sort">{t("sortBy")}</Label>
           <select
             id="sort"
             name="sort"
             defaultValue={first(current.sort) ?? "newest"}
             className="w-full rounded-md border border-border-subtle bg-surface px-3.5 py-2.5 text-sm text-charcoal focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/50"
           >
-            <option value="newest">Newest</option>
-            <option value="az">Alphabetical</option>
-            <option value="price-low">Price: low to high</option>
-            <option value="price-high">Price: high to low</option>
+            <option value="newest">{t("newest")}</option>
+            <option value="az">{t("alphabetical")}</option>
+            <option value="price-low">{t("priceLow")}</option>
+            <option value="price-high">{t("priceHigh")}</option>
           </select>
         </div>
 
         <div className="flex flex-col justify-end gap-2">
           <label className="flex items-center gap-2 text-sm text-charcoal/75">
             <input type="checkbox" name="inStockOnly" value="1" defaultChecked={first(current.inStockOnly) === "1"} className="accent-gold" />
-            In stock only
+            {t("inStockOnly")}
           </label>
           <label className="flex items-center gap-2 text-sm text-charcoal/75">
             <input type="checkbox" name="promotional" value="1" defaultChecked={first(current.promotional) === "1"} className="accent-gold" />
-            On promotion
+            {t("onPromotion")}
           </label>
         </div>
       </div>
       </FilterCollapse>
 
       <div className={cn("mt-5 flex gap-3", hasActiveFilters ? "" : "sm:w-56")}>
-        <Button type="submit" variant="primary" className="flex-1 sm:flex-none sm:px-10">Filter</Button>
+        <Button type="submit" variant="primary" className="flex-1 sm:flex-none sm:px-10">{t("filter")}</Button>
         {hasActiveFilters && (
-          <HardLinkButton href="/jewelry" variant="outline" className="flex-1 sm:flex-none sm:px-10">Clear Filters</HardLinkButton>
+          <HardLinkButton href="/jewelry" variant="outline" className="flex-1 sm:flex-none sm:px-10">{t("clear")}</HardLinkButton>
         )}
       </div>
     </form>

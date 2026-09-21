@@ -1,7 +1,7 @@
 import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
 import { Gem, ChevronRight } from "lucide-react";
-import { StockBadge } from "@/components/ui/Badge";
+import { StorefrontStockBadge as StockBadge } from "@/components/catalog/StorefrontStockBadge";
 import { CardPrice, PromotionBadge } from "@/components/catalog/CardPrice";
 import { cn } from "@/lib/utils";
 

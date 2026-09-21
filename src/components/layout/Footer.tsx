@@ -1,5 +1,9 @@
 import Link from "@/components/ui/MarketLink";
+import { useTranslations } from "next-intl";
 import { TrustBar } from "./TrustBar";
+import { KandyanBand } from "@/components/decor/Kandyan";
+import { MarketSwitcherInline } from "@/components/layout/MarketSwitcher";
+import { useMarket } from "@/components/providers/MarketProvider";
 import type { FooterMessages, TrustBarMessages } from "@/lib/i18n-messages";
 
 // Both message bundles come in as plain props, pre-resolved server-side in
@@ -17,8 +21,12 @@ export function Footer({
    * them back to back reads as filler rather than reassurance. */
   showTrustBar?: boolean;
 }) {
+  const market = useMarket();
+  const t = useTranslations("lk.footer");
+  const tMarket = useTranslations("market");
   return (
     <footer className="bg-ivory-soft">
+      {market === "lk" && <KandyanBand className="text-gold opacity-60" />}
       <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 sm:py-14 lg:px-12 xl:px-16">
         {showTrustBar && <TrustBar messages={trustBarMessages} className="mb-10 border-b border-border-subtle pb-10 sm:mb-12 sm:pb-12" />}
         <div className="grid gap-8 sm:grid-cols-2 sm:gap-10 md:grid-cols-4">
@@ -47,6 +55,32 @@ export function Footer({
             <p className="mt-3 text-sm leading-relaxed text-charcoal/65">{messages.pricingNoteBody}</p>
           </div>
         </div>
+        {market === "lk" && (
+          <div className="mt-10 grid gap-8 border-t border-border-subtle pt-8 sm:grid-cols-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">{t("storeTitle")}</p>
+              <p className="mt-3 text-sm leading-relaxed text-charcoal/65">{t("storeBody")}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">{t("paymentsTitle")}</p>
+              <ul className="mt-3 space-y-2 text-sm text-charcoal/70">
+                <li>{t("bankTransfer")}</li>
+                <li className="text-charcoal/55">{t("card")} · {t("comingSoon")}</li>
+                <li className="text-charcoal/55">{t("cod")} · {t("comingSoon")}</li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">{t("switchTitle")}</p>
+              <MarketSwitcherInline className="mt-3" />
+            </div>
+          </div>
+        )}
+        {market === "intl" && (
+          <div className="mt-10 flex flex-wrap items-center gap-3 border-t border-border-subtle pt-6">
+            <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">{tMarket("switchLabel")}</p>
+            <MarketSwitcherInline />
+          </div>
+        )}
         <p className="mt-12 text-xs text-charcoal/65">{messages.rights}</p>
       </div>
     </footer>

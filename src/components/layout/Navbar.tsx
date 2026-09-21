@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { AccountMenu, ACCOUNT_MENU_LINKS } from "@/components/layout/AccountMenu";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
+import { MarketSwitcher, MarketSwitcherInline } from "@/components/layout/MarketSwitcher";
+import { KandyanBand } from "@/components/decor/Kandyan";
 import { HeaderSearch } from "@/components/layout/HeaderSearch";
 import { signOutAction } from "@/actions/auth";
 import type { AppLocale } from "@/i18n/request";
@@ -87,6 +89,7 @@ export function Navbar({
   locale: AppLocale;
 }) {
   const t = useTranslations("nav");
+  const tMarket = useTranslations("market");
   const market = useMarket();
   const pathname = useAppPathname();
   const [open, setOpen] = useState(false);
@@ -96,6 +99,12 @@ export function Navbar({
     ...(showPromotions ? [PROMOTIONS_LINK] : []),
     ...BASE_NAV_LINKS.slice(4),
   ];
+  // With the optional Auctions and Promotions links showing there are seven
+  // links plus the store/language controls — that only fits from 1280px;
+  // with the usual five it fits from 1024px. Narrower than that the
+  // hamburger menu takes over (it used to switch at 768px, which wrapped the
+  // link labels onto two lines).
+  const wide = showAuction || showPromotions;
   const isHome = pathname === "/";
   const isTransparentRoute =
     TRANSPARENT_NAV_ROUTES.includes(pathname) ||
@@ -173,9 +182,21 @@ export function Navbar({
           )}
         >
           Ratnavue
+          {/* The badge is redundant in Sinhala/Tamil (the store switcher already
+              names the store) and their longer nav labels leave no room for it. */}
+          {market === "lk" && locale !== "si" && locale !== "ta" && (
+            <span
+              className={cn(
+                "ml-2 hidden align-super font-sans sm:inline lg:hidden xl:inline text-[10px] font-medium uppercase tracking-[0.22em] transition-colors duration-300",
+                transparent ? "text-gold-soft" : "text-gold-deep",
+              )}
+            >
+              {tMarket("badge")}
+            </span>
+          )}
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className={cn(wide ? "hidden xl:flex" : "hidden lg:flex", "items-center gap-5 xl:gap-6 2xl:gap-8")}>
           {navLinks.map((link) => {
             const active = pathname.startsWith(link.href);
             return (
@@ -183,7 +204,7 @@ export function Navbar({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "relative pb-1 text-sm tracking-wide transition-colors duration-300 after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full",
+                  "relative whitespace-nowrap pb-1 text-sm tracking-wide transition-colors duration-300 after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-gold after:transition-all after:duration-300 hover:after:w-full",
                   transparent ? "text-ivory/85 hover:text-ivory" : "text-charcoal/75 hover:text-charcoal",
                   active && (transparent ? "text-ivory" : "text-charcoal font-medium")
                 )}
@@ -206,7 +227,7 @@ export function Navbar({
           })}
         </nav>
 
-        <div className="hidden items-center gap-5 md:flex">
+        <div className={cn(wide ? "hidden xl:flex" : "hidden lg:flex", "items-center gap-5")}>
           <HeaderSearch transparent={transparent} />
           <Link
             href={user ? "/account/retail-cart" : "/account/login?callbackUrl=%2Faccount%2Fretail-cart"}
@@ -230,7 +251,7 @@ export function Navbar({
             <Link
               href="/account/login"
               className={cn(
-                "flex items-center gap-2 text-sm transition-colors duration-300",
+                "flex items-center gap-2 whitespace-nowrap text-sm transition-colors duration-300",
                 transparent ? "text-ivory/85 hover:text-ivory" : "text-charcoal/80 hover:text-charcoal"
               )}
             >
@@ -238,10 +259,11 @@ export function Navbar({
               {t("signIn")}
             </Link>
           )}
+          <MarketSwitcher transparent={transparent} />
           <LocaleSwitcher locale={locale} transparent={transparent} />
         </div>
 
-        <div className="flex items-center gap-3 min-[360px]:gap-4 md:hidden">
+        <div className={cn(wide ? "xl:hidden" : "lg:hidden", "flex items-center gap-3 min-[360px]:gap-4")}>
           <Link
             href={user ? "/account/retail-cart" : "/account/login?callbackUrl=%2Faccount%2Fretail-cart"}
             aria-label={t("cart")}
@@ -266,8 +288,18 @@ export function Navbar({
         </div>
       </div>
 
+      {/* Sri Lanka store: a slim Kandyan frieze along the header's lower edge.
+          Absolute (not in flow) so it doesn't change the header's height, and
+          hidden while the nav is transparent over a hero or the mobile menu is
+          open. */}
+      {market === "lk" && !open && (
+        <KandyanBand
+          className={cn("pointer-events-none absolute inset-x-0 bottom-0 h-2 text-gold transition-opacity duration-300", transparent ? "opacity-0" : "opacity-55")}
+        />
+      )}
+
       {open && (
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto border-t border-border-subtle bg-ivory px-5 py-4 md:hidden">
+        <nav className={cn(wide ? "xl:hidden" : "lg:hidden", "flex flex-1 flex-col gap-1 overflow-y-auto border-t border-border-subtle bg-ivory px-5 py-4")}>
           <form action={withMarket("/search", market)} method="get" className="mb-2 flex items-center gap-2 border-b border-border-subtle pb-3">
             <Search size={16} className="shrink-0 text-charcoal/65" />
             <input
@@ -289,6 +321,10 @@ export function Navbar({
               {t(link.key)}
             </Link>
           ))}
+          <div className="mt-2 border-t border-border-subtle pt-4">
+            <p className="mb-2 text-xs uppercase tracking-wide text-charcoal/65">{tMarket("switchLabel")}</p>
+            <MarketSwitcherInline />
+          </div>
           {user ? (
             <>
               <div className="mt-2 border-t border-border-subtle pt-2">

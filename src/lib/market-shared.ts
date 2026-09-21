@@ -12,6 +12,8 @@ export type Market = "intl" | "lk";
 
 export const MARKET_HEADER = "x-market";
 export const LK_PREFIX = "/lk";
+/** The request's path with any market prefix removed — set by proxy.ts. */
+export const APP_PATH_HEADER = "x-app-path";
 
 export const MARKETS: Record<Market, { label: string; currency: "USD" | "LKR"; prefix: string; defaultLocale: string }> = {
   intl: { label: "International", currency: "USD", prefix: "", defaultLocale: "en" },

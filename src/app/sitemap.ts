@@ -5,6 +5,7 @@ import { SUBCULTURE_KEYS } from "@/lib/subculture-collections";
 import { getAllSubcultureContent } from "@/lib/subculture-content";
 
 const BASE_URL = process.env.AUTH_URL ?? "http://localhost:3000";
+const LK = "/lk";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [gems, jewelry, collectionVisibilities, collectionContent] = await Promise.all([
@@ -50,5 +51,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...gemRoutes, ...jewelryRoutes, ...collectionRoutes];
+  // The Sri Lanka store (/lk) mirrors the same catalog with rupee prices.
+  // Its own home and list pages plus every product page; the collections
+  // and other marketing pages are shared and stay under the main entries.
+  const lkRoutes: MetadataRoute.Sitemap = [
+    { url: `${BASE_URL}${LK}`, changeFrequency: "weekly", priority: 1 },
+    { url: `${BASE_URL}${LK}/gems`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE_URL}${LK}/jewelry`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE_URL}${LK}/configurator`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE_URL}${LK}/sourcing`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE_URL}${LK}/about`, changeFrequency: "monthly", priority: 0.5 },
+    ...gems.map((g) => ({ url: `${BASE_URL}${LK}/gems/${g.slug}`, lastModified: g.updatedAt, changeFrequency: "weekly" as const, priority: 0.6 })),
+    ...jewelry.map((j) => ({ url: `${BASE_URL}${LK}/jewelry/${j.slug}`, lastModified: j.updatedAt, changeFrequency: "weekly" as const, priority: 0.6 })),
+  ];
+
+  return [...staticRoutes, ...gemRoutes, ...jewelryRoutes, ...collectionRoutes, ...lkRoutes];
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
  * and safer than re-implementing checkout-adjacent logic in a second place.
  */
 export function StickyBuyBar({ name, priceLabel }: { name: string; priceLabel: string }) {
+  const t = useTranslations("product");
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export function StickyBuyBar({ name, priceLabel }: { name: string; priceLabel: s
           <p className="text-xs text-charcoal/60">{priceLabel}</p>
         </div>
         <Button type="button" variant="gold" size="sm" onClick={scrollToBuyBox} className="shrink-0">
-          View Options
+          {t("viewOptions")}
         </Button>
       </div>
     </div>

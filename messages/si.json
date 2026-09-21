@@ -248,7 +248,16 @@
     },
     "items": "අයිතම {count}",
     "paymentInstructions": "ගෙවීමේ උපදෙස්",
-    "checkStatus": "තත්ත්වය පරීක්ෂා කරන්න"
+    "checkStatus": "තත්ත්වය පරීක්ෂා කරන්න",
+    "placed": "{date} දින තබන ලදී",
+    "total": "මුළු මුදල",
+    "noneInTab": "මෙම කොටසෙහි ඇණවුම් නැත.",
+    "tabs": {
+      "all": "සියල්ල",
+      "pending": "ගෙවීම බලාපොරොත්තුවෙන්",
+      "paid": "ගෙවා ඇත",
+      "closed": "අවලංගු කළ"
+    }
   },
   "checkoutPage": {
     "kicker": "ගෙවීම",

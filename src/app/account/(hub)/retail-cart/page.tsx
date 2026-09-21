@@ -37,7 +37,7 @@ export default async function RetailCartPage() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+    <div className="w-full">
       <p className="text-xs uppercase tracking-widest text-gold-deep">{t("kicker")}</p>
       <h1 className="mt-2 font-serif text-4xl text-charcoal">{t("title")}</h1>
 

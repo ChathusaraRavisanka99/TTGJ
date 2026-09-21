@@ -12,11 +12,12 @@ import { cn } from "@/lib/utils";
 export const ACCOUNT_MENU_LINKS = [
   { href: "/", label: "Home" },
   { href: "/account", label: "My Account" },
-  { href: "/account/retail-cart", label: "My Cart" },
   { href: "/account/orders", label: "My Orders" },
-  { href: "/account/quotes", label: "My Quote Requests" },
-  { href: "/account/sourcing", label: "My Sourcing Requests" },
-  { href: "/account/support", label: "Chat with Support" },
+  { href: "/account/messages", label: "Messages" },
+  { href: "/account/retail-cart", label: "My Cart" },
+  { href: "/account/sourcing", label: "Sourcing Requests" },
+  { href: "/account/custom-designs", label: "Custom Designs" },
+  { href: "/account/quotes", label: "Quote Requests" },
 ];
 
 export function AccountMenu({ user, transparent }: { user: { name?: string | null }; transparent: boolean }) {

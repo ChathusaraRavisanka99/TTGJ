@@ -4,6 +4,7 @@ import { MessageCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getUnreadCount } from "@/lib/chat";
+import { CATALOG_QUOTE_WHERE } from "@/lib/account-hub";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { formatPrice } from "@/lib/utils";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
@@ -15,14 +16,16 @@ export default async function AccountQuotesPage() {
   if (!session?.user) return null;
 
   const quotes = await prisma.quoteRequest.findMany({
-    where: { userId: session.user.id },
+    // Quotes on catalog items only — custom designs (a commissioned piece, a
+    // gem you configured) are listed under Custom Designs.
+    where: { userId: session.user.id, ...CATALOG_QUOTE_WHERE },
     orderBy: { createdAt: "desc" },
     include: { gemstone: true, jewelry: true },
   });
   const unreadCounts = await Promise.all(quotes.map((q) => getUnreadCount("quote", q.id, "CUSTOMER")));
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+    <div className="w-full">
       <p className="text-xs uppercase tracking-widest text-gold-deep">Account</p>
       <h1 className="mt-2 font-serif text-4xl text-charcoal">My Quote Requests</h1>
 

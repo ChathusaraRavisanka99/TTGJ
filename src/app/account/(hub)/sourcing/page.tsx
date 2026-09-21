@@ -20,7 +20,7 @@ export default async function AccountSourcingPage() {
   const unreadCounts = await Promise.all(requests.map((r) => getUnreadCount("sourcing", r.id, "CUSTOMER")));
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+    <div className="w-full">
       <p className="text-xs uppercase tracking-widest text-gold-deep">Account</p>
       <h1 className="mt-2 font-serif text-4xl text-charcoal">My Sourcing Requests</h1>
 

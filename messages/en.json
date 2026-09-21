@@ -248,7 +248,16 @@
     },
     "items": "{count, plural, one {# item} other {# items}}",
     "paymentInstructions": "Payment instructions",
-    "checkStatus": "Check status"
+    "checkStatus": "Check status",
+    "placed": "Placed {date}",
+    "total": "Total",
+    "noneInTab": "No orders in this tab.",
+    "tabs": {
+      "all": "All",
+      "pending": "Awaiting payment",
+      "paid": "Paid",
+      "closed": "Cancelled"
+    }
   },
   "checkoutPage": {
     "kicker": "Checkout",

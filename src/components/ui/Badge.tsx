@@ -18,7 +18,7 @@ const QUOTE_STATUS_STYLES: Record<string, string> = {
 
 export function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium tracking-wide", className)}>
+    <span className={cn("inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium tracking-wide", className)}>
       {children}
     </span>
   );

@@ -27,7 +27,7 @@ export default async function AccountSourcingDetailPage({ params }: PageProps<"/
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+    <div className="w-full">
       <BackLink href="/account/sourcing" label="Back to My Sourcing Requests" />
       <div className="flex items-start justify-between gap-4">
         <div>

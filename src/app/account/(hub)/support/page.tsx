@@ -24,7 +24,7 @@ export default async function AccountSupportPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+    <div className="w-full">
       <p className="text-xs uppercase tracking-widest text-gold-deep">Support</p>
       <h1 className="mt-2 font-serif text-3xl text-charcoal">Chat with Support</h1>
       <p className="mt-2 text-sm text-charcoal/60">

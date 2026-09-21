@@ -96,6 +96,9 @@ export interface CustomerConversation {
   requestType: ChatRequestType;
   requestId: string;
   itemLabel: string;
+  /** A quote conversation that is really a custom design (a commissioned piece
+   * or a gem the customer configured) — the account hub files it separately. */
+  isDesign: boolean;
   lastMessageAt: Date;
   lastMessagePreview: string | null;
   unreadCount: number;
@@ -131,6 +134,7 @@ export async function getConversationsForCustomer(userId: string): Promise<Custo
         requestType: "quote" as const,
         requestId: q.id,
         itemLabel,
+        isDesign: !!spec || q.productType === "CUSTOM",
         lastMessageAt: q.chatThread!.messages[0]?.createdAt ?? q.chatThread!.createdAt,
         lastMessagePreview: q.chatThread!.messages[0]?.body ?? null,
         unreadCount: 0,
@@ -140,6 +144,7 @@ export async function getConversationsForCustomer(userId: string): Promise<Custo
       requestType: "sourcing" as const,
       requestId: s.id,
       itemLabel: s.mineralDescription,
+      isDesign: false,
       lastMessageAt: s.chatThread!.messages[0]?.createdAt ?? s.chatThread!.createdAt,
       lastMessagePreview: s.chatThread!.messages[0]?.body ?? null,
       unreadCount: 0,

@@ -60,11 +60,12 @@ export function MarketSwitcher({ transparent = false }: { transparent?: boolean 
         )}
       >
         <MapPin size={15} />
-        {t(`short.${market}`)}
+        {/* Icon only on narrow phones (a signed-in header also carries the bell). */}
+        <span className="max-[429px]:hidden">{t(`short.${market}`)}</span>
         {/* Room for the full store name only on wide screens; the code alone
             keeps the nav from wrapping below that. */}
         <span className="hidden 2xl:inline">· {t(`name.${market}`)}</span>
-        <ChevronDown size={13} className={cn("transition-transform", open && "rotate-180")} />
+        <ChevronDown size={13} className={cn("transition-transform max-[479px]:hidden", open && "rotate-180")} />
       </button>
 
       {open && (

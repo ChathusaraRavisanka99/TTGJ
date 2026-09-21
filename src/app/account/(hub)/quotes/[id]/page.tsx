@@ -37,8 +37,11 @@ export default async function AccountQuoteDetailPage({ params }: PageProps<"/acc
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-      <BackLink href="/account/quotes" label="Back to My Quote Requests" />
+    <div className="w-full">
+      <BackLink
+        href={quote.configuredSpec || quote.productType === "CUSTOM" ? "/account/custom-designs" : "/account/quotes"}
+        label={quote.configuredSpec || quote.productType === "CUSTOM" ? "Back to Custom Designs" : "Back to My Quote Requests"}
+      />
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-gold-deep">Quote Request</p>

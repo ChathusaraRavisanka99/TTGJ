@@ -67,7 +67,7 @@ export function LocaleSwitcher({ locale, transparent }: { locale: AppLocale; tra
       >
         <Globe size={16} />
         {LANGUAGE_LABELS[locale].code}
-        <ChevronDown size={13} className={cn("transition-transform", open && "rotate-180")} />
+        <ChevronDown size={13} className={cn("transition-transform max-[479px]:hidden", open && "rotate-180")} />
       </button>
 
       {open && (

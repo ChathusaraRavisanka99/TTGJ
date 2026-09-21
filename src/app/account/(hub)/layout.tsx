@@ -1,0 +1,24 @@
+import { auth } from "@/lib/auth";
+import { getMarket } from "@/lib/market";
+import { getHubCounts } from "@/lib/account-hub";
+import { AccountSidebar } from "@/components/account/AccountSidebar";
+
+// The signed-in account area: a left rail (a tab strip on phones) shared by
+// every page in it — overview, orders, messages, requests, cart. Sign-in and
+// registration sit outside this route group, so they stay full-width.
+export default async function AccountHubLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  // proxy.ts already sends signed-out visitors to the login page; this is only
+  // a safety net so a missing session never renders an empty shell.
+  if (!session?.user) return <>{children}</>;
+
+  const market = await getMarket();
+  const counts = await getHubCounts(session.user.id, market);
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8 lg:py-12">
+      <AccountSidebar user={{ name: session.user.name, email: session.user.email }} counts={counts} />
+      <div className="mt-6 min-w-0 lg:mt-0">{children}</div>
+    </div>
+  );
+}

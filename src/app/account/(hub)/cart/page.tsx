@@ -33,7 +33,7 @@ export default async function AccountCartPage() {
   const anyAwaitingPayment = submittedCarts.some((c) => c.paymentStatus === "AWAITING_PAYMENT");
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+    <div className="w-full">
       <p className="text-xs uppercase tracking-widest text-gold-deep">Account</p>
       <h1 className="mt-2 font-serif text-4xl text-charcoal">My Cart</h1>
       <p className="mt-2 text-sm text-charcoal/60">

@@ -11,7 +11,6 @@ import { Marquee } from "@/components/layout/Marquee";
 import { Reveal } from "@/components/layout/Reveal";
 import { HeroSlideshow } from "@/components/layout/HeroSlideshow";
 import { HeroScrollCue } from "@/components/layout/HeroScrollCue";
-import { SectionArrow } from "@/components/layout/SectionArrow";
 import { CardSlider } from "@/components/ui/CardSlider";
 import { TrustBar } from "@/components/layout/TrustBar";
 import { getTrustBarMessages } from "@/lib/i18n-messages";
@@ -48,30 +47,11 @@ export default async function HomePage() {
 
   // Each of these two sections is curated by admins (feature specific items
   // from their list pages) and independently switched on/off from Home Page
-  // content — either can be absent, so the up/down scroll arrows below
-  // can't hardcode their neighbor's id. This chain is just "whichever
-  // sections actually rendered, in order" — prevSection/nextSection look up
-  // each one's real neighbor so the arrows always land on a section that
-  // exists, however many of these are turned on.
+  // content — either can be absent, so the hero's scroll cue can't hardcode
+  // which section comes next. It targets the first one that actually rendered.
   const showFeaturedGems = content.showFeaturedGems && featuredGems.length > 0;
   const showFeaturedJewelry = content.showFeaturedJewelry && featuredJewelry.length > 0;
-  const sectionChain = [
-    "hero",
-    showFeaturedGems ? "featured" : null,
-    showFeaturedJewelry ? "featured-jewelry" : null,
-    "editorial",
-    "heritage-sourcing",
-    "promise",
-    "closing-cta",
-  ].filter((id): id is string => id !== null);
-  const prevSection = (id: string) => {
-    const i = sectionChain.indexOf(id);
-    return i > 0 ? sectionChain[i - 1] : null;
-  };
-  const nextSection = (id: string) => {
-    const i = sectionChain.indexOf(id);
-    return i >= 0 && i < sectionChain.length - 1 ? sectionChain[i + 1] : null;
-  };
+  const heroNextSection = showFeaturedGems ? "featured" : showFeaturedJewelry ? "featured-jewelry" : "editorial";
 
   return (
     <div>
@@ -147,11 +127,11 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <HeroScrollCue target={nextSection("hero")} />
+        <HeroScrollCue target={heroNextSection} />
       </section>
 
       {/* ---------- Marquee ---------- */}
-      <div className="border-y border-border-subtle bg-ivory-soft py-5 text-charcoal">
+      <div className="py-5 text-charcoal">
         <Marquee items={MINERAL_MARQUEE} />
       </div>
 
@@ -161,7 +141,7 @@ export default async function HomePage() {
           switched off from Home Page content regardless of how many items
           are marked — see showFeaturedGems above. */}
       {showFeaturedGems && (
-        <section id="featured" className="relative mx-auto flex w-full max-w-[120rem] flex-col justify-center px-5 py-16 sm:min-h-dvh sm:px-8 sm:py-32 lg:px-12 xl:px-16">
+        <section id="featured" className="relative mx-auto flex w-full max-w-[120rem] flex-col justify-center px-5 py-16 sm:px-8 sm:py-24 lg:px-12 xl:px-16">
           <Reveal className="mb-8 flex items-end justify-between sm:mb-14">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">Hand-Selected</p>
@@ -199,8 +179,6 @@ export default async function HomePage() {
               ))}
             </CardSlider>
           </Reveal>
-          <SectionArrow target={prevSection("featured")} direction="up" tone="dark" />
-          <SectionArrow target={nextSection("featured")} direction="down" tone="dark" />
         </section>
       )}
 
@@ -208,7 +186,7 @@ export default async function HomePage() {
       {/* Same curation pattern as Featured Gemstones, independently toggled
           (JewelryPiece.isFeatured + showFeaturedJewelry). */}
       {showFeaturedJewelry && (
-        <section id="featured-jewelry" className="relative mx-auto flex w-full max-w-[120rem] flex-col justify-center bg-ivory-soft px-5 py-16 sm:min-h-dvh sm:px-8 sm:py-32 lg:px-12 xl:px-16">
+        <section id="featured-jewelry" className="relative mx-auto flex w-full max-w-[120rem] flex-col justify-center px-5 py-16 sm:px-8 sm:py-24 lg:px-12 xl:px-16">
           <Reveal className="mb-8 flex items-end justify-between sm:mb-14">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">Hand-Selected</p>
@@ -238,13 +216,11 @@ export default async function HomePage() {
               ))}
             </CardSlider>
           </Reveal>
-          <SectionArrow target={prevSection("featured-jewelry")} direction="up" tone="dark" />
-          <SectionArrow target={nextSection("featured-jewelry")} direction="down" tone="dark" />
         </section>
       )}
 
       {/* ---------- Editorial statement ---------- */}
-      <section id="editorial" className="relative flex items-center border-y border-border-subtle bg-gradient-to-b from-midnight via-charcoal to-midnight py-20 sm:min-h-dvh sm:py-36">
+      <section id="editorial" className="relative flex items-center bg-gradient-to-b from-midnight via-charcoal to-midnight py-20 sm:py-32">
         <Reveal className="mx-auto max-w-4xl px-5 text-center sm:px-8">
           <p className="font-serif text-3xl leading-snug text-ivory sm:text-5xl">
             &ldquo;{content.editorialQuote} <span className="text-gold-soft">{content.editorialQuoteHighlight}</span>&rdquo;
@@ -252,8 +228,6 @@ export default async function HomePage() {
           <div className="mx-auto mt-8 h-px w-16 bg-gold" />
           <p className="mt-6 text-xs uppercase tracking-[0.3em] text-ivory/45">{content.editorialAttribution}</p>
         </Reveal>
-        <SectionArrow target={prevSection("editorial")} direction="up" tone="light" />
-        <SectionArrow target={nextSection("editorial")} direction="down" tone="light" />
       </section>
 
       {/* ---------- Heritage / Sourcing ---------- */}
@@ -301,8 +275,6 @@ export default async function HomePage() {
             </Link>
           </div>
         </Reveal>
-        <SectionArrow target={prevSection("heritage-sourcing")} direction="up" tone="light" />
-        <SectionArrow target={nextSection("heritage-sourcing")} direction="down" tone="light" />
       </section>
 
       {/* ---------- The Ratnavue Promise ---------- */}
@@ -311,7 +283,7 @@ export default async function HomePage() {
           the closing CTA still has one real question left: "but is it
           genuine, and what if it isn't right for me?" Answers it before
           they ever have to ask. */}
-      <section id="promise" className="relative flex w-full flex-col justify-center bg-gradient-to-b from-ivory to-ivory-soft px-5 py-16 sm:min-h-dvh sm:px-8 sm:py-32 lg:px-12 xl:px-16">
+      <section id="promise" className="relative flex w-full flex-col justify-center px-5 py-16 sm:px-8 sm:py-24 lg:px-12 xl:px-16">
         <Reveal className="mx-auto max-w-5xl text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">The Ratnavue Promise</p>
           <h2 className="mx-auto mt-3 max-w-2xl font-serif text-4xl text-charcoal sm:text-5xl">
@@ -325,17 +297,14 @@ export default async function HomePage() {
         <Reveal delay={0.1} className="mx-auto mt-10 w-full max-w-5xl sm:mt-14">
           <TrustBar messages={trustBarMessages} />
         </Reveal>
-        <SectionArrow target={prevSection("promise")} direction="up" tone="dark" />
-        <SectionArrow target={nextSection("promise")} direction="down" tone="dark" />
       </section>
 
       {/* ---------- Closing CTA ---------- */}
-      <section id="closing-cta" className="relative flex items-center overflow-hidden bg-gradient-to-br from-midnight via-charcoal to-charcoal py-20 sm:min-h-dvh sm:py-36">
+      <section id="closing-cta" className="relative flex items-center overflow-hidden bg-gradient-to-br from-midnight via-charcoal to-charcoal py-20 sm:py-32">
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{ background: "radial-gradient(50% 60% at 50% 100%, rgba(179,145,90,0.18), transparent 70%)" }}
         />
-        <SectionArrow target={prevSection("closing-cta")} direction="up" tone="light" />
         <div className="relative mx-auto grid max-w-4xl items-center gap-10 px-5 text-center sm:px-8 lg:grid-cols-[1fr_auto] lg:gap-16 lg:text-left">
           <Reveal className="order-2 lg:order-1">
             <p className="text-xs uppercase tracking-[0.3em] text-gold-soft">{content.closingKicker}</p>

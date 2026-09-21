@@ -58,20 +58,15 @@ function LoaderGem() {
  */
 export function PageLoader() {
   return (
-    // absolute inset-0, not a height/min-height on a normal block child:
-    // this renders inside MainWrapper's <main> (now `relative` for
-    // exactly this), a flex-1 child of the body's flex-col that already
-    // stretches to fill whatever's left of the viewport (the
-    // sticky-footer pattern). A percentage height like min-h-full looked
-    // like the obvious way to match that, but Chromium doesn't reliably
-    // resolve a percentage-height *child* against a flex-grown parent's
-    // layout size — the box rendered short regardless, leaving a bare
-    // strip of the page's own ivory background around it: above it on
-    // routes with top nav-clearance padding, below it on full-bleed
-    // routes with none. Absolute positioning reads <main>'s actual
-    // layout box directly instead of going through that percentage
-    // resolution at all, so it always matches exactly.
-    <div className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto bg-charcoal py-24">
+    // fixed inset-0: covers the entire viewport — not just <main>'s box,
+    // which left the footer (and, on routes with top padding, a strip of
+    // page background) visible around the loader. z-40 sits *under* the
+    // Navbar (z-50), so the nav stays visible and usable throughout;
+    // pt-28 centres the mark in the space below it. This relies on <main>
+    // not carrying a transform once its entrance animation ends (see
+    // .animate-page-in's `transform: none` in globals.css) — a transformed
+    // ancestor would otherwise become fixed's containing block.
+    <div className="fixed inset-0 z-40 flex flex-col items-center justify-center overflow-y-auto bg-gradient-to-b from-midnight via-charcoal to-midnight pb-16 pt-28">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"

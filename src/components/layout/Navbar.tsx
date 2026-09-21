@@ -148,7 +148,7 @@ export function Navbar({
     <motion.header
       initial={false}
       animate={{
-        backgroundColor: transparent ? "rgba(33,29,26,0)" : "rgba(255,255,255,0.92)",
+        backgroundColor: transparent ? "rgba(33,29,26,0)" : "rgba(255,255,255,0.97)",
         boxShadow: transparent ? "0 1px 0 rgba(255,255,255,0)" : "0 1px 0 rgba(33,29,26,0.08)",
       }}
       transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}

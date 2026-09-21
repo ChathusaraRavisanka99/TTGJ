@@ -49,7 +49,7 @@ body {
    now entirely under the visitor's control; the arrow/scroll-cue buttons and
    anchor links still scroll on click. */
 
-/* Anchor/section jumps (HeroScrollCue, SectionArrow, "View Options" on the
+/* Anchor/section jumps (HeroScrollCue, "View Options" on the
    sticky buy bar) otherwise land the target's top edge under the fixed nav. */
 html {
   scroll-padding-top: 5rem;
@@ -163,19 +163,23 @@ h1, h2, h3, h4, .font-serif {
   animation: loader-line-glow 2.6s ease-in-out infinite;
 }
 
-/* Page content's entrance once a navigation resolves — keyed on pathname
+/* Page content's entrance once a navigation resolves - keyed on pathname
    in MainWrapper, so this restarts on every route change instead of only
-   once. Same visual language as loader-in (fade + slight rise) so the
-   loader's exit and the page's arrival feel like one continuous motion
-   rather than two unrelated animations, but a touch slower since it's
-   revealing a whole page rather than four lines of loader text. */
+   once, so the loader's exit and the page's arrival read as one continuous
+   motion rather than a hard swap.
+   Opacity only, deliberately: this runs on <main>, and ANY transform (or
+   filter) on an ancestor - even while an animation is merely in progress -
+   becomes the containing block for `position: fixed` descendants. The
+   full-viewport PageLoader (and StickyBuyBar) live inside <main>, so a
+   translate/scale here pinned them to <main>'s box for the whole
+   animation instead of the viewport. */
 @keyframes page-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.99); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .animate-page-in {
-  animation: page-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: page-in 0.45s ease-out both;
 }
 
 /* NavigationOverlay's top progress bar — the "something's loading" signal

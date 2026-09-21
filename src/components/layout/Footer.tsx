@@ -18,7 +18,7 @@ export function Footer({
   showTrustBar?: boolean;
 }) {
   return (
-    <footer className="border-t border-border-subtle bg-ivory-soft">
+    <footer className="bg-ivory-soft">
       <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 sm:py-14 lg:px-12 xl:px-16">
         {showTrustBar && <TrustBar messages={trustBarMessages} className="mb-10 border-b border-border-subtle pb-10 sm:mb-12 sm:pb-12" />}
         <div className="grid gap-8 sm:grid-cols-2 sm:gap-10 md:grid-cols-4">

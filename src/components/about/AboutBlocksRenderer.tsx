@@ -113,7 +113,7 @@ function ImageBlockSection({ block, animate }: { block: Extract<AboutBlock, { ty
 
 function QuoteSection({ block, animate }: { block: Extract<AboutBlock, { type: "quote" }>; animate: boolean }) {
   return (
-    <section className="flex items-center border-y border-border-subtle bg-gradient-to-b from-midnight via-charcoal to-midnight py-20 sm:min-h-dvh sm:py-32">
+    <section className="flex items-center bg-gradient-to-b from-midnight via-charcoal to-midnight py-20 sm:py-28">
       <Wrap animate={animate} className="mx-auto w-full max-w-[120rem] px-5 sm:px-8 lg:px-12 xl:px-16">
         <p className="max-w-4xl font-serif text-4xl leading-snug text-ivory sm:text-6xl lg:text-7xl">
           {block.text} <span className="text-gold-soft">{block.highlight}</span>
@@ -141,7 +141,7 @@ function PrinciplesSection({ block, animate }: { block: Extract<AboutBlock, { ty
 
 function CtaSection({ block, animate }: { block: Extract<AboutBlock, { type: "cta" }>; animate: boolean }) {
   return (
-    <section className="border-t border-border-subtle bg-ivory-soft py-20 text-center sm:py-28">
+    <section className="py-20 text-center sm:py-28">
       <Wrap animate={animate} className="mx-auto max-w-xl px-5 sm:px-8">
         <h2 className="font-serif text-3xl text-charcoal sm:text-4xl">{block.heading}</h2>
         <p className="mt-4 text-charcoal/70">{block.body}</p>

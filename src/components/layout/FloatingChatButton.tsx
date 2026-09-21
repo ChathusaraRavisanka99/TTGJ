@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { ChevronLeft, MessageCircle } from "lucide-react";
 import { pollMyConversations, pollChatMessages, getHasOpenCartForRequest, type ConversationView, type ChatMessageView } from "@/actions/chat";
 import { ChatPanel } from "@/components/chat/ChatPanel";

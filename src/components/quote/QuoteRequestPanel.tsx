@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/ui/MarketLink";
+import { useAppPathname } from "@/components/providers/MarketProvider";
 import { CircleCheck, AlertTriangle } from "lucide-react";
 import { submitQuoteRequest } from "@/actions/quotes";
 import { Button } from "@/components/ui/Button";
@@ -24,7 +24,7 @@ export function QuoteRequestPanel({ isAuthenticated, gemstoneId, jewelryId, conf
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const pathname = usePathname();
+  const pathname = useAppPathname();
 
   if (!isAuthenticated) {
     return (

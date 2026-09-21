@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { redirectInMarket } from "@/lib/market";
 import { auth } from "@/lib/auth";
 import { getRetailCartWithItems, retailCartSubtotal } from "@/lib/retail-cart";
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
@@ -12,7 +12,7 @@ export default async function CheckoutPage() {
   if (!session?.user) return null; // middleware guards this route
 
   const cart = await getRetailCartWithItems(session.user.id);
-  if (cart.items.length === 0) redirect("/account/retail-cart");
+  if (cart.items.length === 0) await redirectInMarket("/account/retail-cart");
   // The cart page's own "Proceed to Checkout" button is disabled while any
   // item is unavailable, but that's only a UI nicety — a direct visit to
   // this URL, or a stale tab, needs the same guard server-side. The real
@@ -20,7 +20,7 @@ export default async function CheckoutPage() {
   // initiateRetailCheckout; this redirect just avoids showing a shipping
   // form for an order that submit would refuse anyway.
   const hasUnavailableItem = cart.items.some((item) => (item.gemstone?.stockStatus ?? item.jewelry?.stockStatus) !== "AVAILABLE");
-  if (hasUnavailableItem) redirect("/account/retail-cart");
+  if (hasUnavailableItem) await redirectInMarket("/account/retail-cart");
 
   const subtotal = retailCartSubtotal(cart.items);
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPageContent, DEFAULT_CART_CONTENT } from "@/lib/page-content";

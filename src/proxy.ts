@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 import authConfig from "@/lib/auth.config";
+import { LK_PREFIX, MARKET_HEADER, isLkPath, stripMarket } from "@/lib/market-shared";
 
-// Deliberately NOT `import { auth } from "@/lib/auth"` — that config pulls
-// in PrismaAdapter, Prisma Client, and the Credentials/Google providers
-// (bcryptjs included), none of which run on the Edge runtime and all of
-// which together push the middleware bundle past Vercel's Edge Function
-// size limit. Middleware only ever needs to read/verify the existing
-// session JWT, which needs no providers at all — so it gets its own
-// `auth()` built from just the edge-safe slice of the config.
+// Deliberately NOT `import { auth } from "@/lib/auth"` — that config pulls in
+// PrismaAdapter, Prisma Client, and the Credentials/Google providers
+// (bcryptjs included), which are heavy and unnecessary here: the proxy only
+// ever needs to read/verify the existing session JWT, which needs no
+// providers at all, so it gets its own `auth()` built from just the slice of
+// the config that doesn't touch the database.
 const { auth } = NextAuth(authConfig);
 
 // Known legitimate non-browser clients that must still get through —
@@ -36,8 +36,19 @@ function isBrowserRequest(userAgent: string): boolean {
 }
 
 export default auth((req) => {
-  const { pathname } = req.nextUrl;
+  const rawPath = req.nextUrl.pathname;
+  const isLk = isLkPath(rawPath);
+  // Every check below runs against the path WITHOUT the market prefix, so
+  // "/lk/admin" is protected exactly like "/admin" and can't be used to
+  // sidestep a rule written against the international paths.
+  const pathname = stripMarket(rawPath);
+  const prefix = isLk ? LK_PREFIX : "";
   const role = req.auth?.user?.role;
+
+  // Admin is one shared back office, not part of either storefront.
+  if (isLk && (pathname === "/admin" || pathname.startsWith("/admin/"))) {
+    return NextResponse.redirect(new URL(pathname + req.nextUrl.search, req.nextUrl.origin));
+  }
 
   if (pathname.startsWith("/collections")) {
     const userAgent = req.headers.get("user-agent") ?? "";
@@ -55,9 +66,11 @@ export default auth((req) => {
   // instead of their highlighted order (the hash portion, if any, is
   // never sent to the server at all — that part of the round trip is an
   // inherent browser limitation, not something this can fix).
+  // Keeps the visitor in their storefront: /lk/account -> /lk/account/login
+  // with a /lk-prefixed callback.
   function loginRedirect() {
-    const loginUrl = new URL("/account/login", req.nextUrl.origin);
-    loginUrl.searchParams.set("callbackUrl", pathname + req.nextUrl.search);
+    const loginUrl = new URL(`${prefix}/account/login`, req.nextUrl.origin);
+    loginUrl.searchParams.set("callbackUrl", prefix + pathname + req.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
 
@@ -87,9 +100,25 @@ export default auth((req) => {
     if (!req.auth) return loginRedirect();
   }
 
-  return NextResponse.next();
+  // Stamp the request with its market. ALWAYS overwritten (never trusted
+  // from the client) so `x-market` can't be spoofed by sending the header
+  // yourself.
+  const headers = new Headers(req.headers);
+  headers.set(MARKET_HEADER, isLk ? "lk" : "intl");
+
+  if (isLk) {
+    const rewritten = req.nextUrl.clone();
+    rewritten.pathname = pathname;
+    return NextResponse.rewrite(rewritten, { request: { headers } });
+  }
+  return NextResponse.next({ request: { headers } });
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/account/:path*", "/checkout/:path*", "/collections/:path*"],
+  // Every page request (the market header has to be set on all of them),
+  // but not framework internals, API routes (the PayHere/NextAuth callbacks
+  // stay unprefixed), uploaded media, or static files.
+  matcher: [
+    "/((?!_next/static|_next/image|api|media|images|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:png|jpg|jpeg|gif|svg|webp|avif|ico|css|js|map|woff2?|mp4|webm|pdf)$).*)",
+  ],
 };

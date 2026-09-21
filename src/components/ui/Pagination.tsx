@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { cn } from "@/lib/utils";
 
 /**

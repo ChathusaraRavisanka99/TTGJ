@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/ui/MarketLink";
+import { useAppPathname, useMarket } from "@/components/providers/MarketProvider";
+import { withMarket } from "@/lib/market-shared";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
@@ -86,7 +87,8 @@ export function Navbar({
   locale: AppLocale;
 }) {
   const t = useTranslations("nav");
-  const pathname = usePathname();
+  const market = useMarket();
+  const pathname = useAppPathname();
   const [open, setOpen] = useState(false);
   const navLinks = [
     ...BASE_NAV_LINKS.slice(0, 4),
@@ -266,7 +268,7 @@ export function Navbar({
 
       {open && (
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto border-t border-border-subtle bg-ivory px-5 py-4 md:hidden">
-          <form action="/search" method="get" className="mb-2 flex items-center gap-2 border-b border-border-subtle pb-3">
+          <form action={withMarket("/search", market)} method="get" className="mb-2 flex items-center gap-2 border-b border-border-subtle pb-3">
             <Search size={16} className="shrink-0 text-charcoal/65" />
             <input
               name="q"

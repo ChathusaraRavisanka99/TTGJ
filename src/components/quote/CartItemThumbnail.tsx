@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
 import { Video, Gem } from "lucide-react";
 import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useAppPathname } from "@/components/providers/MarketProvider";
 import { cn } from "@/lib/utils";
 
 // Routes whose own first section is a full-bleed hero starting at the very
@@ -41,7 +41,7 @@ const FULL_BLEED_HERO_PREFIXES = ["/collections/"];
  * when it changes.
  */
 export function MainWrapper({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const hasFullBleedHero = FULL_BLEED_HERO_ROUTES.includes(pathname) || FULL_BLEED_HERO_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const isAdmin = pathname.startsWith("/admin");
 

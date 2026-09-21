@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { SUBCULTURE_LIST, type SubcultureKey } from "@/lib/subculture-collections";
 
 /** "Explore Another Side of the Dark" — cards to the other live

@@ -11,6 +11,8 @@ import { SEASONAL_THEMES } from "@/lib/seasonal-themes";
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { MainWrapper } from "@/components/layout/MainWrapper";
 import { getFooterMessages, getTrustBarMessages } from "@/lib/i18n-messages";
+import { getMarket } from "@/lib/market";
+import { MarketProvider } from "@/components/providers/MarketProvider";
 import type { AppLocale } from "@/i18n/request";
 
 const cormorant = Cormorant_Garamond({
@@ -34,11 +36,12 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [session, visibilities, seasonalContent, locale] = await Promise.all([
+  const [session, visibilities, seasonalContent, locale, market] = await Promise.all([
     auth(),
     getPageVisibilities(["seasonal", "auction"]),
     getSeasonalContent(),
     getLocale(),
+    getMarket(),
   ]);
   // Navbar's transparent-over-hero treatment on /promotions is only safe
   // when that season's hero is actually dark (Halloween) — Spring/Summer/
@@ -67,8 +70,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     : 0;
 
   return (
-    <html lang={locale} className={`${cormorant.variable} ${inter.variable} h-full antialiased`}>
+    <html lang={locale} data-market={market} className={`${cormorant.variable} ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-ivory text-charcoal">
+        <MarketProvider market={market}>
         <NextIntlClientProvider>
           <SiteChrome
             user={session?.user ?? null}
@@ -83,6 +87,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <MainWrapper>{children}</MainWrapper>
           </SiteChrome>
         </NextIntlClientProvider>
+        </MarketProvider>
       </body>
     </html>
   );

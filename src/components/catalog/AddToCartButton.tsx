@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { ShoppingBag, Check } from "lucide-react";
 import { addToRetailCart } from "@/actions/retail-cart";
 import { Button } from "@/components/ui/Button";

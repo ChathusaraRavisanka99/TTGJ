@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 import { getPublicOrderStatus, type PublicOrderStatus } from "@/actions/checkout";
 import { LinkButton } from "@/components/ui/Button";
+import { useMarket } from "@/components/providers/MarketProvider";
+import { withMarket } from "@/lib/market-shared";
 
 const POLL_INTERVAL_MS = 2500;
 const MAX_POLLS = 40; // ~100s — the webhook is usually near-instant; this just bounds the wait
@@ -18,6 +20,7 @@ const MAX_POLLS = 40; // ~100s — the webhook is usually near-instant; this jus
 // here.
 export function ReturnStatus({ orderRecordId, initial }: { orderRecordId: string; initial: PublicOrderStatus | null }) {
   const router = useRouter();
+  const market = useMarket();
   const [result, setResult] = useState(initial);
   const [pollsRemaining, setPollsRemaining] = useState(MAX_POLLS);
   const redirectedRef = useRef(false);
@@ -37,11 +40,11 @@ export function ReturnStatus({ orderRecordId, initial }: { orderRecordId: string
       redirectedRef.current = true;
       const timer = setTimeout(() => {
         const orderNumber = encodeURIComponent(result.orderNumber);
-        router.push(`/account/orders?highlight=${orderNumber}#${orderNumber}`);
+        router.push(withMarket(`/account/orders?highlight=${orderNumber}#${orderNumber}`, market));
       }, 900);
       return () => clearTimeout(timer);
     }
-  }, [result, router]);
+  }, [result, router, market]);
 
   if (!result) {
     return (

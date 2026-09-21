@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
 import { Gem, Paperclip, X } from "lucide-react";
 import { sendChatMessage, markChatRead, pollChatMessages, getChatTagOptions, type ChatMessageView } from "@/actions/chat";

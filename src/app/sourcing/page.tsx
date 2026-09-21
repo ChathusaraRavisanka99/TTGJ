@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { SourcingForm } from "@/components/quote/SourcingForm";

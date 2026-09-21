@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { Bell } from "lucide-react";
 import { pollNotifications, markAllNotificationsRead, type NotificationView } from "@/actions/notifications";
 import { cn } from "@/lib/utils";

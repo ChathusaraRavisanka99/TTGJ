@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
+import { notFound } from "next/navigation";
+import { redirectInMarket } from "@/lib/market";
+import Link from "@/components/ui/MarketLink";
 import { ArrowLeft } from "lucide-react";
 import { getPageVisibility } from "@/lib/page-visibility";
 import { getSeasonalContent } from "@/lib/page-content";
@@ -25,7 +26,7 @@ export default async function PromotionsCollectionPage() {
   if (visibility === "HIDDEN") notFound();
   // Coming Soon means there's genuinely nothing to browse yet — send
   // back to the hero's own teaser rather than an empty animated page.
-  if (visibility === "COMING_SOON") redirect("/promotions");
+  if (visibility === "COMING_SOON") await redirectInMarket("/promotions");
 
   const content = await getSeasonalContent();
   const theme = SEASONAL_THEMES[content.activeTheme] ?? SEASONAL_THEMES.autumn;
@@ -33,7 +34,7 @@ export default async function PromotionsCollectionPage() {
   // Reachable directly (a bookmarked link, back-button after an admin
   // clears the collection) even when /promotions' own button wouldn't
   // currently show — same "nothing here to show" redirect as Coming Soon.
-  if (items.length === 0) redirect("/promotions");
+  if (items.length === 0) await redirectInMarket("/promotions");
 
   return (
     // No forced min-h-dvh here — this is a content page, not a hero, so

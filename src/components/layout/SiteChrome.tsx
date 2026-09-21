@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useAppPathname } from "@/components/providers/MarketProvider";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { IntroLoader } from "./IntroLoader";
@@ -59,7 +59,7 @@ export function SiteChrome({
   locale: AppLocale;
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const isAdmin = pathname.startsWith("/admin");
 
   if (isAdmin) return <>{children}</>;

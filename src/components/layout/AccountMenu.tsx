@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/ui/MarketLink";
+import { useAppPathname } from "@/components/providers/MarketProvider";
 import { User, ChevronDown } from "lucide-react";
 import { signOutAction } from "@/actions/auth";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ export const ACCOUNT_MENU_LINKS = [
 export function AccountMenu({ user, transparent }: { user: { name?: string | null }; transparent: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
+  const pathname = useAppPathname();
 
   useEffect(() => {
     if (!open) return;

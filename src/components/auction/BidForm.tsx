@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { placeBid } from "@/actions/auctions";
 import { Input, Label, FieldError, FieldHint } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";

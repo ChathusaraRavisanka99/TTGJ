@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";

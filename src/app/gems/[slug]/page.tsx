@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { ShieldCheck, FileText, ExternalLink, Sparkles } from "lucide-react";
 import { getGemstoneBySlug, getRelatedGemstones } from "@/lib/catalog";
 import { auth } from "@/lib/auth";

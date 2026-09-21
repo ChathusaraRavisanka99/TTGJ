@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getPageContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";

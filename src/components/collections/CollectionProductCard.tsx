@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
 import type { SubcultureDef } from "@/lib/subculture-collections";
 import type { CollectionCardData } from "@/lib/subculture-items";

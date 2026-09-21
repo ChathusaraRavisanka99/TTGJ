@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { getGemstones, getJewelry } from "@/lib/catalog";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
 import { GemResults } from "@/components/catalog/GemResults";

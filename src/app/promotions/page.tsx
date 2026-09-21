@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { getPageVisibility } from "@/lib/page-visibility";
 import { getSeasonalContent } from "@/lib/page-content";
 import { countPromotionItems } from "@/lib/promotion-items";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
 import { Gem } from "lucide-react";
 import { formatPrice } from "@/lib/utils";

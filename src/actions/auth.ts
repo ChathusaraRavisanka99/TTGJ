@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
 import { registerSchema } from "@/lib/validation/auth";
 import { safeCallbackPath } from "@/lib/utils";
+import { getMarket, withMarket } from "@/lib/market";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -67,7 +68,10 @@ export async function authenticateWithCredentials(formData: FormData): Promise<A
   // same-origin redirect sanitization on purpose, since sign-in itself
   // reports success/failure back to the form instead of redirecting), so
   // nothing upstream is sanitizing this value unless it happens here.
-  const callbackUrl = safeCallbackPath(formData.get("callbackUrl"));
+  // withMarket: with no callback the fallback is "/account", which must
+  // still land inside the visitor's own storefront (/lk/account on the
+  // Sri Lanka store) — idempotent on an already-prefixed callback.
+  const callbackUrl = withMarket(safeCallbackPath(formData.get("callbackUrl")), await getMarket());
 
   try {
     await signIn("credentials", {
@@ -92,10 +96,10 @@ export async function signInWithGoogle(formData: FormData) {
   // redirect — consistent with authenticateWithCredentials above rather
   // than relying on two different code paths staying safe for two
   // different reasons.
-  const callbackUrl = safeCallbackPath(formData.get("callbackUrl"));
+  const callbackUrl = withMarket(safeCallbackPath(formData.get("callbackUrl")), await getMarket());
   await signIn("google", { redirectTo: callbackUrl });
 }
 
 export async function signOutAction() {
-  await signOut({ redirectTo: "/" });
+  await signOut({ redirectTo: withMarket("/", await getMarket()) });
 }

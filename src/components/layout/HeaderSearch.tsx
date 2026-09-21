@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMarket } from "@/components/providers/MarketProvider";
+import { withMarket } from "@/lib/market-shared";
 
 /**
  * Every competitor site reviewed (Blue Nile, Brilliant Earth, thenaturalgem.com)
@@ -19,6 +21,7 @@ export function HeaderSearch({ transparent }: { transparent: boolean }) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const market = useMarket();
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -28,7 +31,7 @@ export function HeaderSearch({ transparent }: { transparent: boolean }) {
     e.preventDefault();
     const q = value.trim();
     if (!q) return;
-    router.push(`/search?q=${encodeURIComponent(q)}`);
+    router.push(withMarket(`/search?q=${encodeURIComponent(q)}`, market));
     setOpen(false);
     setValue("");
   }

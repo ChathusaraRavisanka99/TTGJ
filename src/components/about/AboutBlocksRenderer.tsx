@@ -163,7 +163,7 @@ const SPACER_HEIGHTS: Record<SpacerHeight, string> = {
 
 function SpacerSection({ block, animate }: { block: Extract<AboutBlock, { type: "spacer" }>; animate: boolean }) {
   return (
-    <div className={cn("relative w-full", SPACER_HEIGHTS[block.height])} style={{ backgroundColor: block.color }}>
+    <div className={cn("relative w-full", SPACER_HEIGHTS[block.height])} style={{ backgroundColor: block.color.toLowerCase() === LEGACY_CREAM ? "#ffffff" : block.color }}>
       {/* Admin preview only (animate=false uniquely identifies that
           context — see AboutBlocksRenderer's animate prop). A Spacer set
           to its default colour is deliberately invisible on the real
@@ -304,6 +304,9 @@ function MultiColumnRow({ row, animate }: { row: AboutRow; animate: boolean }) {
     </section>
   );
 }
+
+// The page background used to be cream (#faf7f1), which was also every new spacer's default -- saved spacers still carry that value, so it's treated as the page background (now white) at render time instead of showing as cream bands.
+const LEGACY_CREAM = "#faf7f1";
 
 export function AboutBlocksRenderer({ rows, animate = true }: { rows: AboutRow[]; animate?: boolean }) {
   return (

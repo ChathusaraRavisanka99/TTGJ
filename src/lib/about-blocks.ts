@@ -74,7 +74,7 @@ export type SpacerHeight = "sm" | "md" | "lg" | "xl";
 // The page's own --color-ivory background (see globals.css) — kept as a
 // literal here rather than imported, since this default just needs to
 // match visually, not stay wired to the CSS variable.
-export const SPACER_DEFAULT_COLOR = "#faf7f1";
+export const SPACER_DEFAULT_COLOR = "#ffffff";
 
 // Shared between the admin builder's height <select> and the live
 // preview's admin-only "Spacer · Medium" label overlay (see
@@ -318,7 +318,7 @@ const spacerBlockSchema = z.object({
   id: z.string().min(1).max(64),
   type: z.literal("spacer"),
   height: z.enum(["sm", "md", "lg", "xl"]),
-  color: z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Enter a hex colour like #faf7f1."),
+  color: z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Enter a hex colour like #ffffff."),
 });
 
 export const aboutBlockSchema = z.discriminatedUnion("type", [

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { removeRetailCartItem } from "@/actions/retail-cart";
 import { formatPrice, cn } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/MarketProvider";
 
 interface Item {
   id: string;
@@ -25,6 +26,7 @@ interface Item {
 
 export function RetailCartItemRow({ item }: { item: Item }) {
   const router = useRouter();
+  const currency = useCurrency();
   const [pending, startTransition] = useTransition();
 
   function remove() {
@@ -46,7 +48,7 @@ export function RetailCartItemRow({ item }: { item: Item }) {
         {item.unavailable ? (
           <p className="mt-0.5 text-sm font-medium text-red-700">No longer available — please remove it to check out</p>
         ) : (
-          <p className="mt-0.5 text-sm text-charcoal/60">{formatPrice(item.unitPrice)} each</p>
+          <p className="mt-0.5 text-sm text-charcoal/60">{formatPrice(item.unitPrice, currency)} each</p>
         )}
       </div>
       {/* Wraps to its own full-width row on narrow screens (basis-full),
@@ -58,7 +60,7 @@ export function RetailCartItemRow({ item }: { item: Item }) {
         <button type="button" title="Remove" disabled={pending} onClick={remove} className="text-charcoal/65 hover:text-red-700">
           <Trash2 size={16} />
         </button>
-        <p className="w-20 shrink-0 text-right font-serif text-charcoal sm:w-24">{formatPrice(item.unitPrice * item.quantity)}</p>
+        <p className="w-20 shrink-0 text-right font-serif text-charcoal sm:w-24">{formatPrice(item.unitPrice * item.quantity, currency)}</p>
       </div>
     </div>
   );

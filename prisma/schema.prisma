@@ -77,7 +77,7 @@ model User {
   // The other side of ChatThread.generalUserId — see its own comment.
   generalChatThread ChatThread? @relation("GeneralSupportThread")
 
-  retailCart              RetailCart?
+  retailCarts             RetailCart[]
   orders                  Order[]
   discountCodeRedemptions DiscountCodeRedemption[]
   // Codes minted for this specific customer (DiscountCode.scope ==
@@ -274,6 +274,16 @@ model Gemstone {
   retailPrice Float?
   costPrice   Float?
 
+  // Sri Lanka store (/lk) — entered per item in rupees, never converted
+  // from the USD fields above. lkrRetailPrice is the buy-now price and
+  // lkrPrice the quote-reference price (shown when showPrice is on), same
+  // roles as retailPrice/price. An item with neither is "Request a Quote"
+  // on /lk; isFeaturedLk curates the /lk home page independently of
+  // isFeatured.
+  lkrRetailPrice Float?
+  lkrPrice       Float?
+  isFeaturedLk   Boolean @default(false)
+
   stockStatus StockStatus @default(AVAILABLE)
   isPublished Boolean     @default(true)
 
@@ -301,6 +311,7 @@ model Gemstone {
   @@index([cutId])
   @@index([stockStatus])
   @@index([isFeatured])
+  @@index([isFeaturedLk])
 }
 
 enum PieceType {
@@ -342,6 +353,11 @@ model JewelryPiece {
   retailPrice Float?
   costPrice   Float?
 
+  // Sri Lanka store (/lk) prices and curation — see Gemstone.
+  lkrRetailPrice Float?
+  lkrPrice       Float?
+  isFeaturedLk   Boolean @default(false)
+
   stockStatus StockStatus @default(AVAILABLE)
   isPublished Boolean     @default(true)
 
@@ -366,6 +382,7 @@ model JewelryPiece {
   @@index([pieceType])
   @@index([stockStatus])
   @@index([isFeatured])
+  @@index([isFeaturedLk])
 }
 
 model JewelryGemstoneLink {
@@ -811,6 +828,9 @@ model DiscountCode {
   code String @unique
 
   amountOff Float
+  // The same code's value on the Sri Lanka store, in rupees. Null means the
+  // code isn't valid on /lk (amountOff is USD and isn't converted).
+  amountOffLkr Float?
 
   scope          DiscountScope @default(SITE_WIDE)
   assignedUserId String?
@@ -984,13 +1004,17 @@ model PromotionItem {
   jewelryId  String?
   jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
 
+  // Which storefront this promotion belongs to ("intl" | "lk"); promoPrice
+  // is in that market's currency. The Sri Lanka store runs its own seasonal
+  // promotion (PageContent key "lk:seasonal") with its own item list.
+  market     String @default("intl")
   promoPrice Float
-  sortOrder  Int   @default(0)
+  sortOrder  Int    @default(0)
 
   createdAt DateTime @default(now())
 
-  @@unique([theme, gemstoneId])
-  @@unique([theme, jewelryId])
+  @@unique([theme, gemstoneId, market])
+  @@unique([theme, jewelryId, market])
   @@index([gemstoneId])
   @@index([jewelryId])
   @@index([theme])
@@ -1051,8 +1075,11 @@ model SubcultureCollectionItem {
 
 model RetailCart {
   id     String @id @default(cuid())
-  userId String @unique
+  userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  // One cart per market so rupee and dollar prices never mix in a cart.
+  market String @default("intl")
 
   items RetailCartItem[]
 
@@ -1063,6 +1090,7 @@ model RetailCart {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([userId, market])
   @@index([discountCodeId])
 }
 
@@ -1095,6 +1123,12 @@ enum OrderStatus {
   PAID
   PAYMENT_FAILED
   CANCELLED
+}
+
+enum PaymentMethod {
+  PAYHERE_CARD
+  WIRE_TRANSFER
+  COD
 }
 
 model Order {
@@ -1131,6 +1165,12 @@ model Order {
   shipPostalCode   String?
 
   status OrderStatus @default(PENDING_PAYMENT)
+
+  // Which storefront the order was placed on, and how it's being paid.
+  // A WIRE_TRANSFER order stays PENDING_PAYMENT (its items RESERVED) until
+  // an admin confirms the transfer landed — see lib/orders.ts.
+  market        String        @default("intl")
+  paymentMethod PaymentMethod @default(PAYHERE_CARD)
 
   paymentGateway   String    @default("payhere")
   // PayHere's own payment id, set once their notify webhook confirms

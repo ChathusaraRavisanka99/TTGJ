@@ -1,20 +1,33 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { initiateRetailCheckout } from "@/actions/checkout";
 import type { PayhereCheckoutFields } from "@/lib/payhere";
 import { Input, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { useMarket } from "@/components/providers/MarketProvider";
+import { withMarket } from "@/lib/market-shared";
+import { defaultPaymentMethod, paymentMethodsFor } from "@/lib/payment-methods";
+import { cn } from "@/lib/utils";
 
 // A country select would need a full ISO list — a plain text field here
 // instead, matched case-insensitively against each ShippingZone's
 // countries and against "Sri Lanka" for the domestic/VAT check (see
 // lib/checkout.ts's isSriLanka). Good enough for the countries this
 // business actually ships to today; a real dropdown is a easy follow-up
-// once the shipping zone list is finalized.
+// once the shipping zone list is finalized. On the Sri Lanka store (/lk)
+// the country isn't asked at all: it delivers within Sri Lanka only.
 export function CheckoutForm() {
+  const t = useTranslations("checkout");
+  const router = useRouter();
+  const market = useMarket();
+  const methods = paymentMethodsFor(market);
+  const [method, setMethod] = useState(defaultPaymentMethod(market));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const isWire = method === "WIRE_TRANSFER";
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -22,6 +35,10 @@ export function CheckoutForm() {
       const result = await initiateRetailCheckout(formData);
       if (!result.ok) {
         setError(result.error);
+        return;
+      }
+      if (result.method === "WIRE_TRANSFER") {
+        router.push(withMarket(`/checkout/wire?order=${encodeURIComponent(result.orderRecordId)}`, market));
         return;
       }
       submitToPayhere(result.checkoutUrl, result.fields);
@@ -47,38 +64,87 @@ export function CheckoutForm() {
     <form action={handleSubmit} className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="firstName">First Name</Label>
+          <Label htmlFor="firstName">{t("firstName")}</Label>
           <Input id="firstName" name="firstName" required autoComplete="given-name" />
         </div>
         <div>
-          <Label htmlFor="lastName">Last Name</Label>
+          <Label htmlFor="lastName">{t("lastName")}</Label>
           <Input id="lastName" name="lastName" required autoComplete="family-name" />
         </div>
       </div>
       <div>
-        <Label htmlFor="phone">Phone</Label>
+        <Label htmlFor="phone">{t("phone")}</Label>
         <Input id="phone" name="phone" required autoComplete="tel" />
       </div>
       <div>
-        <Label htmlFor="address">Address</Label>
+        <Label htmlFor="address">{t("address")}</Label>
         <Input id="address" name="address" required autoComplete="street-address" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="city">City</Label>
+          <Label htmlFor="city">{t("city")}</Label>
           <Input id="city" name="city" required autoComplete="address-level2" />
         </div>
-        <div>
-          <Label htmlFor="country">Country</Label>
-          <Input id="country" name="country" required autoComplete="country-name" placeholder="e.g. Sri Lanka" />
-        </div>
+        {market === "lk" ? (
+          <div className="flex items-end pb-2.5 text-sm text-charcoal/70">{t("deliveryNote")}</div>
+        ) : (
+          <div>
+            <Label htmlFor="country">{t("country")}</Label>
+            <Input id="country" name="country" required autoComplete="country-name" placeholder={t("countryPlaceholder")} />
+          </div>
+        )}
       </div>
+
+      {/* Only shown where there's a real choice to make (the Sri Lanka
+          store) — the international site has the one method, so its
+          checkout looks exactly as it always has. A "coming soon" method is
+          visible but disabled: a disabled radio isn't submitted, and the
+          server re-checks the method against the same list anyway. */}
+      {methods.length > 1 && (
+        <fieldset className="space-y-3">
+          <legend className="mb-1 text-sm font-medium text-charcoal">{t("paymentMethod")}</legend>
+          {methods.map((option) => {
+            const live = option.status === "live";
+            return (
+              <label
+                key={option.key}
+                className={cn(
+                  "flex items-start gap-3 rounded-xl border p-4 transition-colors",
+                  live ? "cursor-pointer hover:border-gold" : "cursor-not-allowed bg-charcoal/[0.03] opacity-70",
+                  live && method === option.key ? "border-gold bg-gold/5" : "border-border-subtle",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value={option.key}
+                  disabled={!live}
+                  checked={live && method === option.key}
+                  onChange={() => setMethod(option.key)}
+                  className="mt-1 accent-gold"
+                />
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-charcoal">{t(`methods.${option.key}.name`)}</span>
+                    {!live && (
+                      <span className="rounded-full bg-charcoal/10 px-2 py-0.5 text-[11px] uppercase tracking-wide text-charcoal/70">
+                        {t("comingSoon")}
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-0.5 block text-sm text-charcoal/65">{t(`methods.${option.key}.hint`)}</span>
+                </span>
+              </label>
+            );
+          })}
+        </fieldset>
+      )}
 
       <FieldError>{error ?? undefined}</FieldError>
       <Button type="submit" variant="gold" size="lg" className="w-full" disabled={pending}>
-        {pending ? "Preparing payment..." : "Continue to Payment"}
+        {isWire ? (pending ? t("placing") : t("placeOrder")) : pending ? t("preparing") : t("continueToPayment")}
       </Button>
-      <p className="text-center text-xs text-charcoal/65">You&apos;ll be redirected to PayHere to complete payment securely.</p>
+      <p className="text-center text-xs text-charcoal/65">{isWire ? t("wireNote") : t("payhereNote")}</p>
     </form>
   );
 }

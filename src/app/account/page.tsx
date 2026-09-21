@@ -3,6 +3,7 @@ import Link from "@/components/ui/MarketLink";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { signOutAction } from "@/actions/auth";
+import { getMarket } from "@/lib/market";
 import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = { title: "My Account" };
@@ -11,11 +12,12 @@ export default async function AccountPage() {
   const session = await auth();
   if (!session?.user) return null; // middleware guards this route
 
+  const market = await getMarket();
   const [quoteCount, sourcingCount, openCartItemCount, retailCartItemCount, orderCount, user] = await Promise.all([
     prisma.quoteRequest.count({ where: { userId: session.user.id } }),
     prisma.sourcingRequest.count({ where: { userId: session.user.id } }),
     prisma.cartItem.count({ where: { cart: { userId: session.user.id, status: "OPEN" } } }),
-    prisma.retailCartItem.count({ where: { cart: { userId: session.user.id } } }),
+    prisma.retailCartItem.count({ where: { cart: { userId: session.user.id, market } } }),
     prisma.order.count({ where: { userId: session.user.id, status: { not: "CANCELLED" } } }),
     // Not embedded in the session/JWT (only role is) — cheap enough to
     // read fresh here rather than plumb it through auth.ts for one banner.

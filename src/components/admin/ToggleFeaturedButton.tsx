@@ -8,14 +8,25 @@ import { Star } from "lucide-react";
 // Featured Jewelry sections — a filled gold star toggles a single item in
 // or out without opening its full edit form. Whether the section itself is
 // shown at all is a separate switch, set on /admin/content/home.
-export function ToggleFeaturedButton({ featured, onToggle }: { featured: boolean; onToggle: (next: boolean) => Promise<unknown> }) {
+//
+// `store` names which homepage the star curates ("homepage" or the Sri Lanka
+// store's home) — each storefront has its own featured set.
+export function ToggleFeaturedButton({
+  featured,
+  onToggle,
+  store = "homepage",
+}: {
+  featured: boolean;
+  onToggle: (next: boolean) => Promise<unknown>;
+  store?: string;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
     <button
       type="button"
-      title={featured ? "Remove from homepage Featured section" : "Add to homepage Featured section"}
+      title={featured ? `Remove from the ${store} Featured section` : `Add to the ${store} Featured section`}
       disabled={pending}
       onClick={() => startTransition(async () => { await onToggle(!featured); router.refresh(); })}
       className="rounded p-1 text-charcoal/40 transition-colors hover:bg-charcoal/5 hover:text-gold disabled:opacity-50"

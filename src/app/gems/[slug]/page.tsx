@@ -22,6 +22,8 @@ import { HeritageSideArt } from "@/components/catalog/HeritageSideArt";
 import { StickyBuyBar } from "@/components/catalog/StickyBuyBar";
 import { getTrustBarMessages } from "@/lib/i18n-messages";
 import { formatPrice } from "@/lib/utils";
+import { getMarket } from "@/lib/market";
+import { MARKETS } from "@/lib/market-shared";
 
 export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -35,14 +37,15 @@ export async function generateMetadata({ params }: PageProps<"/gems/[slug]">): P
 
 export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]">) {
   const { slug } = await params;
-  const [gem, session] = await Promise.all([getGemstoneBySlug(slug), auth()]);
+  const market = await getMarket();
+  const [gem, session] = await Promise.all([getGemstoneBySlug(slug, market), auth()]);
 
   if (!gem || !gem.isPublished) notFound();
 
   const [promotion, relatedGems, { gemstonePrices }, trustBarMessages] = await Promise.all([
-    getActivePromotion({ gemstoneId: gem.id }),
-    getRelatedGemstones(gem),
-    getActivePromotionMaps(),
+    getActivePromotion({ gemstoneId: gem.id }, market),
+    getRelatedGemstones(gem, 4, market),
+    getActivePromotionMaps(market),
     getTrustBarMessages(),
   ]);
 
@@ -52,7 +55,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
   // StickyBuyBar's own comment for why this is a plain label rather than
   // reusing ProductPrice itself (that component isn't meant for a compact bar).
   const displayPrice = promotion?.promoPrice ?? gem.retailPrice ?? (gem.showPrice ? gem.price : null);
-  const stickyPriceLabel = displayPrice != null ? formatPrice(displayPrice) : "Request a Quote";
+  const stickyPriceLabel = displayPrice != null ? formatPrice(displayPrice, MARKETS[market].currency) : "Request a Quote";
 
   return (
     <div className="relative overflow-hidden">

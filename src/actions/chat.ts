@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { getMarket } from "@/lib/market";
 import {
   getChatContext,
   getOrCreateChatThread,
@@ -143,6 +144,8 @@ export async function pollChatMessages(requestType: ChatRequestType, requestId: 
   if (!isAdmin && session.user.id !== context.customerId) return [];
 
   const messages = await getChatMessages(context.threadId);
+  // A tagged item's price is shown in the viewer's own storefront currency.
+  const lk = (await getMarket()) === "lk";
   return messages.map((m) => ({
     id: m.id,
     senderId: m.senderId,
@@ -151,10 +154,10 @@ export async function pollChatMessages(requestType: ChatRequestType, requestId: 
     body: m.body,
     createdAt: m.createdAt.toISOString(),
     taggedGemstone: m.taggedGemstone
-      ? { name: m.taggedGemstone.name, slug: m.taggedGemstone.slug, price: m.taggedGemstone.price, showPrice: m.taggedGemstone.showPrice, imageUrl: m.taggedGemstone.media[0]?.url }
+      ? { name: m.taggedGemstone.name, slug: m.taggedGemstone.slug, price: lk ? m.taggedGemstone.lkrPrice : m.taggedGemstone.price, showPrice: m.taggedGemstone.showPrice, imageUrl: m.taggedGemstone.media[0]?.url }
       : null,
     taggedJewelry: m.taggedJewelry
-      ? { name: m.taggedJewelry.name, slug: m.taggedJewelry.slug, price: m.taggedJewelry.price, showPrice: m.taggedJewelry.showPrice, imageUrl: m.taggedJewelry.media[0]?.url }
+      ? { name: m.taggedJewelry.name, slug: m.taggedJewelry.slug, price: lk ? m.taggedJewelry.lkrPrice : m.taggedJewelry.price, showPrice: m.taggedJewelry.showPrice, imageUrl: m.taggedJewelry.media[0]?.url }
       : null,
     taggedCartSnapshot: m.taggedCartSnapshot as { items: { label: string; amount: number }[]; total: number } | null,
   }));

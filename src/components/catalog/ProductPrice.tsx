@@ -1,4 +1,7 @@
+"use client";
+
 import { formatPrice } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/MarketProvider";
 import type { ActivePromotion } from "@/lib/promotion-items";
 
 interface ProductPriceProps {
@@ -18,6 +21,7 @@ interface ProductPriceProps {
 // separately opted into public pricing (showPrice, or has a retailPrice)
 // and that price is actually higher than the promo one.
 export function ProductPrice({ price, showPrice, retailPrice, promotion }: ProductPriceProps) {
+  const currency = useCurrency();
   const displayPrice = retailPrice ?? price;
   const displayable = retailPrice != null || showPrice;
 
@@ -25,8 +29,8 @@ export function ProductPrice({ price, showPrice, retailPrice, promotion }: Produ
     const showRegular = displayable && displayPrice != null && displayPrice > promotion.promoPrice;
     return (
       <div className="mt-2 flex flex-wrap items-baseline gap-3">
-        <p className="font-serif text-2xl text-gold-deep">{formatPrice(promotion.promoPrice)}</p>
-        {showRegular && <p className="text-lg text-charcoal/65 line-through">{formatPrice(displayPrice!)}</p>}
+        <p className="font-serif text-2xl text-gold-deep">{formatPrice(promotion.promoPrice, currency)}</p>
+        {showRegular && <p className="text-lg text-charcoal/65 line-through">{formatPrice(displayPrice!, currency)}</p>}
         <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-gold-deep">
           {promotion.themeLabel} Sale
         </span>
@@ -35,7 +39,7 @@ export function ProductPrice({ price, showPrice, retailPrice, promotion }: Produ
   }
 
   if (displayable && displayPrice != null) {
-    return <p className="mt-2 font-serif text-2xl text-gold-deep">{formatPrice(displayPrice)}</p>;
+    return <p className="mt-2 font-serif text-2xl text-gold-deep">{formatPrice(displayPrice, currency)}</p>;
   }
 
   return null;

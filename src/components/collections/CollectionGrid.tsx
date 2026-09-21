@@ -4,7 +4,11 @@ import { useMemo, useState } from "react";
 import type { SubcultureDef } from "@/lib/subculture-collections";
 import type { CollectionCardData } from "@/lib/subculture-items";
 import { CollectionProductCard } from "@/components/collections/CollectionProductCard";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/MarketProvider";
+
+// Rough price ceilings for the "Up to" filter, in each storefront's own currency.
+const PRICE_CEILINGS = { USD: [500, 1000, 2500, 5000], LKR: [100000, 250000, 500000, 1000000] } as const;
 
 const controlClass =
   "rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/80 focus:outline-none focus:ring-1 focus:ring-white/30";
@@ -34,6 +38,7 @@ function matchesSection(item: CollectionCardData, hints: string[]): boolean {
 export function CollectionGrid({ items, theme }: { items: CollectionCardData[]; theme: SubcultureDef }) {
   const [gemstone, setGemstone] = useState("");
   const [type, setType] = useState<"" | "gemstone" | "jewelry">("");
+  const currency = useCurrency();
   const [maxPrice, setMaxPrice] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
 
@@ -80,10 +85,9 @@ export function CollectionGrid({ items, theme }: { items: CollectionCardData[]; 
         </select>
         <select value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className={controlClass}>
           <option className={optionClass} value="">Any Price</option>
-          <option className={optionClass} value="500">Up to $500</option>
-          <option className={optionClass} value="1000">Up to $1,000</option>
-          <option className={optionClass} value="2500">Up to $2,500</option>
-          <option className={optionClass} value="5000">Up to $5,000</option>
+          {PRICE_CEILINGS[currency].map((ceiling) => (
+            <option key={ceiling} className={optionClass} value={ceiling}>Up to {formatPrice(ceiling, currency)}</option>
+          ))}
         </select>
         <label className={cn(controlClass, "flex cursor-pointer items-center gap-2")}>
           <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="accent-current" />

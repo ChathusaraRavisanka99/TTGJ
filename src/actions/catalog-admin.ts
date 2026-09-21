@@ -61,9 +61,12 @@ export async function createGemstone(formData: FormData): Promise<ActionResult> 
       showPrice: data.showPrice,
       retailPrice: data.retailPrice,
       costPrice: data.costPrice,
+      lkrRetailPrice: data.lkrRetailPrice,
+      lkrPrice: data.lkrPrice,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
+      isFeaturedLk: data.isFeaturedLk,
     },
   });
 
@@ -110,15 +113,21 @@ export async function updateGemstone(id: string, formData: FormData): Promise<Ac
       showPrice: data.showPrice,
       retailPrice: data.retailPrice,
       costPrice: data.costPrice,
+      // null (not undefined) so clearing a rupee price actually clears it —
+      // the item goes back to "Request a Quote" on the Sri Lanka store.
+      lkrRetailPrice: data.lkrRetailPrice ?? null,
+      lkrPrice: data.lkrPrice ?? null,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
+      isFeaturedLk: data.isFeaturedLk,
     },
   });
 
   revalidatePath("/admin/gems");
   revalidatePath(`/admin/gems/${id}`);
   revalidatePath("/");
+  revalidatePath("/lk");
   return { ok: true };
 }
 
@@ -131,12 +140,19 @@ export async function deleteGemstone(id: string): Promise<ActionResult> {
 
 // Quick per-row toggle on the admin gems list, so curating the homepage's
 // Featured Gemstones section doesn't require opening the full edit form.
-export async function toggleGemstoneFeatured(id: string, featured: boolean): Promise<ActionResult> {
+export async function toggleGemstoneFeatured(id: string, featured: boolean, market: "intl" | "lk" = "intl"): Promise<ActionResult> {
   await requireAdmin();
-  await prisma.gemstone.update({ where: { id }, data: { isFeatured: featured } });
+  await prisma.gemstone.update({ where: { id }, data: market === "lk" ? { isFeaturedLk: featured } : { isFeatured: featured } });
   revalidatePath("/admin/gems");
-  revalidatePath("/");
+  revalidatePath(market === "lk" ? "/lk" : "/");
   return { ok: true };
+}
+
+// Bindable variants (`.bind(null, id)`) for the Sri Lanka star column — the admin
+// lists are Server Components, which can hand a client button a bound server
+// action but not an inline function.
+export async function toggleGemstoneFeaturedLk(id: string, featured: boolean): Promise<ActionResult> {
+  return toggleGemstoneFeatured(id, featured, "lk");
 }
 
 export async function uploadCertificateFile(gemstoneId: string, formData: FormData): Promise<ActionResult> {
@@ -202,9 +218,12 @@ export async function createJewelry(formData: FormData): Promise<ActionResult> {
       showPrice: data.showPrice,
       retailPrice: data.retailPrice,
       costPrice: data.costPrice,
+      lkrRetailPrice: data.lkrRetailPrice,
+      lkrPrice: data.lkrPrice,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
+      isFeaturedLk: data.isFeaturedLk,
     },
   });
 
@@ -234,15 +253,19 @@ export async function updateJewelry(id: string, formData: FormData): Promise<Act
       showPrice: data.showPrice,
       retailPrice: data.retailPrice,
       costPrice: data.costPrice,
+      lkrRetailPrice: data.lkrRetailPrice ?? null,
+      lkrPrice: data.lkrPrice ?? null,
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
+      isFeaturedLk: data.isFeaturedLk,
     },
   });
 
   revalidatePath("/admin/jewelry");
   revalidatePath(`/admin/jewelry/${id}`);
   revalidatePath("/");
+  revalidatePath("/lk");
   return { ok: true };
 }
 
@@ -255,12 +278,16 @@ export async function deleteJewelry(id: string): Promise<ActionResult> {
 
 // Quick per-row toggle on the admin jewelry list, mirroring
 // toggleGemstoneFeatured above.
-export async function toggleJewelryFeatured(id: string, featured: boolean): Promise<ActionResult> {
+export async function toggleJewelryFeatured(id: string, featured: boolean, market: "intl" | "lk" = "intl"): Promise<ActionResult> {
   await requireAdmin();
-  await prisma.jewelryPiece.update({ where: { id }, data: { isFeatured: featured } });
+  await prisma.jewelryPiece.update({ where: { id }, data: market === "lk" ? { isFeaturedLk: featured } : { isFeatured: featured } });
   revalidatePath("/admin/jewelry");
-  revalidatePath("/");
+  revalidatePath(market === "lk" ? "/lk" : "/");
   return { ok: true };
+}
+
+export async function toggleJewelryFeaturedLk(id: string, featured: boolean): Promise<ActionResult> {
+  return toggleJewelryFeatured(id, featured, "lk");
 }
 
 export async function linkGemstoneToJewelry(jewelryId: string, gemstoneId: string | null, freeformDesc: string | null): Promise<ActionResult> {

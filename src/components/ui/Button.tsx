@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "@/components/ui/MarketLink";
 import { type ButtonHTMLAttributes, type AnchorHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
+import { useMarket } from "@/components/providers/MarketProvider";
+import { withMarket } from "@/lib/market-shared";
 
 const VARIANTS = {
   primary: "bg-charcoal text-ivory hover:bg-charcoal-soft",
@@ -58,5 +62,6 @@ export function HardLinkButton({
   href,
   ...props
 }: AnchorHTMLAttributes<HTMLAnchorElement> & { variant?: Variant; size?: Size; href: string }) {
-  return <a href={href} className={cn(base, VARIANTS[variant], SIZES[size], className)} {...props} />;
+  const market = useMarket();
+  return <a href={withMarket(href, market)} className={cn(base, VARIANTS[variant], SIZES[size], className)} {...props} />;
 }

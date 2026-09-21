@@ -4,7 +4,8 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/rbac";
 import { saveUploadedMedia } from "@/lib/media";
-import { getPageContent, savePageContent, getSeasonalContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";
+import { savePageContent, getSeasonalContent, getHomeContent, LK_PAYMENTS_KEY } from "@/lib/page-content";
+import { marketKey, type Market } from "@/lib/market-shared";
 import { aboutRowsSchema, type AboutRow } from "@/lib/about-blocks";
 import { SEASONAL_THEME_KEYS, type SeasonalThemeKey } from "@/lib/seasonal-themes";
 import type { ActionResult } from "./auth";
@@ -13,28 +14,16 @@ function obj(formData: FormData) {
   return Object.fromEntries(formData.entries());
 }
 
-async function saveImageField<T extends object>(
-  page: string,
-  defaults: T,
-  field: keyof T,
-  file: File | null,
-): Promise<ActionResult> {
-  await requireAdmin();
-  if (!file || file.size === 0) return { ok: false, error: "No file provided." };
-  try {
-    const saved = await saveUploadedMedia(file);
-    if (saved.type !== "IMAGE") return { ok: false, error: "Please upload an image file." };
-    const current = await getPageContent(page, defaults);
-    await savePageContent(page, { ...current, [field]: saved.url });
-    revalidatePath(page === "home" ? "/" : `/${page}`);
-    revalidatePath(`/admin/content/${page}`);
-    return { ok: true };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Upload failed." };
-  }
-}
-
 // ---------- Home ----------
+//
+// The international home page ("home") and the Sri Lanka one ("lk:home")
+// are edited by the same actions, told apart by a trailing `market` — the
+// admin page's market tab. Same fields, separate saved copy.
+
+function revalidateHome(market: Market) {
+  revalidatePath(market === "lk" ? "/lk" : "/");
+  revalidatePath("/admin/content/home");
+}
 
 const homeTextSchema = z.object({
   heroKicker: z.string().max(200),
@@ -58,23 +47,34 @@ const homeTextSchema = z.object({
   showFeaturedJewelry: z.coerce.boolean().default(false),
 });
 
-export async function updateHomeText(formData: FormData): Promise<ActionResult> {
+export async function updateHomeText(formData: FormData, market: Market = "intl"): Promise<ActionResult> {
   await requireAdmin();
   const parsed = homeTextSchema.safeParse(obj(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid content." };
 
-  const current = await getPageContent("home", DEFAULT_HOME_CONTENT);
-  await savePageContent("home", { ...current, ...parsed.data });
-  revalidatePath("/");
-  revalidatePath("/admin/content/home");
+  const current = await getHomeContent(market);
+  await savePageContent(marketKey("home", market), { ...current, ...parsed.data });
+  revalidateHome(market);
   return { ok: true };
 }
 
-export async function setHomeImage(field: "heritageImage" | "sourcingImage", formData: FormData): Promise<ActionResult> {
-  return saveImageField("home", DEFAULT_HOME_CONTENT, field, formData.get("file") as File | null);
+export async function setHomeImage(market: Market, field: "heritageImage" | "sourcingImage", formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) return { ok: false, error: "No file provided." };
+  try {
+    const saved = await saveUploadedMedia(file);
+    if (saved.type !== "IMAGE") return { ok: false, error: "Please upload an image file." };
+    const current = await getHomeContent(market);
+    await savePageContent(marketKey("home", market), { ...current, [field]: saved.url });
+    revalidateHome(market);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Upload failed." };
+  }
 }
 
-export async function addHeroSlide(formData: FormData): Promise<ActionResult> {
+export async function addHeroSlide(formData: FormData, market: Market = "intl"): Promise<ActionResult> {
   await requireAdmin();
   const file = formData.get("file") as File | null;
   const alt = ((formData.get("alt") as string | null) ?? "").slice(0, 200);
@@ -83,18 +83,17 @@ export async function addHeroSlide(formData: FormData): Promise<ActionResult> {
   try {
     const saved = await saveUploadedMedia(file);
     if (saved.type !== "IMAGE") return { ok: false, error: "Please upload an image file." };
-    const current = await getPageContent("home", DEFAULT_HOME_CONTENT);
+    const current = await getHomeContent(market);
     const heroSlides = [...current.heroSlides, { src: saved.url, alt }];
-    await savePageContent("home", { ...current, heroSlides });
-    revalidatePath("/");
-    revalidatePath("/admin/content/home");
-    return { ok: true };
+    await savePageContent(marketKey("home", market), { ...current, heroSlides });
+    revalidateHome(market);
+      return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Upload failed." };
   }
 }
 
-export async function replaceHeroSlideImage(index: number, formData: FormData): Promise<ActionResult> {
+export async function replaceHeroSlideImage(index: number, formData: FormData, market: Market = "intl"): Promise<ActionResult> {
   await requireAdmin();
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) return { ok: false, error: "No file provided." };
@@ -102,48 +101,46 @@ export async function replaceHeroSlideImage(index: number, formData: FormData): 
   try {
     const saved = await saveUploadedMedia(file);
     if (saved.type !== "IMAGE") return { ok: false, error: "Please upload an image file." };
-    const current = await getPageContent("home", DEFAULT_HOME_CONTENT);
+    const current = await getHomeContent(market);
     if (index < 0 || index >= current.heroSlides.length) return { ok: false, error: "Slide not found." };
     const heroSlides = current.heroSlides.map((s, i) => (i === index ? { ...s, src: saved.url } : s));
-    await savePageContent("home", { ...current, heroSlides });
-    revalidatePath("/");
-    revalidatePath("/admin/content/home");
-    return { ok: true };
+    await savePageContent(marketKey("home", market), { ...current, heroSlides });
+    revalidateHome(market);
+      return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Upload failed." };
   }
 }
 
-export async function updateHeroSlideAlt(index: number, alt: string): Promise<ActionResult> {
+export async function updateHeroSlideAlt(index: number, alt: string, market: Market = "intl"): Promise<ActionResult> {
   await requireAdmin();
-  const current = await getPageContent("home", DEFAULT_HOME_CONTENT);
+  const current = await getHomeContent(market);
   if (index < 0 || index >= current.heroSlides.length) return { ok: false, error: "Slide not found." };
   const heroSlides = current.heroSlides.map((s, i) => (i === index ? { ...s, alt: alt.slice(0, 200) } : s));
-  await savePageContent("home", { ...current, heroSlides });
-  revalidatePath("/");
+  await savePageContent(marketKey("home", market), { ...current, heroSlides });
+  revalidateHome(market);
   return { ok: true };
 }
 
-export async function updateHeroSlideFocus(index: number, focusX: number): Promise<ActionResult> {
+export async function updateHeroSlideFocus(index: number, focusX: number, market: Market = "intl"): Promise<ActionResult> {
   await requireAdmin();
-  const current = await getPageContent("home", DEFAULT_HOME_CONTENT);
+  const current = await getHomeContent(market);
   if (index < 0 || index >= current.heroSlides.length) return { ok: false, error: "Slide not found." };
   const clamped = Math.min(100, Math.max(0, Math.round(focusX)));
   const heroSlides = current.heroSlides.map((s, i) => (i === index ? { ...s, focusX: clamped } : s));
-  await savePageContent("home", { ...current, heroSlides });
-  revalidatePath("/");
+  await savePageContent(marketKey("home", market), { ...current, heroSlides });
+  revalidateHome(market);
   return { ok: true };
 }
 
-export async function removeHeroSlide(index: number): Promise<ActionResult> {
+export async function removeHeroSlide(index: number, market: Market = "intl"): Promise<ActionResult> {
   await requireAdmin();
-  const current = await getPageContent("home", DEFAULT_HOME_CONTENT);
+  const current = await getHomeContent(market);
   if (current.heroSlides.length <= 1) return { ok: false, error: "Keep at least one hero slide." };
   if (index < 0 || index >= current.heroSlides.length) return { ok: false, error: "Slide not found." };
   const heroSlides = current.heroSlides.filter((_, i) => i !== index);
-  await savePageContent("home", { ...current, heroSlides });
-  revalidatePath("/");
-  revalidatePath("/admin/content/home");
+  await savePageContent(marketKey("home", market), { ...current, heroSlides });
+  revalidateHome(market);
   return { ok: true };
 }
 
@@ -187,6 +184,20 @@ export async function updateCartContent(wireTransferInstructions: string): Promi
   return { ok: true };
 }
 
+// ---------- Sri Lanka store (bank-transfer instructions) ----------
+
+export async function updateLkPaymentsContent(wireTransferInstructions: string): Promise<ActionResult> {
+  await requireAdmin();
+  const trimmed = wireTransferInstructions.trim();
+  if (!trimmed) return { ok: false, error: "Instructions can't be empty." };
+  if (trimmed.length > 2000) return { ok: false, error: "Keep it under 2000 characters." };
+
+  await savePageContent(LK_PAYMENTS_KEY, { wireTransferInstructions: trimmed });
+  revalidatePath("/checkout/wire");
+  revalidatePath("/admin/orders");
+  return { ok: true };
+}
+
 // ---------- Seasonal promotions page ----------
 
 const seasonalThemeCopySchema = z.object({
@@ -200,15 +211,15 @@ const seasonalThemeCopySchema = z.object({
 // shouldn't need to also resubmit Spring's, and a stale form for one
 // theme can't clobber another's already-saved edits the way one big
 // "all 5 themes" form would if two admins (or two tabs) saved at once.
-export async function updateSeasonalThemeCopy(theme: SeasonalThemeKey, formData: FormData): Promise<ActionResult> {
+export async function updateSeasonalThemeCopy(theme: SeasonalThemeKey, formData: FormData, market: Market = "intl"): Promise<ActionResult> {
   await requireAdmin();
   if (!SEASONAL_THEME_KEYS.includes(theme)) return { ok: false, error: "Unknown theme." };
   const parsed = seasonalThemeCopySchema.safeParse(obj(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid content." };
 
-  const current = await getSeasonalContent();
-  await savePageContent("seasonal", { ...current, themes: { ...current.themes, [theme]: parsed.data } });
-  revalidatePath("/promotions");
+  const current = await getSeasonalContent(market);
+  await savePageContent(marketKey("seasonal", market), { ...current, themes: { ...current.themes, [theme]: parsed.data } });
+  revalidatePath(market === "lk" ? "/lk/promotions" : "/promotions");
   revalidatePath("/admin/promotions");
   return { ok: true };
 }
@@ -216,13 +227,13 @@ export async function updateSeasonalThemeCopy(theme: SeasonalThemeKey, formData:
 // Which of the 5 predefined themes is currently showing on the live
 // page — distinct from editing a theme's copy above, same as picking
 // which slide is active versus editing a slide.
-export async function setActiveSeasonalTheme(theme: SeasonalThemeKey): Promise<ActionResult> {
+export async function setActiveSeasonalTheme(theme: SeasonalThemeKey, market: Market = "intl"): Promise<ActionResult> {
   await requireAdmin();
   if (!SEASONAL_THEME_KEYS.includes(theme)) return { ok: false, error: "Unknown theme." };
 
-  const current = await getSeasonalContent();
-  await savePageContent("seasonal", { ...current, activeTheme: theme });
-  revalidatePath("/promotions");
+  const current = await getSeasonalContent(market);
+  await savePageContent(marketKey("seasonal", market), { ...current, activeTheme: theme });
+  revalidatePath(market === "lk" ? "/lk/promotions" : "/promotions");
   revalidatePath("/admin/promotions");
   return { ok: true };
 }

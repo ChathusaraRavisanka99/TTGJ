@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from "react";
 import { usePathname } from "next/navigation";
-import { stripMarket, type Market } from "@/lib/market-shared";
+import { MARKETS, stripMarket, type Market } from "@/lib/market-shared";
 
 const MarketContext = createContext<Market>("intl");
 
@@ -15,6 +15,11 @@ export function MarketProvider({ market, children }: { market: Market; children:
 
 export function useMarket(): Market {
   return useContext(MarketContext);
+}
+
+/** "USD" on the international site, "LKR" on /lk — feeds formatPrice. */
+export function useCurrency(): "USD" | "LKR" {
+  return MARKETS[useContext(MarketContext)].currency;
 }
 
 /**

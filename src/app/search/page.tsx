@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "@/components/ui/MarketLink";
 import { getGemstones, getJewelry } from "@/lib/catalog";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
+import { getMarket } from "@/lib/market";
 import { GemResults } from "@/components/catalog/GemResults";
 import { JewelryResults } from "@/components/catalog/JewelryResults";
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: "Search" };
 // rather than making them pick a catalog first. Reuses getGemstones/getJewelry
 // exactly as /gems and /jewelry do, just without any of their other filters.
 export default async function SearchPage({ searchParams }: PageProps<"/search">) {
-  const sp = await searchParams;
+  const [sp, market] = await Promise.all([searchParams, getMarket()]);
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
 
   if (!q) {
@@ -27,9 +28,9 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   }
 
   const [{ items: gems, total: gemTotal }, { items: pieces, total: jewelryTotal }, promotions] = await Promise.all([
-    getGemstones({ q, sort: "newest" }),
-    getJewelry({ q, sort: "newest" }),
-    getActivePromotionMaps(),
+    getGemstones({ q, sort: "newest", market }),
+    getJewelry({ q, sort: "newest", market }),
+    getActivePromotionMaps(market),
   ]);
 
   const noResults = gemTotal === 0 && jewelryTotal === 0;

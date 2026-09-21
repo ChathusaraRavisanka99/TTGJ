@@ -1,4 +1,7 @@
+"use client";
+
 import { cn, formatPrice } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/MarketProvider";
 
 interface CardPriceProps {
   price?: number | null;
@@ -25,6 +28,7 @@ interface CardPriceProps {
 // against otherwise), falling back to the existing price/Request-a-Quote
 // behaviour when there's no active promotion at all.
 export function CardPrice({ price, showPrice, retailPrice, promoPrice, priceClassName, quoteClassName }: CardPriceProps) {
+  const currency = useCurrency();
   const displayPrice = retailPrice ?? price;
   const displayable = retailPrice != null || !!showPrice;
 
@@ -32,14 +36,14 @@ export function CardPrice({ price, showPrice, retailPrice, promoPrice, priceClas
     const showRegular = displayable && displayPrice != null && displayPrice > promoPrice;
     return (
       <div className={cn("flex flex-wrap items-baseline gap-x-2", priceClassName)}>
-        <span className="font-serif text-gold-deep">{formatPrice(promoPrice)}</span>
-        {showRegular && <span className="text-[0.85em] text-charcoal/65 line-through">{formatPrice(displayPrice!)}</span>}
+        <span className="font-serif text-gold-deep">{formatPrice(promoPrice, currency)}</span>
+        {showRegular && <span className="text-[0.85em] text-charcoal/65 line-through">{formatPrice(displayPrice!, currency)}</span>}
       </div>
     );
   }
 
   if (displayable && displayPrice != null) {
-    return <p className={cn("font-serif text-charcoal", priceClassName)}>{formatPrice(displayPrice)}</p>;
+    return <p className={cn("font-serif text-charcoal", priceClassName)}>{formatPrice(displayPrice, currency)}</p>;
   }
 
   return (

@@ -3,19 +3,20 @@ import { notFound } from "next/navigation";
 import Link from "@/components/ui/MarketLink";
 import { Gavel } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { getPageVisibility } from "@/lib/page-visibility";
+import { getPageVisibility, marketVisibilityKey } from "@/lib/page-visibility";
+import { getMarket } from "@/lib/market";
 import { getAuctionDisplayState, auctionItemLabel, highestBid } from "@/lib/auctions";
 import { AuctionCard } from "@/components/auction/AuctionCard";
 import { Reveal } from "@/components/layout/Reveal";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const visibility = await getPageVisibility("auction");
+  const visibility = await getPageVisibility(marketVisibilityKey("auction", await getMarket()));
   if (visibility === "HIDDEN") return {};
   return { title: visibility === "COMING_SOON" ? "Coming Soon" : "Auctions" };
 }
 
 export default async function AuctionListPage() {
-  const visibility = await getPageVisibility("auction");
+  const visibility = await getPageVisibility(marketVisibilityKey("auction", await getMarket()));
   // Same "reads as though the route doesn't exist" behavior as
   // /promotions when Hidden — see that page for the reasoning.
   if (visibility === "HIDDEN") notFound();

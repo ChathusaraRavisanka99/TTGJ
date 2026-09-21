@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { marketKey, type Market } from "@/lib/market-shared";
 
 // Every page gated by this mechanism, one place — a page picks its own
 // key and this is the only spot that needs updating to register a new
@@ -12,8 +13,18 @@ export const PAGE_VISIBILITY_KEYS = [
   "dark-academia",
   "metal-rock",
   "witchy-occult",
+  // The Sri Lanka store's own seasonal promotion and auctions (see
+  // market-shared's marketKey). Auctions default HIDDEN like any untouched
+  // page, so /lk has none until an admin turns them on.
+  "lk:seasonal",
+  "lk:auction",
 ] as const;
 export type PageVisibilityKey = (typeof PAGE_VISIBILITY_KEYS)[number];
+
+/** "seasonal"/"auction" for the international site, "lk:seasonal"/"lk:auction" on /lk. */
+export function marketVisibilityKey(base: "seasonal" | "auction", market: Market): PageVisibilityKey {
+  return marketKey(base, market) as PageVisibilityKey;
+}
 
 export type PageVisibilityState = "HIDDEN" | "COMING_SOON" | "LIVE";
 

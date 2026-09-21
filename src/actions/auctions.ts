@@ -6,7 +6,8 @@ import { auth } from "@/lib/auth";
 import { requireAdmin } from "@/lib/rbac";
 import { ensureCartItemForAuction } from "@/lib/cart";
 import { getAuctionDisplayState, minimumNextBid } from "@/lib/auctions";
-import { getPageVisibility } from "@/lib/page-visibility";
+import { getPageVisibility, marketVisibilityKey } from "@/lib/page-visibility";
+import { getMarket } from "@/lib/market";
 import type { ActionResult } from "./auth";
 
 interface AuctionInput {
@@ -165,7 +166,7 @@ export async function placeBid(auctionId: string, amount: number): Promise<Actio
   // secret (it's in the page URL once an admin shares one). Hidden or
   // Coming Soon means the feature isn't meant to be live yet at all, so
   // that has to be enforced here too, not just by what the page renders.
-  const visibility = await getPageVisibility("auction");
+  const visibility = await getPageVisibility(marketVisibilityKey("auction", await getMarket()));
   if (visibility !== "LIVE") return { ok: false, error: "Auctions aren't open right now." };
 
   const auction = await prisma.auction.findUnique({ where: { id: auctionId }, include: { bids: true } });

@@ -39,5 +39,59 @@
   },
   "localeSwitcher": {
     "label": "Language"
+  },
+  "checkout": {
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phone": "Phone",
+    "address": "Address",
+    "city": "City",
+    "country": "Country",
+    "countryPlaceholder": "e.g. Sri Lanka",
+    "deliveryNote": "Delivery within Sri Lanka.",
+    "paymentMethod": "Payment method",
+    "comingSoon": "Coming soon",
+    "methods": {
+      "WIRE_TRANSFER": {
+        "name": "Bank transfer",
+        "hint": "Pay by bank transfer. We'll show our bank details and your payment reference next, and hold your items while we wait for the transfer."
+      },
+      "PAYHERE_CARD": {
+        "name": "Card payment",
+        "hint": "Pay securely with a credit or debit card."
+      },
+      "COD": {
+        "name": "Cash on delivery",
+        "hint": "Available to registered customers."
+      }
+    },
+    "placeOrder": "Place Order",
+    "continueToPayment": "Continue to Payment",
+    "preparing": "Preparing payment...",
+    "placing": "Placing your order...",
+    "payhereNote": "You'll be redirected to PayHere to complete payment securely.",
+    "wireNote": "Your order is created now and its items are held for you until the transfer is confirmed.",
+    "summary": {
+      "title": "Order Summary",
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "birthday": "Birthday discount",
+      "tax": "VAT",
+      "shipping": "Delivery",
+      "total": "Total"
+    },
+    "wire": {
+      "kicker": "Order placed",
+      "title": "Complete your bank transfer",
+      "intro": "Your items are being held for you. Please transfer the total below and use your order number as the payment reference so we can match it.",
+      "amount": "Amount to transfer",
+      "reference": "Payment reference",
+      "instructionsTitle": "Bank details",
+      "afterTransfer": "Once your transfer reaches us we'll confirm your order and prepare it for delivery. You can follow its status under My Orders.",
+      "viewOrders": "View My Orders",
+      "continueShopping": "Continue Shopping",
+      "cancelOrder": "Cancel this order",
+      "cancelled": "This order has been cancelled and its items released."
+    }
   }
 }

@@ -1,8 +1,10 @@
 import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { getPageContent, DEFAULT_HOME_CONTENT } from "@/lib/page-content";
+import { getHomeContent } from "@/lib/page-content";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
+import { getMarket } from "@/lib/market";
+import { pricesForMarket } from "@/lib/market-pricing";
 import { LinkButton } from "@/components/ui/Button";
 import { GemCard } from "@/components/catalog/GemCard";
 import { JewelryCard } from "@/components/catalog/JewelryCard";
@@ -27,23 +29,29 @@ const MINERAL_MARQUEE = [
 ];
 
 export default async function HomePage() {
-  const [featuredGems, featuredJewelry, content, { gemstonePrices, jewelryPrices }, trustBarMessages] = await Promise.all([
+  const market = await getMarket();
+  // Each storefront curates its own featured items (isFeatured vs
+  // isFeaturedLk) and has its own home copy (see getHomeContent).
+  const featuredWhere = market === "lk" ? { isPublished: true, isFeaturedLk: true } : { isPublished: true, isFeatured: true };
+  const [rawFeaturedGems, rawFeaturedJewelry, content, { gemstonePrices, jewelryPrices }, trustBarMessages] = await Promise.all([
     prisma.gemstone.findMany({
-      where: { isPublished: true, isFeatured: true },
+      where: featuredWhere,
       orderBy: { createdAt: "desc" },
       take: 8,
       include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true, media: true },
     }),
     prisma.jewelryPiece.findMany({
-      where: { isPublished: true, isFeatured: true },
+      where: featuredWhere,
       orderBy: { createdAt: "desc" },
       take: 8,
       include: { media: { orderBy: { sortOrder: "asc" } } },
     }),
-    getPageContent("home", DEFAULT_HOME_CONTENT),
-    getActivePromotionMaps(),
+    getHomeContent(market),
+    getActivePromotionMaps(market),
     getTrustBarMessages(),
   ]);
+  const featuredGems = pricesForMarket(rawFeaturedGems, market);
+  const featuredJewelry = pricesForMarket(rawFeaturedJewelry, market);
 
   // Each of these two sections is curated by admins (feature specific items
   // from their list pages) and independently switched on/off from Home Page

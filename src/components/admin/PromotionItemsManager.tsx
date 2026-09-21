@@ -7,6 +7,7 @@ import { Input, Select, Label, FieldError, FieldHint } from "@/components/ui/Fie
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
 import type { SeasonalThemeKey } from "@/lib/seasonal-themes";
+import { MARKETS, type Market } from "@/lib/market-shared";
 
 interface Option {
   id: string;
@@ -27,7 +28,7 @@ interface PromotedItem {
 // picker, before they've typed a promotional price — specs and the
 // current price, exactly what they'd otherwise have to open the item's
 // own edit page to check.
-function CurrentPriceAndSpecs({ item }: { item: Option }) {
+function CurrentPriceAndSpecs({ item, currency }: { item: Option; currency: "USD" | "LKR" }) {
   return (
     <div className="rounded-lg border border-border-subtle bg-ivory-soft px-4 py-3 text-sm">
       <p className="text-charcoal">{item.specs}</p>
@@ -36,8 +37,8 @@ function CurrentPriceAndSpecs({ item }: { item: Option }) {
         {item.price == null
           ? "not set"
           : item.showPrice
-            ? <span className="text-charcoal">{formatPrice(item.price)} (shown publicly)</span>
-            : <span>{formatPrice(item.price)} (internal reference only — not shown publicly)</span>}
+            ? <span className="text-charcoal">{formatPrice(item.price, currency)} (shown publicly)</span>
+            : <span>{formatPrice(item.price, currency)} (internal reference only — not shown publicly)</span>}
       </p>
     </div>
   );
@@ -48,13 +49,16 @@ export function PromotionItemsManager({
   gemstones,
   jewelry,
   items,
+  market = "intl",
 }: {
   theme: SeasonalThemeKey;
   gemstones: Option[];
   jewelry: Option[];
   items: PromotedItem[];
+  market?: Market;
 }) {
   const router = useRouter();
+  const currency = MARKETS[market].currency;
   const [itemType, setItemType] = useState<"gemstone" | "jewelry">("gemstone");
   const [itemId, setItemId] = useState("");
   const [promoPrice, setPromoPrice] = useState("");
@@ -75,6 +79,7 @@ export function PromotionItemsManager({
         gemstoneId: itemType === "gemstone" ? itemId || null : null,
         jewelryId: itemType === "jewelry" ? itemId || null : null,
         promoPrice: promoPriceNumber,
+        market,
       });
       if (!result.ok) {
         setError(result.error);
@@ -120,13 +125,13 @@ export function PromotionItemsManager({
           against, rather than typing a number blind. */}
       {selected && (
         <div className="mt-3 max-w-md">
-          <CurrentPriceAndSpecs item={selected} />
+          <CurrentPriceAndSpecs item={selected} currency={currency} />
         </div>
       )}
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <div>
-          <Label htmlFor="promoPrice">Promotional Price (USD)</Label>
+          <Label htmlFor="promoPrice">Promotional Price ({currency})</Label>
           <Input
             id="promoPrice"
             type="number"
@@ -144,20 +149,20 @@ export function PromotionItemsManager({
       </div>
       {showsHigherOrEqualWarning && (
         <FieldHint>
-          That&apos;s not below the current price ({formatPrice(selected!.price!)}) — double-check before adding.
+          That&apos;s not below the current price ({formatPrice(selected!.price!, currency)}) — double-check before adding.
         </FieldHint>
       )}
       <FieldError>{error ?? undefined}</FieldError>
 
       <div className="mt-4 divide-y divide-border-subtle rounded-xl border border-border-subtle bg-surface">
-        {items.map((item) => <PromotionItemRow key={item.id} item={item} />)}
+        {items.map((item) => <PromotionItemRow key={item.id} item={item} currency={currency} />)}
         {items.length === 0 && <p className="p-4 text-sm text-charcoal/50">No promotional items in this theme&apos;s collection yet.</p>}
       </div>
     </div>
   );
 }
 
-function PromotionItemRow({ item }: { item: PromotedItem }) {
+function PromotionItemRow({ item, currency }: { item: PromotedItem; currency: "USD" | "LKR" }) {
   const router = useRouter();
   const [price, setPrice] = useState(String(item.promoPrice));
   const [error, setError] = useState<string | null>(null);
@@ -185,7 +190,7 @@ function PromotionItemRow({ item }: { item: PromotedItem }) {
       <div className="min-w-0">
         <p className="truncate text-charcoal">{item.label}</p>
         {item.regularPrice != null && (
-          <p className="text-xs text-charcoal/45 line-through">{formatPrice(item.regularPrice)}</p>
+          <p className="text-xs text-charcoal/45 line-through">{formatPrice(item.regularPrice, currency)}</p>
         )}
       </div>
       <div className="flex items-center gap-2">

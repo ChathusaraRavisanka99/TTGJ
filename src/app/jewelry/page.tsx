@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getJewelry } from "@/lib/catalog";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
+import { getMarket } from "@/lib/market";
 import { JewelryFilterBar } from "@/components/catalog/JewelryFilterBar";
 import { JewelryResults } from "@/components/catalog/JewelryResults";
 import { Pagination } from "@/components/ui/Pagination";
@@ -8,7 +9,7 @@ import { Pagination } from "@/components/ui/Pagination";
 export const metadata: Metadata = { title: "Shop Jewelry" };
 
 export default async function JewelryPage({ searchParams }: PageProps<"/jewelry">) {
-  const sp = await searchParams;
+  const [sp, market] = await Promise.all([searchParams, getMarket()]);
   const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : undefined);
   const getAll = (key: string): string[] => {
     const v = sp[key];
@@ -26,6 +27,7 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
     promotionalOnly: get("promotional") === "1",
     sort: (get("sort") as "newest" | "az" | "price-low" | "price-high" | undefined) ?? "newest",
     page: get("page") ? Number(get("page")) : undefined,
+    market,
   };
 
   const [{ items: pieces, page, totalPages }, promotions] = await Promise.all([
@@ -33,7 +35,7 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
     // Fetched regardless of the filter above — every card needs to know
     // whether *it* is on promotion to show its badge/discounted price,
     // not just the subset a customer happens to have filtered down to.
-    getActivePromotionMaps(),
+    getActivePromotionMaps(market),
   ]);
 
   return (

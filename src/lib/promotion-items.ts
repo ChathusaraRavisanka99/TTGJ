@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { getPageVisibility } from "@/lib/page-visibility";
+import { getPageVisibility, marketVisibilityKey } from "@/lib/page-visibility";
+import type { Market } from "@/lib/market-shared";
 import { getSeasonalContent } from "@/lib/page-content";
 import { SEASONAL_THEMES, type SeasonalThemeKey } from "@/lib/seasonal-themes";
 
@@ -15,9 +16,9 @@ export const promotionItemInclude = {
 // every theme at once (all 5 collections are small — cheaper to fetch
 // once and slice per tab client-side than round-trip on every tab
 // switch), same reasoning the per-theme copy already follows.
-export async function getPromotionItems(theme?: SeasonalThemeKey) {
+export async function getPromotionItems(theme?: SeasonalThemeKey, market: Market = "intl") {
   return prisma.promotionItem.findMany({
-    where: theme ? { theme } : undefined,
+    where: theme ? { theme, market } : { market },
     orderBy: { sortOrder: "asc" },
     include: promotionItemInclude,
   });
@@ -30,8 +31,8 @@ export function promotionItemLabel(item: { gemstone: { name: string } | null; je
 // Cheaper than getPromotionItems(theme) when all the hero needs to know
 // is whether its "shop the collection" button has anywhere real to send
 // someone — no media/product includes required just to count rows.
-export async function countPromotionItems(theme: SeasonalThemeKey): Promise<number> {
-  return prisma.promotionItem.count({ where: { theme } });
+export async function countPromotionItems(theme: SeasonalThemeKey, market: Market = "intl"): Promise<number> {
+  return prisma.promotionItem.count({ where: { theme, market } });
 }
 
 export interface ActivePromotion {
@@ -57,15 +58,17 @@ export interface ActivePromotionMaps {
  * even if an admin has already staged items into some theme's
  * collection behind the scenes) and only ever reflects the *active*
  * theme's collection — never a different theme's, even if that one also
- * happens to include the same item.
+ * happens to include the same item. Each market runs its own promotion
+ * (own visibility, active theme and item list — see PromotionItem.market),
+ * and promo prices are in that market's currency.
  */
-export async function getActivePromotionMaps(): Promise<ActivePromotionMaps> {
-  const visibility = await getPageVisibility("seasonal");
+export async function getActivePromotionMaps(market: Market = "intl"): Promise<ActivePromotionMaps> {
+  const visibility = await getPageVisibility(marketVisibilityKey("seasonal", market));
   if (visibility !== "LIVE") return { themeLabel: null, gemstonePrices: new Map(), jewelryPrices: new Map() };
 
-  const content = await getSeasonalContent();
+  const content = await getSeasonalContent(market);
   const items = await prisma.promotionItem.findMany({
-    where: { theme: content.activeTheme },
+    where: { theme: content.activeTheme, market },
     select: { gemstoneId: true, jewelryId: true, promoPrice: true },
   });
 
@@ -80,8 +83,8 @@ export async function getActivePromotionMaps(): Promise<ActivePromotionMaps> {
 
 /** Called from a single product's own detail page — see
  * getActivePromotionMaps for what "active" actually means here. */
-export async function getActivePromotion(input: { gemstoneId?: string; jewelryId?: string }): Promise<ActivePromotion | null> {
-  const maps = await getActivePromotionMaps();
+export async function getActivePromotion(input: { gemstoneId?: string; jewelryId?: string }, market: Market = "intl"): Promise<ActivePromotion | null> {
+  const maps = await getActivePromotionMaps(market);
   if (!maps.themeLabel) return null;
 
   const promoPrice = input.gemstoneId ? maps.gemstonePrices.get(input.gemstoneId) : maps.jewelryPrices.get(input.jewelryId!);

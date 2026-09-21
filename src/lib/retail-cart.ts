@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Market } from "@/lib/market-shared";
 
 // One persistent retail cart per user (unlike the wholesale Cart, which
 // cycles OPEN -> SUBMITTED and starts a fresh one each time) — a retail
@@ -7,13 +8,18 @@ import { prisma } from "@/lib/prisma";
 // once payment succeeds (see app/api/payhere/notify/route.ts) and refills
 // for the next purchase. Same self-provisioning pattern as
 // lib/commerce-settings.ts's singleton.
-export async function getOrCreateRetailCart(userId: string) {
-  const existing = await prisma.retailCart.findUnique({ where: { userId } });
+//
+// One cart per (user, market): the Sri Lanka store prices in rupees and the
+// international site in dollars, so a single mixed cart would have no
+// coherent total. Switching storefront switches carts.
+export async function getOrCreateRetailCart(userId: string, market: Market = "intl") {
+  const where = { userId_market: { userId, market } };
+  const existing = await prisma.retailCart.findUnique({ where });
   if (existing) return existing;
   try {
-    return await prisma.retailCart.create({ data: { userId } });
+    return await prisma.retailCart.create({ data: { userId, market } });
   } catch {
-    return prisma.retailCart.findUniqueOrThrow({ where: { userId } });
+    return prisma.retailCart.findUniqueOrThrow({ where });
   }
 }
 
@@ -22,8 +28,8 @@ export const retailCartItemInclude = {
   jewelry: { include: { media: { orderBy: { sortOrder: "asc" as const } } } },
 } as const;
 
-export async function getRetailCartWithItems(userId: string) {
-  const cart = await getOrCreateRetailCart(userId);
+export async function getRetailCartWithItems(userId: string, market: Market = "intl") {
+  const cart = await getOrCreateRetailCart(userId, market);
   return prisma.retailCart.findUniqueOrThrow({
     where: { id: cart.id },
     include: { items: { include: retailCartItemInclude }, discountCode: true },
@@ -32,6 +38,23 @@ export async function getRetailCartWithItems(userId: string) {
 
 export function retailCartItemLabel(item: { gemstone: { name: string } | null; jewelry: { name: string } | null }): string {
   return item.gemstone?.name ?? item.jewelry?.name ?? "Item";
+}
+
+interface PricedProduct {
+  retailPrice: number | null;
+  lkrRetailPrice: number | null;
+}
+
+/** The line's current per-unit price for a market — the live retail price
+ * (rupee column on /lk), falling back to the price snapshotted when it was
+ * added. Checkout re-reads live prices itself (buildCheckoutBreakdown). */
+export function retailCartUnitPrice(
+  item: { unitPrice: number; gemstone: PricedProduct | null; jewelry: PricedProduct | null },
+  market: Market,
+): number {
+  const product = item.gemstone ?? item.jewelry;
+  const live = market === "lk" ? product?.lkrRetailPrice : product?.retailPrice;
+  return live ?? item.unitPrice;
 }
 
 export function retailCartSubtotal(items: { unitPrice: number; quantity: number }[]): number {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getGemstones, getMasterData, type GemColorFamily } from "@/lib/catalog";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
+import { getMarket } from "@/lib/market";
 import { GemFilterBar } from "@/components/catalog/GemFilterBar";
 import { GemResults } from "@/components/catalog/GemResults";
 import { Pagination } from "@/components/ui/Pagination";
@@ -8,7 +9,7 @@ import { Pagination } from "@/components/ui/Pagination";
 export const metadata: Metadata = { title: "Shop Gemstones" };
 
 export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
-  const sp = await searchParams;
+  const [sp, market] = await Promise.all([searchParams, getMarket()]);
   const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : undefined);
   // Checkbox filter groups repeat the same query-string key once per
   // checked box (mineral=a&mineral=b) — Next.js already hands that back
@@ -35,6 +36,7 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
     promotionalOnly: get("promotional") === "1",
     sort: (get("sort") as "newest" | "carat" | "az" | "price-low" | "price-high" | undefined) ?? "newest",
     page: get("page") ? Number(get("page")) : undefined,
+    market,
   };
 
   const [{ items: gems, page, totalPages }, masterData, promotions] = await Promise.all([
@@ -43,7 +45,7 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
     // Fetched regardless of the filter above — every card needs to know
     // whether *it* is on promotion to show its badge/discounted price,
     // not just the subset a customer happens to have filtered down to.
-    getActivePromotionMaps(),
+    getActivePromotionMaps(market),
   ]);
 
   return (

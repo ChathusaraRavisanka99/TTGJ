@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { toggleJewelryFeatured } from "@/actions/catalog-admin";
+import { toggleJewelryFeatured, toggleJewelryFeaturedLk } from "@/actions/catalog-admin";
 import { StockBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { ToggleFeaturedButton } from "@/components/admin/ToggleFeaturedButton";
 import { BackLink } from "@/components/admin/BackLink";
+import { formatPrice } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 
@@ -43,12 +44,16 @@ export default async function AdminJewelryPage({ searchParams }: PageProps<"/adm
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
-              <th className="w-10 px-4 py-3">
-                <span className="sr-only">Featured</span>
+              <th className="w-10 px-4 py-3" title="Featured on the international homepage">
+                <span className="sr-only">Featured</span>★
+              </th>
+              <th className="w-10 px-4 py-3" title="Featured on the Sri Lanka home page">
+                <span className="sr-only">Featured in Sri Lanka</span>LK★
               </th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Metal</th>
+              <th className="px-4 py-3">LKR price</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Published</th>
             </tr>
@@ -60,16 +65,20 @@ export default async function AdminJewelryPage({ searchParams }: PageProps<"/adm
                   <ToggleFeaturedButton featured={piece.isFeatured} onToggle={toggleJewelryFeatured.bind(null, piece.id)} />
                 </td>
                 <td className="px-4 py-3">
+                  <ToggleFeaturedButton featured={piece.isFeaturedLk} store="Sri Lanka home page" onToggle={toggleJewelryFeaturedLk.bind(null, piece.id)} />
+                </td>
+                <td className="px-4 py-3">
                   <Link href={`/admin/jewelry/${piece.id}`} className="text-charcoal hover:text-gold">{piece.name}</Link>
                 </td>
                 <td className="px-4 py-3 text-charcoal/70">{piece.pieceType}</td>
                 <td className="px-4 py-3 text-charcoal/70">{piece.metalType}</td>
+                <td className="px-4 py-3 text-charcoal/70">{piece.lkrRetailPrice != null ? formatPrice(piece.lkrRetailPrice, "LKR") : "—"}</td>
                 <td className="px-4 py-3"><StockBadge status={piece.stockStatus} /></td>
                 <td className="px-4 py-3 text-charcoal/70">{piece.isPublished ? "Yes" : "No"}</td>
               </tr>
             ))}
             {pieces.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-charcoal/50">No jewelry pieces yet.</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-charcoal/50">No jewelry pieces yet.</td></tr>
             )}
           </tbody>
         </table>

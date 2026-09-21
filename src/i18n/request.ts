@@ -32,9 +32,26 @@ function resolveLocale(cookieValue: string | undefined, acceptLanguage: string |
   return DEFAULT_LOCALE;
 }
 
+type Messages = { [key: string]: string | Messages };
+
+// English underneath every locale: a key that hasn't been translated yet
+// renders its English text instead of a raw "checkout.placeOrder" key (or
+// throwing), so a locale can ship with partial coverage and fill in over
+// time.
+function mergeMessages(base: Messages, overrides: Messages): Messages {
+  const merged: Messages = { ...base };
+  for (const [key, value] of Object.entries(overrides)) {
+    const existing = merged[key];
+    merged[key] =
+      typeof value === "object" && typeof existing === "object" ? mergeMessages(existing, value) : value;
+  }
+  return merged;
+}
+
 export default getRequestConfig(async () => {
   const [cookieStore, headerStore] = await Promise.all([cookies(), headers()]);
   const locale = resolveLocale(cookieStore.get(LOCALE_COOKIE)?.value, headerStore.get("accept-language"));
-  const messages = (await import(`../../messages/${locale}.json`)).default;
-  return { locale, messages };
+  const english = (await import("../../messages/en.json")).default as Messages;
+  const localized = locale === DEFAULT_LOCALE ? english : mergeMessages(english, (await import(`../../messages/${locale}.json`)).default as Messages);
+  return { locale, messages: localized };
 });

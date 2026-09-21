@@ -20,6 +20,8 @@ import { HeritageSideArt } from "@/components/catalog/HeritageSideArt";
 import { StickyBuyBar } from "@/components/catalog/StickyBuyBar";
 import { getTrustBarMessages } from "@/lib/i18n-messages";
 import { formatPrice } from "@/lib/utils";
+import { getMarket } from "@/lib/market";
+import { MARKETS } from "@/lib/market-shared";
 
 const METAL_LABELS: Record<string, string> = {
   GOLD: "Gold",
@@ -38,14 +40,15 @@ export async function generateMetadata({ params }: PageProps<"/jewelry/[slug]">)
 
 export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/[slug]">) {
   const { slug } = await params;
-  const [piece, session] = await Promise.all([getJewelryBySlug(slug), auth()]);
+  const market = await getMarket();
+  const [piece, session] = await Promise.all([getJewelryBySlug(slug, market), auth()]);
 
   if (!piece || !piece.isPublished) notFound();
 
   const [promotion, relatedJewelry, { jewelryPrices }, trustBarMessages] = await Promise.all([
-    getActivePromotion({ jewelryId: piece.id }),
-    getRelatedJewelry(piece),
-    getActivePromotionMaps(),
+    getActivePromotion({ jewelryId: piece.id }, market),
+    getRelatedJewelry(piece, 4, market),
+    getActivePromotionMaps(market),
     getTrustBarMessages(),
   ]);
 
@@ -53,7 +56,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
   // Same price precedence CardPrice/ProductPrice use for display — see
   // StickyBuyBar's own comment for why this is a plain label.
   const displayPrice = promotion?.promoPrice ?? piece.retailPrice ?? (piece.showPrice ? piece.price : null);
-  const stickyPriceLabel = displayPrice != null ? formatPrice(displayPrice) : "Request a Quote";
+  const stickyPriceLabel = displayPrice != null ? formatPrice(displayPrice, MARKETS[market].currency) : "Request a Quote";
 
   return (
     <div className="relative overflow-hidden">

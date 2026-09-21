@@ -41,7 +41,7 @@ export default async function AdminDiscountCodesPage({ searchParams }: PageProps
       <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Discount Codes</h1>
       <p className="mt-1 text-sm text-charcoal/60">
-        Fixed-amount codes a customer can apply to their cart — site-wide or tied to one customer, with an optional
+        Fixed-amount codes a customer can apply to their cart â€” site-wide or tied to one customer, with an optional
         use limit and expiry date.
       </p>
 
@@ -55,6 +55,7 @@ export default async function AdminDiscountCodesPage({ searchParams }: PageProps
             <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
               <th className="px-4 py-3">Code</th>
               <th className="px-4 py-3">Amount Off</th>
+              <th className="px-4 py-3">Amount Off (LKR)</th>
               <th className="px-4 py-3">Scope</th>
               <th className="px-4 py-3">Uses</th>
               <th className="px-4 py-3">Expires</th>
@@ -68,6 +69,7 @@ export default async function AdminDiscountCodesPage({ searchParams }: PageProps
               <tr key={c.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
                 <td className="px-4 py-3 font-mono text-charcoal">{c.code}</td>
                 <td className="px-4 py-3 text-charcoal/70">{formatPrice(c.amountOff)}</td>
+                <td className="px-4 py-3 text-charcoal/70">{c.amountOffLkr != null ? formatPrice(c.amountOffLkr, "LKR") : "â€”"}</td>
                 <td className="px-4 py-3 text-charcoal/70">
                   {c.assignedUser ? (
                     <Link href={`/admin/customers/${c.assignedUser.id}`} className="hover:text-gold hover:underline">
@@ -78,9 +80,9 @@ export default async function AdminDiscountCodesPage({ searchParams }: PageProps
                   )}
                 </td>
                 <td className="px-4 py-3 text-charcoal/70">
-                  {c.usesCount} / {c.maxUses ?? "∞"}
+                  {c.usesCount} / {c.maxUses ?? "âˆž"}
                 </td>
-                <td className="px-4 py-3 text-charcoal/70">{c.expiresAt ? c.expiresAt.toLocaleDateString() : "—"}</td>
+                <td className="px-4 py-3 text-charcoal/70">{c.expiresAt ? c.expiresAt.toLocaleDateString() : "â€”"}</td>
                 <td className="px-4 py-3">{statusBadge(c)}</td>
                 <td className="px-4 py-3 text-charcoal/70">{c.createdAt.toLocaleDateString()}</td>
                 <td className="px-4 py-3">
@@ -89,7 +91,7 @@ export default async function AdminDiscountCodesPage({ searchParams }: PageProps
               </tr>
             ))}
             {codes.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-charcoal/50">No discount codes yet.</td></tr>
+              <tr><td colSpan={9} className="px-4 py-8 text-center text-charcoal/50">No discount codes yet.</td></tr>
             )}
           </tbody>
         </table>

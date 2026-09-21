@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { toggleGemstoneFeatured } from "@/actions/catalog-admin";
+import { toggleGemstoneFeatured, toggleGemstoneFeaturedLk } from "@/actions/catalog-admin";
 import { StockBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { ToggleFeaturedButton } from "@/components/admin/ToggleFeaturedButton";
 import { BackLink } from "@/components/admin/BackLink";
+import { formatPrice } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 
@@ -44,13 +45,17 @@ export default async function AdminGemsPage({ searchParams }: PageProps<"/admin/
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
-              <th className="w-10 px-4 py-3">
-                <span className="sr-only">Featured</span>
+              <th className="w-10 px-4 py-3" title="Featured on the international homepage">
+                <span className="sr-only">Featured</span>★
+              </th>
+              <th className="w-10 px-4 py-3" title="Featured on the Sri Lanka home page">
+                <span className="sr-only">Featured in Sri Lanka</span>LK★
               </th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Mineral</th>
               <th className="px-4 py-3">Cut</th>
               <th className="px-4 py-3">Carat</th>
+              <th className="px-4 py-3">LKR price</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Published</th>
             </tr>
@@ -62,17 +67,21 @@ export default async function AdminGemsPage({ searchParams }: PageProps<"/admin/
                   <ToggleFeaturedButton featured={gem.isFeatured} onToggle={toggleGemstoneFeatured.bind(null, gem.id)} />
                 </td>
                 <td className="px-4 py-3">
+                  <ToggleFeaturedButton featured={gem.isFeaturedLk} store="Sri Lanka home page" onToggle={toggleGemstoneFeaturedLk.bind(null, gem.id)} />
+                </td>
+                <td className="px-4 py-3">
                   <Link href={`/admin/gems/${gem.id}`} className="text-charcoal hover:text-gold">{gem.name}</Link>
                 </td>
                 <td className="px-4 py-3 text-charcoal/70">{gem.mineral.name}</td>
                 <td className="px-4 py-3 text-charcoal/70">{gem.cut.name}</td>
                 <td className="px-4 py-3 text-charcoal/70">{gem.caratWeight} ct</td>
+                <td className="px-4 py-3 text-charcoal/70">{gem.lkrRetailPrice != null ? formatPrice(gem.lkrRetailPrice, "LKR") : "—"}</td>
                 <td className="px-4 py-3"><StockBadge status={gem.stockStatus} /></td>
                 <td className="px-4 py-3 text-charcoal/70">{gem.isPublished ? "Yes" : "No"}</td>
               </tr>
             ))}
             {gems.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-charcoal/50">No gemstones yet.</td></tr>
+              <tr><td colSpan={9} className="px-4 py-8 text-center text-charcoal/50">No gemstones yet.</td></tr>
             )}
           </tbody>
         </table>

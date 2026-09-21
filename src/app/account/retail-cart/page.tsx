@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "@/components/ui/MarketLink";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getRetailCartWithItems, retailCartItemLabel, retailCartSubtotal } from "@/lib/retail-cart";
+import { getRetailCartWithItems, retailCartItemLabel, retailCartSubtotal, retailCartUnitPrice } from "@/lib/retail-cart";
+import { getMarket } from "@/lib/market";
+import { MARKETS } from "@/lib/market-shared";
 import { isBirthdayEligible } from "@/lib/birthday-promo";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
 import { RetailCartItemRow } from "@/components/catalog/RetailCartItemRow";
@@ -16,13 +18,15 @@ export default async function RetailCartPage() {
   const session = await auth();
   if (!session?.user) return null; // middleware guards this route
 
+  const market = await getMarket();
+  const currency = MARKETS[market].currency;
   const [cart, user, promotions] = await Promise.all([
-    getRetailCartWithItems(session.user.id),
+    getRetailCartWithItems(session.user.id, market),
     prisma.user.findUniqueOrThrow({ where: { id: session.user.id }, select: { dateOfBirth: true, lastBirthdayDiscountAt: true } }),
-    getActivePromotionMaps(),
+    getActivePromotionMaps(market),
   ]);
 
-  const subtotal = retailCartSubtotal(cart.items);
+  const subtotal = retailCartSubtotal(cart.items.map((item) => ({ unitPrice: retailCartUnitPrice(item, market), quantity: item.quantity })));
   const birthdayEligible = isBirthdayEligible(user);
   const hasUnavailableItem = cart.items.some((item) => (item.gemstone?.stockStatus ?? item.jewelry?.stockStatus) !== "AVAILABLE");
   const hasNonPromoItemWithCost = cart.items.some((item) => {
@@ -57,7 +61,7 @@ export default async function RetailCartPage() {
                 item={{
                   id: item.id,
                   quantity: item.quantity,
-                  unitPrice: (item.gemstone?.retailPrice ?? item.jewelry?.retailPrice ?? item.unitPrice) as number,
+                  unitPrice: retailCartUnitPrice(item, market),
                   label: retailCartItemLabel(item),
                   href: item.gemstone ? `/gems/${item.gemstone.slug}` : `/jewelry/${item.jewelry!.slug}`,
                   imageUrl: (item.gemstone?.media[0]?.url) ?? (item.jewelry?.media[0]?.url),
@@ -75,7 +79,7 @@ export default async function RetailCartPage() {
             <p className="text-sm text-charcoal/60">
               Subtotal ({cart.items.reduce((n, i) => n + i.quantity, 0)} item{cart.items.length === 1 ? "" : "s"})
             </p>
-            <p className="font-serif text-2xl text-charcoal">{formatPrice(subtotal)}</p>
+            <p className="font-serif text-2xl text-charcoal">{formatPrice(subtotal, currency)}</p>
           </div>
           <p className="mt-1 text-right text-xs text-charcoal/65">Tax, shipping, and handling are calculated at checkout.</p>
 

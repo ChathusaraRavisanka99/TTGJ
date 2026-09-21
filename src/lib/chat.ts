@@ -64,8 +64,8 @@ export async function getChatMessages(threadId: string | null) {
     orderBy: { createdAt: "asc" },
     include: {
       sender: { select: { name: true, email: true } },
-      taggedGemstone: { select: { name: true, slug: true, price: true, showPrice: true, media: { orderBy: { sortOrder: "asc" }, take: 1 } } },
-      taggedJewelry: { select: { name: true, slug: true, price: true, showPrice: true, media: { orderBy: { sortOrder: "asc" }, take: 1 } } },
+      taggedGemstone: { select: { name: true, slug: true, price: true, lkrPrice: true, showPrice: true, media: { orderBy: { sortOrder: "asc" }, take: 1 } } },
+      taggedJewelry: { select: { name: true, slug: true, price: true, lkrPrice: true, showPrice: true, media: { orderBy: { sortOrder: "asc" }, take: 1 } } },
     },
   });
 }

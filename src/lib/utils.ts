@@ -47,10 +47,15 @@ const priceFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-// Formats a price for display, e.g. 1240.5 -> "$1,241". Whether to call this
-// at all is the caller's job — it's gated by each item's own `showPrice`
-// flag, since price display is opt-in per item, not a site-wide switch.
-export function formatPrice(price: number): string {
+// Formats a price for display, e.g. 1240.5 -> "$1,241" (or, for the Sri
+// Lanka store, 125000 -> "Rs 125,000"). Whether to call this at all is the
+// caller's job — it's gated by each item's own `showPrice` flag, since
+// price display is opt-in per item, not a site-wide switch. The LKR form
+// is written out by hand: Intl's own "LKR" symbol varies by browser locale
+// ("LKR 125,000", "Rs.", or a script-specific form in si/ta), and Sri
+// Lankan shoppers expect the plain "Rs" prefix.
+export function formatPrice(price: number, currency: "USD" | "LKR" = "USD"): string {
+  if (currency === "LKR") return `Rs ${Math.round(price).toLocaleString("en-US")}`;
   return priceFormatter.format(price);
 }
 

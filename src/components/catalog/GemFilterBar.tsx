@@ -4,6 +4,7 @@ import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 import { FilterCollapse } from "@/components/catalog/FilterCollapse";
 import { GEM_COLOR_FAMILIES } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
+import { CurrencySymbol } from "@/components/ui/CurrencySymbol";
 
 interface GemFilterBarProps {
   minerals: { slug: string; name: string }[];
@@ -120,7 +121,7 @@ export function GemFilterBar({ minerals, cuts, clarityGrades, treatments, origin
         <CheckboxGroup label="Origin" name="origin" active={toSet(current.origin)} options={origins.map((o) => ({ value: o.slug, label: o.name }))} />
 
         <div className="rounded-lg border border-border-subtle p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">Price ($)</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">Price (<CurrencySymbol />)</p>
           <div className="mt-3 flex items-center gap-2">
             <Input name="minPrice" type="number" min={0} step="1" placeholder="Min" defaultValue={first(current.minPrice)} className="text-sm" />
             <span className="text-charcoal/65">–</span>

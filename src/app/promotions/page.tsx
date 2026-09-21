@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "@/components/ui/MarketLink";
-import { getPageVisibility } from "@/lib/page-visibility";
+import { getPageVisibility, marketVisibilityKey } from "@/lib/page-visibility";
+import { getMarket } from "@/lib/market";
 import { getSeasonalContent } from "@/lib/page-content";
 import { countPromotionItems } from "@/lib/promotion-items";
 import { SEASONAL_THEMES } from "@/lib/seasonal-themes";
@@ -11,20 +12,22 @@ import { SantaFlyby } from "@/components/seasonal/SantaFlyby";
 import { LinkButton } from "@/components/ui/Button";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const visibility = await getPageVisibility("seasonal");
+  const market = await getMarket();
+  const visibility = await getPageVisibility(marketVisibilityKey("seasonal", market));
   if (visibility === "HIDDEN") return {};
-  const content = await getSeasonalContent();
+  const content = await getSeasonalContent(market);
   const copy = content.themes[content.activeTheme];
   return { title: visibility === "COMING_SOON" ? "Coming Soon" : copy.heading };
 }
 
 export default async function PromotionsPage() {
-  const visibility = await getPageVisibility("seasonal");
+  const market = await getMarket();
+  const visibility = await getPageVisibility(marketVisibilityKey("seasonal", market));
   // HIDDEN reads as though the route doesn't exist at all — no teaser,
   // no hint of what's coming, matching a page an admin hasn't touched yet.
   if (visibility === "HIDDEN") notFound();
 
-  const content = await getSeasonalContent();
+  const content = await getSeasonalContent(market);
   const copy = content.themes[content.activeTheme];
   const theme = SEASONAL_THEMES[content.activeTheme] ?? SEASONAL_THEMES.autumn;
   const isComingSoon = visibility === "COMING_SOON";
@@ -33,7 +36,7 @@ export default async function PromotionsPage() {
   // but a visitor only ever sees the one collection that matches what's
   // live right now. Just a count here — the full collection (with photos
   // and pricing) lives on its own page, /promotions/collection.
-  const itemCount = isComingSoon ? 0 : await countPromotionItems(content.activeTheme);
+  const itemCount = isComingSoon ? 0 : await countPromotionItems(content.activeTheme, market);
 
   return (
     // min-h-dvh (not a fixed height) — fills exactly one screen on both

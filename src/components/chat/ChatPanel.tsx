@@ -9,6 +9,7 @@ import type { ChatRequestType } from "@/lib/chat";
 import { Textarea, Select, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { cn, formatPrice } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/MarketProvider";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -206,6 +207,7 @@ function ChatBubble({ message, isMine }: { message: ChatMessageView; isMine: boo
 }
 
 function TaggedItemCard({ href, item }: { href: string; item: { name: string; price: number | null; showPrice: boolean; imageUrl?: string } }) {
+  const currency = useCurrency();
   return (
     <Link href={href} target="_blank" className="mt-2 flex items-center gap-3 rounded-lg border border-border-subtle bg-surface p-2 hover:border-gold/40">
       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-ivory-soft">
@@ -217,7 +219,7 @@ function TaggedItemCard({ href, item }: { href: string; item: { name: string; pr
       </div>
       <div className="min-w-0">
         <p className="truncate text-xs font-medium text-charcoal">{item.name}</p>
-        {item.showPrice && item.price != null && <p className="text-xs text-charcoal/65">{formatPrice(item.price)}</p>}
+        {item.showPrice && item.price != null && <p className="text-xs text-charcoal/65">{formatPrice(item.price, currency)}</p>}
       </div>
     </Link>
   );

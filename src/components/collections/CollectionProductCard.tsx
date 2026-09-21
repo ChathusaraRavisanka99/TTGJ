@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
 import type { SubcultureDef } from "@/lib/subculture-collections";
 import type { CollectionCardData } from "@/lib/subculture-items";
 import { formatPrice, cn } from "@/lib/utils";
+import { useCurrency } from "@/components/providers/MarketProvider";
 
 /** One card style for both product types (gemstone or jewelry), themed
  * per collection via `theme` — the base photo/name sits still, and a
@@ -20,6 +23,7 @@ export function CollectionProductCard({ item, theme, priority }: { item: Collect
     item.metalLabel,
   ].filter(Boolean) as string[];
 
+  const currency = useCurrency();
   const displayPrice = item.retailPrice ?? item.price;
   const displayable = item.retailPrice != null || item.showPrice;
 
@@ -74,7 +78,7 @@ export function CollectionProductCard({ item, theme, priority }: { item: Collect
         <p className={cn("mt-1 text-xs uppercase tracking-wide opacity-60", theme.bodyClass)}>{specs.slice(0, 2).join(" · ")}</p>
         <div className="mt-auto pt-3">
           {displayable && displayPrice != null ? (
-            <p className={cn("font-serif text-sm", theme.headingClass)}>{formatPrice(displayPrice)}</p>
+            <p className={cn("font-serif text-sm", theme.headingClass)}>{formatPrice(displayPrice, currency)}</p>
           ) : (
             <p className={cn("text-xs font-medium", theme.accentClass)}>Request a Quote →</p>
           )}

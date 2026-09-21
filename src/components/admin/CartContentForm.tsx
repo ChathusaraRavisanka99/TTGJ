@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateCartContent } from "@/actions/page-content";
+import { updateCartContent, updateLkPaymentsContent } from "@/actions/page-content";
 import { Textarea, Label, FieldError, FieldHint } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
-export function CartContentForm({ initialInstructions }: { initialInstructions: string }) {
+// "cart" is the wholesale cart's wire instructions; "lk" is the Sri Lanka
+// store's bank-transfer instructions for retail orders (same shape, own key).
+export function CartContentForm({ initialInstructions, variant = "cart" }: { initialInstructions: string; variant?: "cart" | "lk" }) {
   const [value, setValue] = useState(initialInstructions);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +17,7 @@ export function CartContentForm({ initialInstructions }: { initialInstructions: 
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const result = await updateCartContent(value);
+      const result = await (variant === "lk" ? updateLkPaymentsContent(value) : updateCartContent(value));
       if (!result.ok) {
         setError(result.error);
         return;
@@ -26,14 +28,16 @@ export function CartContentForm({ initialInstructions }: { initialInstructions: 
 
   return (
     <div className="rounded-xl border border-border-subtle bg-surface p-5">
-      <p className="font-serif text-lg text-charcoal">Wire Transfer Instructions</p>
+      <p className="font-serif text-lg text-charcoal">{variant === "lk" ? "Sri Lanka Bank Transfer Instructions" : "Wire Transfer Instructions"}</p>
       <p className="mt-1 text-xs text-charcoal/50">
-        Shown to a customer once any of their carts is awaiting payment, and printed on the cart invoice.
+        {variant === "lk"
+          ? "Shown to a Sri Lanka store customer right after they place a bank-transfer order, and on their orders page while it is unpaid."
+          : "Shown to a customer once any of their carts is awaiting payment, and printed on the cart invoice."}
       </p>
       <div className="mt-4">
-        <Label htmlFor="wireInstructions">Instructions</Label>
+        <Label htmlFor={`wireInstructions-${variant}`}>Instructions</Label>
         <Textarea
-          id="wireInstructions"
+          id={`wireInstructions-${variant}`}
           rows={5}
           value={value}
           onChange={(e) => { setValue(e.target.value); setSaved(false); }}

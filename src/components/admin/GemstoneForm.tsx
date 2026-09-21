@@ -7,6 +7,7 @@ import { hueAtPercent, percentAtHue, resolveGemColor } from "@/components/gem-vi
 import { createGemstone, updateGemstone, deleteGemstone } from "@/actions/catalog-admin";
 import { Input, Textarea, Select, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { SriLankaStoreFields } from "@/components/admin/SriLankaStoreFields";
 
 interface Option {
   id: string;
@@ -54,6 +55,9 @@ interface GemstoneFormProps {
     stockStatus: string;
     isPublished: boolean;
     isFeatured: boolean;
+    lkrRetailPrice: number | null;
+    lkrPrice: number | null;
+    isFeaturedLk: boolean;
   };
 }
 
@@ -315,6 +319,8 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
           <input type="checkbox" name="isFeatured" value="true" defaultChecked={initial?.isFeatured ?? false} className="accent-gold" />
           Featured (shown in the homepage&apos;s Featured Gemstones section)
         </label>
+
+        <SriLankaStoreFields initial={initial} noun="gemstone" featuredSection="Featured Gemstones" />
 
         <FieldError>{error ?? undefined}</FieldError>
 

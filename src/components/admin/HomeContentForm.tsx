@@ -6,8 +6,9 @@ import { updateHomeText } from "@/actions/page-content";
 import { Input, Textarea, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import type { HomeContent } from "@/lib/page-content";
+import type { Market } from "@/lib/market-shared";
 
-export function HomeContentForm({ initial }: { initial: HomeContent }) {
+export function HomeContentForm({ initial, market = "intl" }: { initial: HomeContent; market?: Market }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -15,7 +16,7 @@ export function HomeContentForm({ initial }: { initial: HomeContent }) {
   async function handleSubmit(formData: FormData) {
     setError(null);
     setPending(true);
-    const result = await updateHomeText(formData);
+    const result = await updateHomeText(formData, market);
     setPending(false);
     if (!result.ok) setError(result.error);
     else router.refresh();

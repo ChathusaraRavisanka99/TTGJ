@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { getMarket } from "@/lib/market";
+import { priceForMarket } from "@/lib/market-pricing";
 import { getPageVisibility, getPageVisibilities } from "@/lib/page-visibility";
 import { getAllSubcultureContent } from "@/lib/subculture-content";
 import { getCollectionItems, toCollectionCardData } from "@/lib/subculture-items";
@@ -74,7 +76,14 @@ export default async function SubcultureCollectionPage({ params }: PageProps<"/c
   // doc comment: defaults to HIDDEN until an admin turns a page on).
   if (visibility === "HIDDEN") notFound();
 
-  const [rows, visibilities, session] = await Promise.all([getCollectionItems(key), getPageVisibilities([...SUBCULTURE_KEYS]), auth()]);
+  const [rawRows, visibilities, session, market] = await Promise.all([getCollectionItems(key), getPageVisibilities([...SUBCULTURE_KEYS]), auth(), getMarket()]);
+  // The themed collections are shared across storefronts, but the prices on
+  // their cards are the visitor's own market's (rupees on /lk).
+  const rows = rawRows.map((row) => ({
+    ...row,
+    gemstone: row.gemstone && priceForMarket(row.gemstone, market),
+    jewelry: row.jewelry && priceForMarket(row.jewelry, market),
+  }));
 
   const content = all[key];
   const items = rows.map(toCollectionCardData).filter((item) => item !== null);

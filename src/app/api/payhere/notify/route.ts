@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPayhereNotification, PAYHERE_STATUS } from "@/lib/payhere";
-import { finalizeDiscountRedemption } from "@/lib/discount-codes";
+import { finalizePaidOrder } from "@/lib/orders";
 
 // PayHere's server-to-server payment notification — see
 // https://support.payhere.lk/api-&-mobile-sdk/checkout-api. Not a
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     return new NextResponse("Invalid signature", { status: 400 });
   }
 
-  const order = await prisma.order.findUnique({ where: { orderNumber: orderId }, include: { items: true } });
+  const order = await prisma.order.findUnique({ where: { orderNumber: orderId } });
   if (!order) {
     console.error(`PayHere notify: unknown order ${orderId}`);
     return new NextResponse("Order not found", { status: 404 });
@@ -59,46 +59,9 @@ export async function POST(req: Request) {
     return new NextResponse("OK", { status: 200 });
   }
 
-  await prisma.order.update({ where: { id: order.id }, data: { status: "PAID", paidAt: new Date(), gatewayPaymentId: paymentId } });
-
-  // Every gemstone/jewelry piece here is one-of-a-kind (see StockStatus) —
-  // this is what actually closes the loop the checkout-time re-check
-  // (buildCheckoutBreakdown) depends on: without flipping it to SOLD here,
-  // nothing would ever stop a second customer's cart/checkout from
-  // treating an already-paid-for item as still available.
-  const gemstoneIds = order.items.map((i) => i.gemstoneId).filter((id): id is string => id != null);
-  const jewelryIds = order.items.map((i) => i.jewelryId).filter((id): id is string => id != null);
-  if (gemstoneIds.length > 0) {
-    await prisma.gemstone.updateMany({ where: { id: { in: gemstoneIds } }, data: { stockStatus: "SOLD" } });
-  }
-  if (jewelryIds.length > 0) {
-    await prisma.jewelryPiece.updateMany({ where: { id: { in: jewelryIds } }, data: { stockStatus: "SOLD" } });
-  }
-
-  if (order.discountCodeId) {
-    // Best-effort — a code going bad between checkout and payment
-    // (expired, disabled, hit its limit via a race with another
-    // customer) shouldn't block or reverse an already-charged payment;
-    // it just isn't counted as a redemption.
-    const result = await finalizeDiscountRedemption({ discountCodeId: order.discountCodeId, userId: order.userId, orderId: order.id });
-    if (!result.ok) console.warn(`PayHere notify: discount code redemption for order ${orderId} not finalized: ${result.error}`);
-  }
-
-  if (order.birthdayDiscountAmount > 0) {
-    await prisma.user.update({ where: { id: order.userId }, data: { lastBirthdayDiscountAt: new Date() } });
-  }
-
-  // Empty the retail cart now that it's been paid for — a fresh one is
-  // implicitly available for the next purchase (getOrCreateRetailCart).
-  // Also clears discountCodeId: leaving a just-redeemed (possibly now
-  // exhausted or expired) code attached would make it look "still
-  // applied" the moment the customer adds a new item to their now-empty
-  // cart.
-  const cart = await prisma.retailCart.findUnique({ where: { userId: order.userId } });
-  if (cart) {
-    await prisma.retailCartItem.deleteMany({ where: { cartId: cart.id } });
-    await prisma.retailCart.update({ where: { id: cart.id }, data: { discountCodeId: null } });
-  }
+  // Items -> SOLD, discount redemption, birthday stamp and cart clearing all
+  // live in lib/orders.ts, shared with an admin confirming a bank transfer.
+  await finalizePaidOrder(order.id, { gatewayPaymentId: paymentId });
 
   return new NextResponse("OK", { status: 200 });
 }

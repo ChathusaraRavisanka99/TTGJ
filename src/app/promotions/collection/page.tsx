@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { redirectInMarket } from "@/lib/market";
+import { getMarket, redirectInMarket } from "@/lib/market";
 import Link from "@/components/ui/MarketLink";
 import { ArrowLeft } from "lucide-react";
-import { getPageVisibility } from "@/lib/page-visibility";
+import { getPageVisibility, marketVisibilityKey } from "@/lib/page-visibility";
 import { getSeasonalContent } from "@/lib/page-content";
 import { getPromotionItems, promotionItemLabel } from "@/lib/promotion-items";
 import { SEASONAL_THEMES } from "@/lib/seasonal-themes";
@@ -13,14 +13,16 @@ import { SantaFlyby } from "@/components/seasonal/SantaFlyby";
 import { PromotionItemCard } from "@/components/promotions/PromotionItemCard";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const visibility = await getPageVisibility("seasonal");
+  const market = await getMarket();
+  const visibility = await getPageVisibility(marketVisibilityKey("seasonal", market));
   if (visibility !== "LIVE") return {};
-  const content = await getSeasonalContent();
+  const content = await getSeasonalContent(market);
   return { title: `${SEASONAL_THEMES[content.activeTheme]?.label ?? "Promotional"} Collection` };
 }
 
 export default async function PromotionsCollectionPage() {
-  const visibility = await getPageVisibility("seasonal");
+  const market = await getMarket();
+  const visibility = await getPageVisibility(marketVisibilityKey("seasonal", market));
   // Hidden reads as though this route doesn't exist either — same rule
   // as /promotions itself.
   if (visibility === "HIDDEN") notFound();
@@ -28,9 +30,9 @@ export default async function PromotionsCollectionPage() {
   // back to the hero's own teaser rather than an empty animated page.
   if (visibility === "COMING_SOON") await redirectInMarket("/promotions");
 
-  const content = await getSeasonalContent();
+  const content = await getSeasonalContent(market);
   const theme = SEASONAL_THEMES[content.activeTheme] ?? SEASONAL_THEMES.autumn;
-  const items = await getPromotionItems(content.activeTheme);
+  const items = await getPromotionItems(content.activeTheme, market);
   // Reachable directly (a bookmarked link, back-button after an admin
   // clears the collection) even when /promotions' own button wouldn't
   // currently show — same "nothing here to show" redirect as Coming Soon.
@@ -86,7 +88,7 @@ export default async function PromotionsCollectionPage() {
             const media = item.gemstone?.media ?? item.jewelry?.media ?? [];
             const product = item.gemstone ?? item.jewelry;
             const href = item.gemstone ? `/gems/${item.gemstone.slug}` : `/jewelry/${item.jewelry!.slug}`;
-            const regularPrice = product?.showPrice ? product.price : null;
+            const regularPrice = product?.showPrice ? (market === "lk" ? product.lkrPrice : product.price) : null;
             return (
               <div key={item.id} className="w-[46%] min-w-[150px] sm:w-56 lg:w-64">
                 <PromotionItemCard

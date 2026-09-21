@@ -11,6 +11,14 @@ function formBoolean(defaultValue: boolean) {
   return z.preprocess((v) => v === "true" || v === true, z.boolean()).default(defaultValue);
 }
 
+// A blank number input submits "" — which z.coerce.number() turns into 0,
+// silently turning "no rupee price" into "Rs 0, buy now". The Sri Lanka
+// store's price fields treat blank as genuinely unset instead.
+const optionalMoney = z.preprocess(
+  (v) => (v === "" || v == null ? undefined : v),
+  z.coerce.number().min(0).max(1_000_000_000).optional(),
+);
+
 export const gemstoneSchema = z.object({
   name: z.string().min(2).max(150),
   description: z.string().max(4000).optional().or(z.literal("")),
@@ -37,9 +45,12 @@ export const gemstoneSchema = z.object({
   showPrice: formBoolean(false),
   retailPrice: z.coerce.number().min(0).max(10_000_000).optional(),
   costPrice: z.coerce.number().min(0).max(10_000_000).optional(),
+  lkrRetailPrice: optionalMoney,
+  lkrPrice: optionalMoney,
   stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
   isPublished: formBoolean(true),
   isFeatured: formBoolean(false),
+  isFeaturedLk: formBoolean(false),
 });
 
 export type GemstoneInput = z.infer<typeof gemstoneSchema>;
@@ -57,9 +68,12 @@ export const jewelrySchema = z.object({
   showPrice: formBoolean(false),
   retailPrice: z.coerce.number().min(0).max(10_000_000).optional(),
   costPrice: z.coerce.number().min(0).max(10_000_000).optional(),
+  lkrRetailPrice: optionalMoney,
+  lkrPrice: optionalMoney,
   stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
   isPublished: formBoolean(true),
   isFeatured: formBoolean(false),
+  isFeaturedLk: formBoolean(false),
 });
 
 export type JewelryInput = z.infer<typeof jewelrySchema>;

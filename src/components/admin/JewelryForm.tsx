@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createJewelry, updateJewelry, deleteJewelry } from "@/actions/catalog-admin";
 import { Input, Textarea, Select, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { SriLankaStoreFields } from "@/components/admin/SriLankaStoreFields";
 import { PIECE_TYPES, METAL_TYPES } from "@/lib/gem-constants";
 
 interface JewelryFormProps {
@@ -25,6 +26,9 @@ interface JewelryFormProps {
     stockStatus: string;
     isPublished: boolean;
     isFeatured: boolean;
+    lkrRetailPrice: number | null;
+    lkrPrice: number | null;
+    isFeaturedLk: boolean;
   };
 }
 
@@ -147,6 +151,8 @@ export function JewelryForm({ initial }: JewelryFormProps) {
         <input type="checkbox" name="isFeatured" value="true" defaultChecked={initial?.isFeatured ?? false} className="accent-gold" />
         Featured (shown in the homepage&apos;s Featured Jewelry section)
       </label>
+
+      <SriLankaStoreFields initial={initial} noun="piece" featuredSection="Featured Jewelry" />
 
       <FieldError>{error ?? undefined}</FieldError>
 

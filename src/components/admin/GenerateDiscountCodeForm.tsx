@@ -15,6 +15,7 @@ interface CustomerOption {
 export function GenerateDiscountCodeForm({ customers }: { customers: CustomerOption[] }) {
   const router = useRouter();
   const [amount, setAmount] = useState("");
+  const [amountLkr, setAmountLkr] = useState("");
   const [customCode, setCustomCode] = useState("");
   const [scope, setScope] = useState<"SITE_WIDE" | "CUSTOMER">("SITE_WIDE");
   const [assignedUserId, setAssignedUserId] = useState("");
@@ -30,6 +31,7 @@ export function GenerateDiscountCodeForm({ customers }: { customers: CustomerOpt
     startTransition(async () => {
       const result = await generateDiscountCode({
         amountOff: Number(amount),
+        amountOffLkr: amountLkr ? Number(amountLkr) : null,
         customCode,
         scope,
         assignedUserId: scope === "CUSTOMER" ? assignedUserId : undefined,
@@ -42,6 +44,7 @@ export function GenerateDiscountCodeForm({ customers }: { customers: CustomerOpt
       }
       setCreated(result.code ?? null);
       setAmount("");
+      setAmountLkr("");
       setCustomCode("");
       setMaxUses("");
       setExpiresAt("");
@@ -56,7 +59,7 @@ export function GenerateDiscountCodeForm({ customers }: { customers: CustomerOpt
         Fixed amount off. Site-wide or tied to one customer, an optional use limit, and an optional expiry date.
       </p>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div>
           <Label htmlFor="amountOff">Amount Off (USD)</Label>
           <Input
@@ -67,6 +70,18 @@ export function GenerateDiscountCodeForm({ customers }: { customers: CustomerOpt
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="E.g. 50"
+          />
+        </div>
+        <div>
+          <Label htmlFor="amountOffLkr">Amount Off (LKR)</Label>
+          <Input
+            id="amountOffLkr"
+            type="number"
+            step="1"
+            min="1"
+            value={amountLkr}
+            onChange={(e) => setAmountLkr(e.target.value)}
+            placeholder="Blank = not valid on /lk"
           />
         </div>
         <div>

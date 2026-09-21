@@ -10,7 +10,11 @@ import type { ActionResult } from "./auth";
 // ---------- Admin: generate/manage codes ----------
 
 export interface GenerateDiscountCodeInput {
+  /** Dollars — the international site's value. */
   amountOff: number;
+  /** The same code's value in rupees on the Sri Lanka store. Omit and the
+   * code simply isn't valid on /lk (dollars are never converted). */
+  amountOffLkr?: number | null;
   customCode?: string;
   scope: "SITE_WIDE" | "CUSTOMER";
   assignedUserId?: string;
@@ -24,6 +28,9 @@ export async function generateDiscountCode(input: GenerateDiscountCodeInput): Pr
   await requireAdmin();
 
   if (!Number.isFinite(input.amountOff) || input.amountOff <= 0) return { ok: false, error: "Enter an amount greater than $0." };
+  if (input.amountOffLkr != null && (!Number.isFinite(input.amountOffLkr) || input.amountOffLkr <= 0)) {
+    return { ok: false, error: "The rupee amount must be greater than 0 (leave it blank if the code shouldn't work on the Sri Lanka store)." };
+  }
   if (input.scope === "CUSTOMER" && !input.assignedUserId) return { ok: false, error: "Select a customer for a customer-specific code." };
   if (input.maxUses != null && (!Number.isFinite(input.maxUses) || input.maxUses < 1)) {
     return { ok: false, error: "Max uses must be at least 1 (leave blank for unlimited)." };
@@ -45,6 +52,7 @@ export async function generateDiscountCode(input: GenerateDiscountCodeInput): Pr
     data: {
       code,
       amountOff: input.amountOff,
+      amountOffLkr: input.amountOffLkr ?? null,
       scope: input.scope,
       assignedUserId: input.scope === "CUSTOMER" ? input.assignedUserId : null,
       maxUses: input.maxUses ?? null,

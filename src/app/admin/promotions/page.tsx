@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSeasonalContent } from "@/lib/page-content";
-import { getPageVisibility } from "@/lib/page-visibility";
+import { getPageVisibility, marketVisibilityKey } from "@/lib/page-visibility";
+import { MarketTabs, parseAdminMarket } from "@/components/admin/MarketTabs";
 import { getPromotionItems, promotionItemLabel } from "@/lib/promotion-items";
 import { METAL_TYPES } from "@/lib/gem-constants";
 import { SEASONAL_THEME_KEYS, type SeasonalThemeKey } from "@/lib/seasonal-themes";
@@ -17,15 +18,19 @@ function metalTypeLabel(metalType: string): string {
   return METAL_TYPES.find((m) => m.value === metalType)?.label ?? metalType;
 }
 
-export default async function AdminPromotionsPage() {
+export default async function AdminPromotionsPage({ searchParams }: PageProps<"/admin/promotions">) {
+  const market = parseAdminMarket((await searchParams).market);
+  const lk = market === "lk";
+  const visibilityKey = marketVisibilityKey("seasonal", market);
   const [content, visibility, gemstoneRows, jewelryRows, promoItems] = await Promise.all([
-    getSeasonalContent(),
-    getPageVisibility("seasonal"),
+    getSeasonalContent(market),
+    getPageVisibility(visibilityKey),
     prisma.gemstone.findMany({
       select: {
         id: true,
         name: true,
         price: true,
+        lkrPrice: true,
         showPrice: true,
         caratWeight: true,
         mineral: { select: { name: true } },
@@ -34,13 +39,13 @@ export default async function AdminPromotionsPage() {
       orderBy: { name: "asc" },
     }),
     prisma.jewelryPiece.findMany({
-      select: { id: true, name: true, price: true, showPrice: true, pieceType: true, metalType: true, metalPurity: true },
+      select: { id: true, name: true, price: true, lkrPrice: true, showPrice: true, pieceType: true, metalType: true, metalPurity: true },
       orderBy: { name: "asc" },
     }),
     // Every theme at once — 5 small collections are cheaper to fetch
     // together and slice per tab client-side than round-trip on every
     // tab switch, same reasoning the per-theme copy already follows.
-    getPromotionItems(),
+    getPromotionItems(undefined, market),
   ]);
 
   // Current price + a one-line spec summary for each item, so an admin
@@ -50,14 +55,14 @@ export default async function AdminPromotionsPage() {
   const gemstones = gemstoneRows.map((g) => ({
     id: g.id,
     name: g.name,
-    price: g.price,
+    price: lk ? g.lkrPrice : g.price,
     showPrice: g.showPrice,
     specs: `${g.caratWeight}ct ${g.mineral.name}, ${g.cut.name}`,
   }));
   const jewelry = jewelryRows.map((j) => ({
     id: j.id,
     name: j.name,
-    price: j.price,
+    price: lk ? j.lkrPrice : j.price,
     showPrice: j.showPrice,
     specs: `${pieceTypeLabel(j.pieceType)}, ${metalTypeLabel(j.metalType)}${j.metalPurity ? ` ${j.metalPurity}` : ""}`,
   }));
@@ -74,7 +79,7 @@ export default async function AdminPromotionsPage() {
       id: item.id,
       label: promotionItemLabel(item),
       promoPrice: item.promoPrice,
-      regularPrice: product?.showPrice ? product.price : null,
+      regularPrice: product?.showPrice ? (lk ? product.lkrPrice : product.price) : null,
     });
   }
 
@@ -83,7 +88,7 @@ export default async function AdminPromotionsPage() {
       <BackLink href="/admin" label="Back to Dashboard" />
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-3xl text-charcoal">Seasonal Promotions</h1>
-        <Link href="/promotions" target="_blank" className="text-sm text-gold underline">
+        <Link href={lk ? "/lk/promotions" : "/promotions"} target="_blank" className="text-sm text-gold underline">
           View live page ↗
         </Link>
       </div>
@@ -94,14 +99,22 @@ export default async function AdminPromotionsPage() {
         Live.
       </p>
 
+      <MarketTabs basePath="/admin/promotions" current={market} />
+      {lk && (
+        <p className="mt-3 text-sm text-charcoal/60">
+          Editing the <strong>Sri Lanka store&apos;s</strong> own promotion (/lk/promotions): its own visibility, active
+          theme, copy and collections, with promotional prices in rupees. Nothing here affects the international site.
+        </p>
+      )}
+
       <div className="mt-8 rounded-xl border border-border-subtle bg-surface p-5">
-        <PageVisibilityControl pageKey="seasonal" currentState={visibility} />
+        <PageVisibilityControl key={market} pageKey={visibilityKey} currentState={visibility} />
       </div>
 
       <div className="mt-8 border-t border-border-subtle pt-8">
         <p className="font-serif text-xl text-charcoal">Themes &amp; Collections</p>
         <div className="mt-4">
-          <SeasonalContentForm initial={content} gemstones={gemstones} jewelry={jewelry} itemsByTheme={itemsByTheme} />
+          <SeasonalContentForm key={market} initial={content} gemstones={gemstones} jewelry={jewelry} itemsByTheme={itemsByTheme} market={market} />
         </div>
       </div>
     </div>

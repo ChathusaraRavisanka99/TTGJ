@@ -3,6 +3,7 @@ import { Button, HardLinkButton } from "@/components/ui/Button";
 import { FilterCollapse } from "@/components/catalog/FilterCollapse";
 import { PIECE_TYPES, METAL_TYPES } from "@/lib/gem-constants";
 import { cn } from "@/lib/utils";
+import { CurrencySymbol } from "@/components/ui/CurrencySymbol";
 
 interface JewelryFilterBarProps {
   current: Record<string, string | string[] | undefined>;
@@ -83,7 +84,7 @@ export function JewelryFilterBar({ current }: JewelryFilterBarProps) {
         <CheckboxGroup label="Metal" name="metalType" active={toSet(current.metalType)} options={METAL_TYPES.map((m) => ({ value: m.value, label: m.label }))} />
 
         <div className="rounded-lg border border-border-subtle p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">Price ($)</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">Price (<CurrencySymbol />)</p>
           <div className="mt-3 flex items-center gap-2">
             <Input name="minPrice" type="number" min={0} step="1" placeholder="Min" defaultValue={first(current.minPrice)} className="text-sm" />
             <span className="text-charcoal/65">–</span>

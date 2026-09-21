@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { SEASONAL_THEME_KEYS, type SeasonalThemeKey } from "@/lib/seasonal-themes";
+import { marketKey, type Market } from "@/lib/market-shared";
 
 // Marketing copy/images for the Home and About pages, editable by admins at
 // /admin/content/{home,about}. Deliberately NOT the product catalog — item
@@ -97,6 +98,30 @@ export const DEFAULT_HOME_CONTENT: HomeContent = {
   showFeaturedJewelry: true,
 };
 
+// The Sri Lanka store's home page (/lk) — its own PageContent row ("lk:home",
+// see market-shared's marketKey), editable per market in the admin's Home
+// Page editor. Until an admin edits it, the imagery and the long-form
+// sections are shared with the international page; only the hero and the
+// closing call-to-action are written for a local audience.
+export const LK_DEFAULT_HOME_CONTENT: HomeContent = {
+  ...DEFAULT_HOME_CONTENT,
+  heroKicker: "Ceylon Gems · Made for Sri Lanka",
+  heroHeadingLine1: "Sri Lanka's gems,",
+  heroHeadingLine2: "from our island",
+  heroHeadingHighlight: "to your hands.",
+  heroSubtext:
+    "Shop Ceylon sapphires, rubies, and fine jewelry priced in rupees, delivered across Sri Lanka and paid by bank transfer. Can't find the stone you have in mind? Our sourcing team searches the local gem markets for you.",
+  closingKicker: "Your Gem, Your Way",
+  closingHeading: "Begin with a colour you love.",
+  closingBody: "Choose a stone, or tell us what you're looking for — priced in rupees, quoted privately.",
+};
+
+export function getHomeContent(market: Market = "intl"): Promise<HomeContent> {
+  return market === "lk"
+    ? getPageContent(marketKey("home", market), LK_DEFAULT_HOME_CONTENT)
+    : getPageContent("home", DEFAULT_HOME_CONTENT);
+}
+
 // Shown to a customer on /account/cart once they submit it, and reused
 // as-is on the printed CartInvoice — a plain admin-editable paragraph
 // rather than structured bank-detail fields, since exactly what to say
@@ -109,6 +134,17 @@ export interface CartContent {
 export const DEFAULT_CART_CONTENT: CartContent = {
   wireTransferInstructions:
     "Wire transfer details have not been set up yet — an admin needs to add them in Cart Settings before a customer can complete payment.",
+};
+
+// The Sri Lanka store's bank-transfer instructions (PageContent key
+// "lk:payments"), shown on /checkout/wire after a customer places a
+// wire-transfer order. Same plain admin-editable paragraph as the wholesale
+// cart's, edited from the admin Retail Orders page.
+export const LK_PAYMENTS_KEY = "lk:payments";
+
+export const DEFAULT_LK_PAYMENTS_CONTENT: CartContent = {
+  wireTransferInstructions:
+    "Bank transfer details have not been set up yet — please contact us and we'll send them to you, quoting your order number.",
 };
 
 // The dedicated seasonal promotions page (/promotions) — editable at
@@ -183,8 +219,8 @@ export const DEFAULT_SEASONAL_CONTENT: SeasonalContent = {
 // would lose its predefined copy entirely instead of falling back to it.
 // This does that merge per-theme, so every theme is always fully
 // populated: predefined, then overridden per-field by whatever's saved.
-export async function getSeasonalContent(): Promise<SeasonalContent> {
-  const saved = await getPageContent<Partial<SeasonalContent>>("seasonal", {});
+export async function getSeasonalContent(market: Market = "intl"): Promise<SeasonalContent> {
+  const saved = await getPageContent<Partial<SeasonalContent>>(marketKey("seasonal", market), {});
   const themes = Object.fromEntries(
     SEASONAL_THEME_KEYS.map((key) => [key, { ...DEFAULT_SEASONAL_THEME_COPY[key], ...saved.themes?.[key] }]),
   ) as Record<SeasonalThemeKey, SeasonalThemeCopy>;

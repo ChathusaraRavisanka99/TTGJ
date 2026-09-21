@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
-import { redirectInMarket } from "@/lib/market";
+import { redirectInMarket, getMarket } from "@/lib/market";
+import { MARKETS } from "@/lib/market-shared";
 import { auth } from "@/lib/auth";
-import { getRetailCartWithItems, retailCartSubtotal } from "@/lib/retail-cart";
+import { getRetailCartWithItems, retailCartSubtotal, retailCartUnitPrice } from "@/lib/retail-cart";
+import { buildCheckoutBreakdown, type CheckoutBreakdown } from "@/lib/checkout";
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
 import { formatPrice } from "@/lib/utils";
+import { getTranslations } from "next-intl/server";
 
 export const metadata: Metadata = { title: "Checkout" };
 
@@ -11,7 +14,9 @@ export default async function CheckoutPage() {
   const session = await auth();
   if (!session?.user) return null; // middleware guards this route
 
-  const cart = await getRetailCartWithItems(session.user.id);
+  const market = await getMarket();
+  const currency = MARKETS[market].currency;
+  const cart = await getRetailCartWithItems(session.user.id, market);
   if (cart.items.length === 0) await redirectInMarket("/account/retail-cart");
   // The cart page's own "Proceed to Checkout" button is disabled while any
   // item is unavailable, but that's only a UI nicety — a direct visit to
@@ -22,7 +27,24 @@ export default async function CheckoutPage() {
   const hasUnavailableItem = cart.items.some((item) => (item.gemstone?.stockStatus ?? item.jewelry?.stockStatus) !== "AVAILABLE");
   if (hasUnavailableItem) await redirectInMarket("/account/retail-cart");
 
-  const subtotal = retailCartSubtotal(cart.items);
+  const lines = cart.items.map((item) => ({ item, unitPrice: retailCartUnitPrice(item, market) }));
+  const subtotal = retailCartSubtotal(lines.map(({ item, unitPrice }) => ({ unitPrice, quantity: item.quantity })));
+  const t = await getTranslations("checkout");
+
+  // The Sri Lanka store always ships domestically with no gateway fee, so
+  // the full total is known up front and worth showing before the customer
+  // commits to a bank-transfer order (which holds the items). The
+  // international total depends on the shipping country typed below, so
+  // there it's still worked out after the address is entered.
+  let breakdown: CheckoutBreakdown | null = null;
+  let breakdownError: string | null = null;
+  if (market === "lk") {
+    try {
+      breakdown = await buildCheckoutBreakdown({ userId: session.user.id, shippingCountry: "Sri Lanka", market, paymentMethod: "WIRE_TRANSFER" });
+    } catch (error) {
+      breakdownError = error instanceof Error ? error.message : null;
+    }
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-16 sm:px-8">
@@ -30,27 +52,51 @@ export default async function CheckoutPage() {
       <h1 className="mt-2 font-serif text-4xl text-charcoal">Shipping &amp; Payment</h1>
 
       <div className="mt-6 rounded-xl border border-border-subtle bg-surface p-5">
-        <p className="text-xs uppercase tracking-wide text-charcoal/65">Order Summary</p>
+        <p className="text-xs uppercase tracking-wide text-charcoal/65">{t("summary.title")}</p>
         <div className="mt-2 space-y-1">
-          {cart.items.map((item) => (
+          {lines.map(({ item, unitPrice }) => (
             <div key={item.id} className="flex justify-between text-sm text-charcoal/75">
               <span>{(item.gemstone?.name ?? item.jewelry?.name ?? "Item")} × {item.quantity}</span>
-              <span>{formatPrice((item.gemstone?.retailPrice ?? item.jewelry?.retailPrice ?? item.unitPrice) * item.quantity)}</span>
+              <span>{formatPrice(unitPrice * item.quantity, currency)}</span>
             </div>
           ))}
         </div>
         <div className="mt-2 flex justify-between border-t border-border-subtle pt-2 text-sm font-medium text-charcoal">
-          <span>Subtotal</span>
-          <span>{formatPrice(subtotal)}</span>
+          <span>{t("summary.subtotal")}</span>
+          <span>{formatPrice(subtotal, currency)}</span>
         </div>
-        <p className="mt-1 text-xs text-charcoal/65">
-          Final tax, EMS shipping, and handling fee are calculated after you enter your shipping address below.
-        </p>
+        {breakdown ? (
+          <div className="mt-2 space-y-1 text-sm text-charcoal/75">
+            {breakdown.codeDiscount > 0 && <SummaryRow label={t("summary.discount")} value={`−${formatPrice(breakdown.codeDiscount, currency)}`} />}
+            {breakdown.birthdayDiscount > 0 && <SummaryRow label={t("summary.birthday")} value={`−${formatPrice(breakdown.birthdayDiscount, currency)}`} />}
+            {breakdown.tax > 0 && <SummaryRow label={t("summary.tax")} value={formatPrice(breakdown.tax, currency)} />}
+            <SummaryRow label={t("summary.shipping")} value={formatPrice(breakdown.shipping, currency)} />
+            <div className="flex justify-between border-t border-border-subtle pt-2 font-medium text-charcoal">
+              <span>{t("summary.total")}</span>
+              <span>{formatPrice(breakdown.total, currency)}</span>
+            </div>
+          </div>
+        ) : breakdownError ? (
+          <p className="mt-2 text-sm text-red-700">{breakdownError}</p>
+        ) : (
+          <p className="mt-1 text-xs text-charcoal/65">
+            Final tax, EMS shipping, and handling fee are calculated after you enter your shipping address below.
+          </p>
+        )}
       </div>
 
       <div className="mt-8">
         <CheckoutForm />
       </div>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between">
+      <span>{label}</span>
+      <span>{value}</span>
     </div>
   );
 }

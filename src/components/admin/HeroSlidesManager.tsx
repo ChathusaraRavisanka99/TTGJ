@@ -8,8 +8,9 @@ import { addHeroSlide, replaceHeroSlideImage, removeHeroSlide, updateHeroSlideAl
 import { Button } from "@/components/ui/Button";
 import { Input, Label, FieldError } from "@/components/ui/Field";
 import type { HeroSlide } from "@/lib/page-content";
+import type { Market } from "@/lib/market-shared";
 
-function SlideRow({ slide, index }: { slide: HeroSlide; index: number }) {
+function SlideRow({ slide, index, market }: { slide: HeroSlide; index: number; market: Market }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +24,7 @@ function SlideRow({ slide, index }: { slide: HeroSlide; index: number }) {
   function handleFocusCommit() {
     if (focusX === (slide.focusX ?? 50)) return;
     startTransition(async () => {
-      await updateHeroSlideFocus(index, focusX);
+      await updateHeroSlideFocus(index, focusX, market);
       router.refresh();
     });
   }
@@ -35,7 +36,7 @@ function SlideRow({ slide, index }: { slide: HeroSlide; index: number }) {
     const formData = new FormData();
     formData.set("file", file);
     startTransition(async () => {
-      const result = await replaceHeroSlideImage(index, formData);
+      const result = await replaceHeroSlideImage(index, formData, market);
       if (!result.ok) setError(result.error);
       if (fileInput.current) fileInput.current.value = "";
       router.refresh();
@@ -45,7 +46,7 @@ function SlideRow({ slide, index }: { slide: HeroSlide; index: number }) {
   function handleAltBlur() {
     if (alt === slide.alt) return;
     startTransition(async () => {
-      await updateHeroSlideAlt(index, alt);
+      await updateHeroSlideAlt(index, alt, market);
       router.refresh();
     });
   }
@@ -53,7 +54,7 @@ function SlideRow({ slide, index }: { slide: HeroSlide; index: number }) {
   function handleRemove() {
     if (!confirm("Remove this hero slide?")) return;
     startTransition(async () => {
-      const result = await removeHeroSlide(index);
+      const result = await removeHeroSlide(index, market);
       if (!result.ok) setError(result.error);
       router.refresh();
     });
@@ -116,7 +117,7 @@ function SlideRow({ slide, index }: { slide: HeroSlide; index: number }) {
   );
 }
 
-export function HeroSlidesManager({ slides }: { slides: HeroSlide[] }) {
+export function HeroSlidesManager({ slides, market = "intl" }: { slides: HeroSlide[]; market?: Market }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +132,7 @@ export function HeroSlidesManager({ slides }: { slides: HeroSlide[] }) {
     formData.set("file", file);
     formData.set("alt", altInput.current?.value ?? "");
     startTransition(async () => {
-      const result = await addHeroSlide(formData);
+      const result = await addHeroSlide(formData, market);
       if (!result.ok) setError(result.error);
       if (fileInput.current) fileInput.current.value = "";
       if (altInput.current) altInput.current.value = "";
@@ -143,7 +144,7 @@ export function HeroSlidesManager({ slides }: { slides: HeroSlide[] }) {
     <div>
       <div className="space-y-3">
         {slides.map((slide, i) => (
-          <SlideRow key={`${slide.src}-${i}`} slide={slide} index={i} />
+          <SlideRow key={`${slide.src}-${i}`} slide={slide} index={i} market={market} />
         ))}
       </div>
 

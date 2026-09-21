@@ -5,7 +5,7 @@ import { getLocale } from "next-intl/server";
 import "./globals.css";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getPageVisibilities } from "@/lib/page-visibility";
+import { getPageVisibilities, marketVisibilityKey } from "@/lib/page-visibility";
 import { getSeasonalContent } from "@/lib/page-content";
 import { SEASONAL_THEMES } from "@/lib/seasonal-themes";
 import { SiteChrome } from "@/components/layout/SiteChrome";
@@ -36,12 +36,14 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [session, visibilities, seasonalContent, locale, market] = await Promise.all([
+  const market = await getMarket();
+  const seasonalKey = marketVisibilityKey("seasonal", market);
+  const auctionKey = marketVisibilityKey("auction", market);
+  const [session, visibilities, seasonalContent, locale] = await Promise.all([
     auth(),
-    getPageVisibilities(["seasonal", "auction"]),
-    getSeasonalContent(),
+    getPageVisibilities([seasonalKey, auctionKey]),
+    getSeasonalContent(market),
     getLocale(),
-    getMarket(),
   ]);
   // Navbar's transparent-over-hero treatment on /promotions is only safe
   // when that season's hero is actually dark (Halloween) — Spring/Summer/
@@ -64,7 +66,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // wording (retailCartSubtotal's sibling reduce in lib/retail-cart.ts).
   const cartItemCount = session?.user
     ? (await prisma.retailCartItem.aggregate({
-        where: { cart: { userId: session.user.id } },
+        where: { cart: { userId: session.user.id, market } },
         _sum: { quantity: true },
       }))._sum.quantity ?? 0
     : 0;
@@ -78,8 +80,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             user={session?.user ?? null}
             footerMessages={footerMessages}
             trustBarMessages={trustBarMessages}
-            showPromotions={visibilities.seasonal !== "HIDDEN"}
-            showAuction={visibilities.auction !== "HIDDEN"}
+            showPromotions={visibilities[seasonalKey] !== "HIDDEN"}
+            showAuction={visibilities[auctionKey] !== "HIDDEN"}
             cartItemCount={cartItemCount}
             promotionsThemeIsDark={promotionsThemeIsDark}
             locale={locale as AppLocale}

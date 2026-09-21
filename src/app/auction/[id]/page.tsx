@@ -4,7 +4,8 @@ import Link from "@/components/ui/MarketLink";
 import { Gavel } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { getPageVisibility } from "@/lib/page-visibility";
+import { getPageVisibility, marketVisibilityKey } from "@/lib/page-visibility";
+import { getMarket } from "@/lib/market";
 import { getAuctionDisplayState, auctionItemLabel, highestBid, minimumNextBid, PUBLIC_AUCTION_STATE_LABELS } from "@/lib/auctions";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { BidForm } from "@/components/auction/BidForm";
@@ -23,7 +24,7 @@ async function loadAuction(id: string) {
 }
 
 export async function generateMetadata({ params }: PageProps<"/auction/[id]">): Promise<Metadata> {
-  const visibility = await getPageVisibility("auction");
+  const visibility = await getPageVisibility(marketVisibilityKey("auction", await getMarket()));
   if (visibility === "HIDDEN") return {};
   const { id } = await params;
   const auction = await loadAuction(id);
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: PageProps<"/auction/[id]">): 
 }
 
 export default async function AuctionDetailPage({ params }: PageProps<"/auction/[id]">) {
-  const visibility = await getPageVisibility("auction");
+  const visibility = await getPageVisibility(marketVisibilityKey("auction", await getMarket()));
   if (visibility === "HIDDEN") notFound();
 
   if (visibility === "COMING_SOON") {

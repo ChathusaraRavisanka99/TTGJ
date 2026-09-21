@@ -9,6 +9,7 @@ import { PromotionItemsManager } from "@/components/admin/PromotionItemsManager"
 import { SEASONAL_THEMES, SEASONAL_THEME_KEYS, type SeasonalThemeKey } from "@/lib/seasonal-themes";
 import type { SeasonalContent, SeasonalThemeCopy } from "@/lib/page-content";
 import { cn } from "@/lib/utils";
+import type { Market } from "@/lib/market-shared";
 
 interface ItemOption {
   id: string;
@@ -36,12 +37,15 @@ export function SeasonalContentForm({
   gemstones,
   jewelry,
   itemsByTheme,
+  market = "intl",
 }: {
   initial: SeasonalContent;
   gemstones: ItemOption[];
   jewelry: ItemOption[];
   itemsByTheme: Record<SeasonalThemeKey, PromotedItem[]>;
+  market?: Market;
 }) {
+  const livePath = market === "lk" ? "/lk/promotions" : "/promotions";
   const router = useRouter();
   const [tab, setTab] = useState<SeasonalThemeKey>(initial.activeTheme);
   const [activeTheme, setActiveThemeState] = useState(initial.activeTheme);
@@ -51,7 +55,7 @@ export function SeasonalContentForm({
   function handleMakeActive(theme: SeasonalThemeKey) {
     setActiveError(null);
     startActiveTransition(async () => {
-      const result = await setActiveSeasonalTheme(theme);
+      const result = await setActiveSeasonalTheme(theme, market);
       if (!result.ok) {
         setActiveError(result.error);
         return;
@@ -81,7 +85,7 @@ export function SeasonalContentForm({
       </div>
       <p className="mt-2 text-xs text-charcoal/50">
         {activeTheme === tab
-          ? "This theme is currently live on /promotions."
+          ? `This theme is currently live on ${livePath}.`
           : "Not the live theme right now — edits below are saved but won't show until it's made active."}
       </p>
 
@@ -104,7 +108,7 @@ export function SeasonalContentForm({
           {/* Remounts on tab change so each theme's uncontrolled inputs
               reset to that theme's own saved values, not the previous
               tab's. */}
-          <SeasonalThemeCopyEditor key={tab} theme={tab} initial={initial.themes[tab]} />
+          <SeasonalThemeCopyEditor key={tab} theme={tab} initial={initial.themes[tab]} market={market} />
         </div>
       </div>
 
@@ -116,14 +120,14 @@ export function SeasonalContentForm({
           whichever collection is currently active.
         </p>
         <div className="mt-4">
-          <PromotionItemsManager key={tab} theme={tab} gemstones={gemstones} jewelry={jewelry} items={itemsByTheme[tab]} />
+          <PromotionItemsManager key={tab} theme={tab} gemstones={gemstones} jewelry={jewelry} items={itemsByTheme[tab]} market={market} />
         </div>
       </div>
     </div>
   );
 }
 
-function SeasonalThemeCopyEditor({ theme, initial }: { theme: SeasonalThemeKey; initial: SeasonalThemeCopy }) {
+function SeasonalThemeCopyEditor({ theme, initial, market }: { theme: SeasonalThemeKey; initial: SeasonalThemeCopy; market: Market }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -133,7 +137,7 @@ function SeasonalThemeCopyEditor({ theme, initial }: { theme: SeasonalThemeKey; 
     setError(null);
     setSaved(false);
     setPending(true);
-    const result = await updateSeasonalThemeCopy(theme, formData);
+    const result = await updateSeasonalThemeCopy(theme, formData, market);
     setPending(false);
     if (!result.ok) {
       setError(result.error);

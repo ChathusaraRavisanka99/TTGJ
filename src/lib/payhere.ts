@@ -78,13 +78,18 @@ export function buildPayhereCheckoutFields(input: {
   city: string;
   country: string;
   appUrl: string;
+  /** "/lk" for an order placed on the Sri Lanka store, so the browser
+   * comes back to the storefront it left. Only the browser-facing return/
+   * cancel URLs take it — notify_url is a server-to-server call and stays
+   * unprefixed. */
+  pathPrefix?: string;
 }): PayhereCheckoutFields {
   const { merchantId } = credentials();
   const amountFormatted = input.amount.toFixed(2);
   return {
     merchant_id: merchantId,
-    return_url: `${input.appUrl}/checkout/return?order=${encodeURIComponent(input.orderRecordId)}`,
-    cancel_url: `${input.appUrl}/checkout/cancel?order=${encodeURIComponent(input.orderRecordId)}`,
+    return_url: `${input.appUrl}${input.pathPrefix ?? ""}/checkout/return?order=${encodeURIComponent(input.orderRecordId)}`,
+    cancel_url: `${input.appUrl}${input.pathPrefix ?? ""}/checkout/cancel?order=${encodeURIComponent(input.orderRecordId)}`,
     notify_url: `${input.appUrl}/api/payhere/notify`,
     order_id: input.orderNumber,
     items: input.items,

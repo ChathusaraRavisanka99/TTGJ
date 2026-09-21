@@ -65,15 +65,18 @@ export default async function AccountOrdersPage({ searchParams }: PageProps<"/ac
                 {o.items.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm text-charcoal/75">
                     <span>{item.label} × {item.quantity}</span>
-                    <span>{formatPrice(item.lineTotal)}</span>
+                    <span>{formatPrice(item.lineTotal, o.currency === "LKR" ? "LKR" : "USD")}</span>
                   </div>
                 ))}
               </div>
               <div className="mt-3 flex items-baseline justify-between border-t border-border-subtle pt-3">
-                <p className="font-serif text-xl text-charcoal">{formatPrice(o.total)} {o.currency}</p>
+                <p className="font-serif text-xl text-charcoal">{formatPrice(o.total, o.currency === "LKR" ? "LKR" : "USD")}{o.currency === "LKR" ? "" : ` ${o.currency}`}</p>
                 {o.status === "PENDING_PAYMENT" && (
-                  <Link href={`/checkout/return?order=${o.id}`} className="text-xs text-gold-deep underline">
-                    Check status
+                  <Link
+                    href={o.paymentMethod === "WIRE_TRANSFER" ? `/checkout/wire?order=${o.id}` : `/checkout/return?order=${o.id}`}
+                    className="text-xs text-gold-deep underline"
+                  >
+                    {o.paymentMethod === "WIRE_TRANSFER" ? "Payment instructions" : "Check status"}
                   </Link>
                 )}
               </div>

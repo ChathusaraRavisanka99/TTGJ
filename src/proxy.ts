@@ -96,7 +96,10 @@ export default auth((req) => {
   // order number) and show only a status, handing off to the
   // authenticated /account/orders for anything sensitive. See
   // getPublicOrderStatus in actions/checkout.ts.
-  if (pathname === "/checkout") {
+  // /checkout/wire (where a bank-transfer customer is told where to send
+  // the money) shows the amount and bank details, so unlike the PayHere
+  // return pages it requires the order's own session.
+  if (pathname === "/checkout" || pathname === "/checkout/wire") {
     if (!req.auth) return loginRedirect();
   }
 

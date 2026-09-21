@@ -277,6 +277,7 @@ export function Navbar({
             )}
           </Link>
           {user && <NotificationBell transparent={transparent} size={21} />}
+          <MarketSwitcher transparent={transparent} />
           <LocaleSwitcher locale={locale} transparent={transparent} />
           <button
             className={cn("transition-colors duration-300", transparent ? "text-ivory" : "text-charcoal")}

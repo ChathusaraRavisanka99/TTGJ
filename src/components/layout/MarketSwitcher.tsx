@@ -61,6 +61,9 @@ export function MarketSwitcher({ transparent = false }: { transparent?: boolean 
       >
         <MapPin size={15} />
         {t(`short.${market}`)}
+        {/* Room for the full store name only on wide screens; the code alone
+            keeps the nav from wrapping below that. */}
+        <span className="hidden 2xl:inline">· {t(`name.${market}`)}</span>
         <ChevronDown size={13} className={cn("transition-transform", open && "rotate-180")} />
       </button>
 

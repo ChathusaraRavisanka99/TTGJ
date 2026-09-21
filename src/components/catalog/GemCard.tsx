@@ -175,11 +175,16 @@ function GemCardGrid(props: GemCardProps) {
         </div>
       </Thumbnail>
       <div className="flex flex-1 flex-col p-4">
-        <p className="line-clamp-2 font-serif text-lg leading-snug text-charcoal">{props.name}</p>
-        <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/65">
+        {/* Each block below reserves its two-line height even when the text
+            only needs one, so the name, type line, specs and price start at
+            the same y in every card of a row — otherwise a long name or a
+            wrapping "CAT'S EYE CHRYSOBERYL · ROUND CABOCHON" pushes only its
+            own card's details down and the row reads as misaligned. */}
+        <p className="line-clamp-2 min-h-[3.1rem] font-serif text-lg leading-snug text-charcoal">{props.name}</p>
+        <p className="mt-1 line-clamp-2 min-h-8 text-xs uppercase leading-4 tracking-wide text-charcoal/65">
           {props.mineralName} · {props.cutName}
         </p>
-        <div className="mt-3"><SpecTags props={props} /></div>
+        <div className="mt-3 min-h-9"><SpecTags props={props} /></div>
         {/* mt-auto pins price/CTA to the card's bottom edge regardless of how
             many lines the name or spec tags above wrapped to — combined with
             the root Link's h-full, this is what keeps every card in a row

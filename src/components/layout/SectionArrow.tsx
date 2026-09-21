@@ -10,18 +10,12 @@ import { cn } from "@/lib/utils";
  * absolutely by the caller's section (which needs `relative`).
  *
  * Sits a bit further in from the section edge than you'd expect (top-14 /
- * bottom-14, not top-6 / bottom-6) deliberately: scroll-snap here is
- * `proximity`, which doesn't guarantee landing pixel-exact at a section's
- * edge the way `mandatory` would — and `mandatory` was tried and reverted
- * because it trapped the scroll position at the last snap point and made
- * the footer unreachable. The extra clearance is what actually keeps the
- * arrow in view after `proximity`'s slightly-off landing, without that
- * much worse trade-off.
+ * bottom-14, not top-6 / bottom-6) so it clears the fixed nav after a jump.
+ * Only scrolls on click — the page itself no longer snaps or auto-scrolls.
  *
  * Hidden below `sm:` — a "jump to next section" button is a mouse/trackpad-
  * era affordance; on a phone a thumb already scrolls directly, and the
- * button just sits in the way of the content it's floating over. Matches
- * globals.css turning scroll-snap itself off below the same breakpoint.
+ * button just sits in the way of the content it's floating over.
  */
 export function SectionArrow({
   target,

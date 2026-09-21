@@ -138,8 +138,10 @@ function JewelryCardGrid(props: JewelryCardProps) {
         )}
       </Thumbnail>
       <div className="flex flex-1 flex-col p-4">
-        <p className="line-clamp-2 font-serif text-lg leading-snug text-charcoal">{props.name}</p>
-        <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/65">
+        {/* Two-line heights reserved for the name and type line so details
+            start at the same y in every card of a row — see GemCard. */}
+        <p className="line-clamp-2 min-h-[3.1rem] font-serif text-lg leading-snug text-charcoal">{props.name}</p>
+        <p className="mt-1 line-clamp-2 min-h-8 text-xs uppercase leading-4 tracking-wide text-charcoal/65">
           {props.pieceType.charAt(0) + props.pieceType.slice(1).toLowerCase()} · {METAL_LABELS[props.metalType]}
         </p>
         {/* mt-auto pins price/CTA to the card's bottom edge regardless of how

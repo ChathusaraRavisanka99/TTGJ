@@ -43,41 +43,11 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Section-to-section scroll snapping. Only elements that opt in via
-   `snap-start` (e.g. the home page's full-height sections) become snap
-   points — everywhere else this has no visual effect, so it's safe to set
-   globally rather than re-scoping per page.
-   `proximity`, not `mandatory`: mandatory was tried here to make the
-   section landing pixel-exact (proximity's imprecision could leave the
-   top-pinned up-arrow just above the viewport), but it traps the scroll
-   position at the LAST snap point on the page — verified directly, even a
-   programmatic scrollTo(maxScroll) got overridden back to it — which made
-   the footer completely unreachable once the last section had snap-start.
-   That's a much worse bug than an occasionally-clipped arrow, so this
-   stays proximity; the arrow issue is mitigated instead by giving it more
-   clearance from the section edge (see SectionArrow).
-   sm: and up only — on a phone, snap fighting a thumb's own scroll
-   momentum reads as janky/sticky rather than the deliberate "settle on a
-   section" feel it's going for on a larger viewport with mouse/trackpad
-   scrolling, so it's off by default and only opts in at the same
-   breakpoint SectionArrow's buttons themselves reappear at (see below) —
-   the two are meant to go together, not one without the other.
-   `html.no-scroll-snap` (toggled by MainWrapper for /collections routes)
-   opts back out even at sm:+ — those pages have no snap-start sections at
-   all, but their hero/intro sections are still close enough to full
-   viewport height that this container-level rule alone made mobile
-   Safari/Chrome snap between them anyway (no child needs an explicit
-   scroll-snap-align for that — verified live on a real phone in
-   landscape and via a wide "mobile" devtools viewport, both >=640px). */
-html {
-  scroll-snap-type: none;
-}
-
-@media (min-width: 640px) {
-  html:not(.no-scroll-snap) {
-    scroll-snap-type: y proximity;
-  }
-}
+/* No page-level scroll-snap: the browser used to pull the page to the nearest
+   full-height home section as you scrolled (an "auto scroll" you couldn't
+   opt out of, and one that fought touch and trackpad momentum). Scrolling is
+   now entirely under the visitor's control; the arrow/scroll-cue buttons and
+   anchor links still scroll on click. */
 
 /* Anchor/section jumps (HeroScrollCue, SectionArrow, "View Options" on the
    sticky buy bar) otherwise land the target's top edge under the fixed nav. */

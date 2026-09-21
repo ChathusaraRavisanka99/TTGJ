@@ -42,9 +42,9 @@ export function PromotionItemCard({ name, href, imageUrl, promoPrice, regularPri
       <div className="p-4">
         <p className="truncate font-serif text-lg text-charcoal">{name}</p>
         <div className="mt-2 flex items-baseline gap-2">
-          <p className="font-serif text-lg text-gold">{formatPrice(promoPrice)}</p>
+          <p className="font-serif text-lg text-gold-deep">{formatPrice(promoPrice)}</p>
           {regularPrice != null && regularPrice > promoPrice && (
-            <p className="text-sm text-charcoal/40 line-through">{formatPrice(regularPrice)}</p>
+            <p className="text-sm text-charcoal/65 line-through">{formatPrice(regularPrice)}</p>
           )}
         </div>
       </div>

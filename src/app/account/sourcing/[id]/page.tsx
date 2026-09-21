@@ -31,7 +31,7 @@ export default async function AccountSourcingDetailPage({ params }: PageProps<"/
       <BackLink href="/account/sourcing" label="Back to My Sourcing Requests" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-widest text-gold">Sourcing Request</p>
+          <p className="text-xs uppercase tracking-widest text-gold-deep">Sourcing Request</p>
           <h1 className="mt-2 font-serif text-3xl text-charcoal">{request.mineralDescription}</h1>
         </div>
         <QuoteStatusBadge status={request.status} />
@@ -39,7 +39,7 @@ export default async function AccountSourcingDetailPage({ params }: PageProps<"/
 
       <div className="mt-8 space-y-6">
         <div className="rounded-xl border border-border-subtle bg-surface p-5">
-          <p className="text-xs uppercase tracking-wide text-charcoal/45">Details</p>
+          <p className="text-xs uppercase tracking-wide text-charcoal/65">Details</p>
           <p className="mt-1 text-sm text-charcoal/60">Submitted {request.createdAt.toLocaleDateString()}</p>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-charcoal/65">
             {request.approxSize && <span>Size: {request.approxSize}</span>}
@@ -49,13 +49,13 @@ export default async function AccountSourcingDetailPage({ params }: PageProps<"/
           {request.quotedPrice != null && (
             <div className="mt-3 flex items-baseline justify-between border-t border-border-subtle pt-3">
               <p className="font-serif text-xl text-charcoal">{formatPrice(request.quotedPrice)}</p>
-              {request.quoteValidUntil && <p className="text-xs text-charcoal/45">Valid until {request.quoteValidUntil.toLocaleDateString()}</p>}
+              {request.quoteValidUntil && <p className="text-xs text-charcoal/65">Valid until {request.quoteValidUntil.toLocaleDateString()}</p>}
             </div>
           )}
           {request.notes && <p className="mt-3 text-sm text-charcoal/70">&ldquo;{request.notes}&rdquo;</p>}
           {request.adminNotes && (
             <div className="mt-3 rounded-lg bg-ivory-soft p-3 text-sm text-charcoal/75">
-              <p className="text-xs uppercase tracking-wide text-charcoal/45">From Ratnavue</p>
+              <p className="text-xs uppercase tracking-wide text-charcoal/65">From Ratnavue</p>
               <p className="mt-1">{request.adminNotes}</p>
             </div>
           )}

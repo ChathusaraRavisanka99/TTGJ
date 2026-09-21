@@ -39,7 +39,7 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
   return (
     <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
       <div className="mb-10">
-        <p className="text-xs uppercase tracking-widest text-gold">Fine Jewelry</p>
+        <p className="text-xs uppercase tracking-widest text-gold-deep">Fine Jewelry</p>
         <h1 className="mt-2 font-serif text-4xl text-charcoal">Shop Jewelry</h1>
         <p className="mt-3 max-w-2xl text-charcoal/65">
           Rings, pendants, and earrings crafted around Ceylon gemstones. Request a quote for any piece, or ask us
@@ -52,7 +52,7 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
       </div>
 
       {pieces.length === 0 ? (
-        <p className="py-20 text-center text-charcoal/50">No jewelry pieces match your filters yet.</p>
+        <p className="py-20 text-center text-charcoal/65">No jewelry pieces match your filters yet.</p>
       ) : (
         <JewelryResults pieces={pieces.map((piece) => ({ ...piece, promoPrice: promotions.jewelryPrices.get(piece.id) ?? null }))} />
       )}

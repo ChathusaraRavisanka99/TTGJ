@@ -34,7 +34,7 @@ export default async function AccountCartPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-      <p className="text-xs uppercase tracking-widest text-gold">Account</p>
+      <p className="text-xs uppercase tracking-widest text-gold-deep">Account</p>
       <h1 className="mt-2 font-serif text-4xl text-charcoal">My Cart</h1>
       <p className="mt-2 text-sm text-charcoal/60">
         Accepted quotes and sourcing requests land here automatically. Review the total, then submit when you&apos;re
@@ -43,7 +43,7 @@ export default async function AccountCartPage() {
 
       {/* ---------- Open cart ---------- */}
       <div className="mt-8">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-charcoal/50">Ready to Submit</h2>
+        <h2 className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Ready to Submit</h2>
         {!openCart || openCart.items.length === 0 ? (
           <p className="mt-3 rounded-xl border border-border-subtle bg-surface p-5 text-sm text-charcoal/60">
             Nothing here yet. Once we accept one of your{" "}
@@ -75,7 +75,7 @@ export default async function AccountCartPage() {
             </div>
             <div className="mt-3 flex items-center justify-between border-t border-gold/30 pt-3">
               <p className="text-sm uppercase tracking-wide text-charcoal/60">Total</p>
-              <p className="font-serif text-2xl text-gold">{formatPrice(openTotal)}</p>
+              <p className="font-serif text-2xl text-gold-deep">{formatPrice(openTotal)}</p>
             </div>
             <div className="mt-4 border-t border-border-subtle pt-4">
               <DiscountCodeControl appliedCode={openCart.discountCode?.code ?? null} />
@@ -90,7 +90,7 @@ export default async function AccountCartPage() {
       {/* ---------- Wire transfer instructions, once anything's awaiting payment ---------- */}
       {anyAwaitingPayment && (
         <div className="mt-8 rounded-xl border border-gold/30 bg-gold/5 p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/50">Payment by Wire Transfer</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Payment by Wire Transfer</p>
           <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-charcoal/80">
             {cartContent.wireTransferInstructions}
           </p>
@@ -100,7 +100,7 @@ export default async function AccountCartPage() {
       {/* ---------- Submitted history ---------- */}
       {submittedCarts.length > 0 && (
         <div className="mt-10">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-charcoal/50">Submitted</h2>
+          <h2 className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Submitted</h2>
           <div className="mt-3 space-y-4">
             {submittedCarts.map((cart) => {
               const total = cartTotal(cart.items, cart.discountAmount);
@@ -109,7 +109,7 @@ export default async function AccountCartPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="font-serif text-lg text-charcoal">{formatPrice(total)}</p>
-                      <p className="mt-1 text-xs text-charcoal/50">
+                      <p className="mt-1 text-xs text-charcoal/65">
                         Submitted {cart.submittedAt?.toLocaleDateString()} · {cart.items.length} item
                         {cart.items.length === 1 ? "" : "s"}
                       </p>
@@ -137,7 +137,7 @@ export default async function AccountCartPage() {
                     )}
                   </ul>
                   {cart.invoice && (
-                    <p className="mt-3 text-xs text-charcoal/45">Invoice {cart.invoice.invoiceNumber} issued.</p>
+                    <p className="mt-3 text-xs text-charcoal/65">Invoice {cart.invoice.invoiceNumber} issued.</p>
                   )}
                 </div>
               );

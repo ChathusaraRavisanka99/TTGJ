@@ -49,7 +49,7 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
   return (
     <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
       <div className="mb-10">
-        <p className="text-xs uppercase tracking-widest text-gold">Loose Gemstones</p>
+        <p className="text-xs uppercase tracking-widest text-gold-deep">Loose Gemstones</p>
         <h1 className="mt-2 font-serif text-4xl text-charcoal">Shop Ceylon Gemstones</h1>
         <p className="mt-3 max-w-2xl text-charcoal/65">
           Each stone is listed with its full specification — cut, colour, tone, and clarity. Browse freely; request
@@ -69,7 +69,7 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
       </div>
 
       {gems.length === 0 ? (
-        <p className="py-20 text-center text-charcoal/50">No gemstones match your filters yet.</p>
+        <p className="py-20 text-center text-charcoal/65">No gemstones match your filters yet.</p>
       ) : (
         <GemResults gems={gems.map((gem) => ({ ...gem, promoPrice: promotions.gemstonePrices.get(gem.id) ?? null }))} />
       )}

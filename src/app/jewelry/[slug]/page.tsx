@@ -75,7 +75,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 
         <Reveal delay={0.1} y={16}>
           <div className="flex items-center gap-3">
-            <p className="text-xs uppercase tracking-widest text-gold">{pieceTypeLabel}</p>
+            <p className="text-xs uppercase tracking-widest text-gold-deep">{pieceTypeLabel}</p>
             <StockBadge status={piece.stockStatus} />
           </div>
           <h1 className="mt-2 font-serif text-4xl text-charcoal">{piece.name}</h1>
@@ -85,7 +85,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
           {/* Same honest "won't be restocked" reasoning as the gem detail
               page — JewelryPiece rows have no quantity field either. */}
           {piece.stockStatus === "AVAILABLE" && (
-            <p className="mt-4 flex items-center gap-1.5 text-xs font-medium text-gold">
+            <p className="mt-4 flex items-center gap-1.5 text-xs font-medium text-gold-deep">
               <Sparkles size={13} /> One piece, handcrafted — once it sells, it won&apos;t be made again.
             </p>
           )}
@@ -100,7 +100,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 
           {piece.gemstones.length > 0 && (
             <div className="mt-6">
-              <p className="text-xs uppercase tracking-wide text-charcoal/45">Gemstones Set In This Piece</p>
+              <p className="text-xs uppercase tracking-wide text-charcoal/65">Gemstones Set In This Piece</p>
               <ul className="mt-2 space-y-1">
                 {piece.gemstones.map((link) => (
                   <li key={link.id} className="text-sm text-charcoal/75">
@@ -144,7 +144,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 
       {relatedJewelry.length > 0 && (
         <Reveal className="mt-20 border-t border-border-subtle pt-14 sm:mt-28 sm:pt-16">
-          <p className="text-xs uppercase tracking-[0.3em] text-gold">More From the Collection</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">More From the Collection</p>
           <h2 className="mt-2 font-serif text-3xl text-charcoal sm:text-4xl">You May Also Love</h2>
           <div className="mt-8">
             <CardSlider>
@@ -177,7 +177,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 function Spec({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-charcoal/45">{label}</dt>
+      <dt className="text-xs uppercase tracking-wide text-charcoal/65">{label}</dt>
       <dd className="mt-0.5 text-sm text-charcoal">{value}</dd>
     </div>
   );

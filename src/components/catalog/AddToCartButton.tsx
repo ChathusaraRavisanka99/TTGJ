@@ -34,7 +34,7 @@ export function AddToCartButton({ gemstoneId, jewelryId }: { gemstoneId?: string
       </Button>
       {added && (
         <p className="mt-2 text-sm text-charcoal/70">
-          <Link href="/account/retail-cart" className="text-gold underline hover:text-charcoal">View Cart</Link> to check out, or keep browsing.
+          <Link href="/account/retail-cart" className="text-gold-deep underline hover:text-charcoal">View Cart</Link> to check out, or keep browsing.
         </p>
       )}
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}

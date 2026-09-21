@@ -24,7 +24,7 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-16 sm:px-8">
-      <p className="text-xs uppercase tracking-widest text-gold">Account</p>
+      <p className="text-xs uppercase tracking-widest text-gold-deep">Account</p>
       <h1 className="mt-2 font-serif text-4xl text-charcoal">Welcome back, {session.user.name?.split(" ")[0] ?? "there"}</h1>
       <p className="mt-2 text-sm text-charcoal/60">{session.user.email}</p>
 

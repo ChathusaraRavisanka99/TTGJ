@@ -35,8 +35,8 @@ function CheckboxGroup({
       <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-medium uppercase tracking-wide text-charcoal/70">
         {label}
         {active.size > 0 && <span className="rounded-full bg-gold/20 px-1.5 py-0.5 text-[10px] text-charcoal">{active.size}</span>}
-        <span className="ml-auto text-charcoal/40 group-open:hidden">+</span>
-        <span className="hidden text-charcoal/40 group-open:inline">−</span>
+        <span className="ml-auto text-charcoal/65 group-open:hidden">+</span>
+        <span className="hidden text-charcoal/65 group-open:inline">−</span>
       </summary>
       <div className="mt-3 flex flex-col gap-1.5">
         {options.map((opt) => (
@@ -86,7 +86,7 @@ export function JewelryFilterBar({ current }: JewelryFilterBarProps) {
           <p className="text-xs font-medium uppercase tracking-wide text-charcoal/70">Price ($)</p>
           <div className="mt-3 flex items-center gap-2">
             <Input name="minPrice" type="number" min={0} step="1" placeholder="Min" defaultValue={first(current.minPrice)} className="text-sm" />
-            <span className="text-charcoal/40">–</span>
+            <span className="text-charcoal/65">–</span>
             <Input name="maxPrice" type="number" min={0} step="1" placeholder="Max" defaultValue={first(current.maxPrice)} className="text-sm" />
           </div>
         </div>

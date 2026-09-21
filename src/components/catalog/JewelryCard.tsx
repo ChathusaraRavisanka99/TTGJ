@@ -83,7 +83,7 @@ function JewelryCardList(props: JewelryCardProps) {
       <Thumbnail props={props} className="h-24 w-24 rounded-lg ring-1 ring-inset ring-charcoal/5 sm:h-28 sm:w-28" sizes="(min-width: 640px) 112px, 96px" />
       <div className="min-w-0 flex-1">
         <p className="truncate font-serif text-lg text-charcoal sm:text-xl">{props.name}</p>
-        <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/50">
+        <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/65">
           {props.pieceType.charAt(0) + props.pieceType.slice(1).toLowerCase()} · {METAL_LABELS[props.metalType]}
         </p>
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -130,7 +130,7 @@ function JewelryCardGrid(props: JewelryCardProps) {
       className="group flex h-full flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface transition-shadow hover:shadow-lg hover:shadow-charcoal/5"
     >
       <Thumbnail props={props} className="aspect-square" sizes="(min-width: 1280px) 18vw, (min-width: 1024px) 23vw, (min-width: 640px) 30vw, 45vw">
-        <div className="absolute right-2 top-2 max-sm:[&>span]:px-2 max-sm:[&>span]:text-[10px] sm:right-3 sm:top-3">
+        <div className="absolute right-2 top-2 max-sm:bottom-2 max-sm:top-auto max-sm:[&>span]:px-2 max-sm:[&>span]:text-[10px] sm:right-3 sm:top-3">
           <StockBadge status={props.stockStatus} />
         </div>
         {props.promoPrice != null && (
@@ -139,7 +139,7 @@ function JewelryCardGrid(props: JewelryCardProps) {
       </Thumbnail>
       <div className="flex flex-1 flex-col p-4">
         <p className="line-clamp-2 font-serif text-lg leading-snug text-charcoal">{props.name}</p>
-        <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/50">
+        <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/65">
           {props.pieceType.charAt(0) + props.pieceType.slice(1).toLowerCase()} · {METAL_LABELS[props.metalType]}
         </p>
         {/* mt-auto pins price/CTA to the card's bottom edge regardless of how

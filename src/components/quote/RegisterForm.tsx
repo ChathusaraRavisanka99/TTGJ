@@ -44,7 +44,7 @@ export function RegisterForm({ callbackUrl }: { callbackUrl: string }) {
           </div>
           <input type="hidden" name="customerType" value={customerType} />
           {customerType === "WHOLESALE" && (
-            <p className="mt-1.5 text-xs text-charcoal/50">
+            <p className="mt-1.5 text-xs text-charcoal/65">
               Wholesale accounts are reviewed by our team before approval — you can browse, request quotes, and buy
               retail in the meantime.
             </p>
@@ -66,7 +66,7 @@ export function RegisterForm({ callbackUrl }: { callbackUrl: string }) {
         <div>
           <Label htmlFor="dateOfBirth">Date of Birth (optional)</Label>
           <Input id="dateOfBirth" name="dateOfBirth" type="date" autoComplete="bday" />
-          <p className="mt-1 text-xs text-charcoal/45">Unlocks a birthday discount during your birth month.</p>
+          <p className="mt-1 text-xs text-charcoal/65">Unlocks a birthday discount during your birth month.</p>
         </div>
 
         {customerType === "WHOLESALE" && (

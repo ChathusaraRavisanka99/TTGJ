@@ -41,7 +41,7 @@ export default async function AccountQuoteDetailPage({ params }: PageProps<"/acc
       <BackLink href="/account/quotes" label="Back to My Quote Requests" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-widest text-gold">Quote Request</p>
+          <p className="text-xs uppercase tracking-widest text-gold-deep">Quote Request</p>
           <h1 className="mt-2 font-serif text-3xl text-charcoal">{label}</h1>
         </div>
         <QuoteStatusBadge status={quote.status} />
@@ -49,18 +49,18 @@ export default async function AccountQuoteDetailPage({ params }: PageProps<"/acc
 
       <div className="mt-8 space-y-6">
         <div className="rounded-xl border border-border-subtle bg-surface p-5">
-          <p className="text-xs uppercase tracking-wide text-charcoal/45">Details</p>
+          <p className="text-xs uppercase tracking-wide text-charcoal/65">Details</p>
           <p className="mt-1 text-sm text-charcoal/60">Submitted {quote.createdAt.toLocaleDateString()} · Qty {quote.quantity}</p>
           {quote.quotedPrice != null && (
             <div className="mt-3 flex items-baseline justify-between border-t border-border-subtle pt-3">
               <p className="font-serif text-xl text-charcoal">{formatPrice(quote.quotedPrice)}</p>
-              {quote.quoteValidUntil && <p className="text-xs text-charcoal/45">Valid until {quote.quoteValidUntil.toLocaleDateString()}</p>}
+              {quote.quoteValidUntil && <p className="text-xs text-charcoal/65">Valid until {quote.quoteValidUntil.toLocaleDateString()}</p>}
             </div>
           )}
           {quote.note && <p className="mt-3 whitespace-pre-line text-sm text-charcoal/70">&ldquo;{quote.note}&rdquo;</p>}
           {quote.adminNotes && (
             <div className="mt-3 rounded-lg bg-ivory-soft p-3 text-sm text-charcoal/75">
-              <p className="text-xs uppercase tracking-wide text-charcoal/45">From Ratnavue</p>
+              <p className="text-xs uppercase tracking-wide text-charcoal/65">From Ratnavue</p>
               <p className="mt-1">{quote.adminNotes}</p>
             </div>
           )}

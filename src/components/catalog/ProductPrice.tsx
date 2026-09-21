@@ -25,9 +25,9 @@ export function ProductPrice({ price, showPrice, retailPrice, promotion }: Produ
     const showRegular = displayable && displayPrice != null && displayPrice > promotion.promoPrice;
     return (
       <div className="mt-2 flex flex-wrap items-baseline gap-3">
-        <p className="font-serif text-2xl text-gold">{formatPrice(promotion.promoPrice)}</p>
-        {showRegular && <p className="text-lg text-charcoal/40 line-through">{formatPrice(displayPrice!)}</p>}
-        <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-gold">
+        <p className="font-serif text-2xl text-gold-deep">{formatPrice(promotion.promoPrice)}</p>
+        {showRegular && <p className="text-lg text-charcoal/65 line-through">{formatPrice(displayPrice!)}</p>}
+        <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-gold-deep">
           {promotion.themeLabel} Sale
         </span>
       </div>
@@ -35,7 +35,7 @@ export function ProductPrice({ price, showPrice, retailPrice, promotion }: Produ
   }
 
   if (displayable && displayPrice != null) {
-    return <p className="mt-2 font-serif text-2xl text-gold">{formatPrice(displayPrice)}</p>;
+    return <p className="mt-2 font-serif text-2xl text-gold-deep">{formatPrice(displayPrice)}</p>;
   }
 
   return null;

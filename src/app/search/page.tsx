@@ -19,7 +19,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   if (!q) {
     return (
       <div className="mx-auto max-w-3xl px-5 py-24 text-center sm:px-8">
-        <p className="text-xs uppercase tracking-widest text-gold">Search</p>
+        <p className="text-xs uppercase tracking-widest text-gold-deep">Search</p>
         <h1 className="mt-2 font-serif text-3xl text-charcoal">What are you looking for?</h1>
         <p className="mt-3 text-charcoal/60">Try a mineral, a piece type, or a style — &ldquo;sapphire,&rdquo; &ldquo;ring,&rdquo; &ldquo;pear cut.&rdquo;</p>
       </div>
@@ -37,7 +37,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   return (
     <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
       <div className="mb-10">
-        <p className="text-xs uppercase tracking-widest text-gold">Search Results</p>
+        <p className="text-xs uppercase tracking-widest text-gold-deep">Search Results</p>
         <h1 className="mt-2 font-serif text-4xl text-charcoal">&ldquo;{q}&rdquo;</h1>
         {!noResults && (
           <p className="mt-3 text-charcoal/65">
@@ -47,10 +47,10 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
       </div>
 
       {noResults ? (
-        <p className="py-20 text-center text-charcoal/50">
+        <p className="py-20 text-center text-charcoal/65">
           Nothing matches &ldquo;{q}&rdquo; yet. Try a broader term, or browse{" "}
-          <Link href="/gems" className="text-gold underline underline-offset-2 hover:text-charcoal">gemstones</Link> and{" "}
-          <Link href="/jewelry" className="text-gold underline underline-offset-2 hover:text-charcoal">jewelry</Link> directly.
+          <Link href="/gems" className="text-gold-deep underline underline-offset-2 hover:text-charcoal">gemstones</Link> and{" "}
+          <Link href="/jewelry" className="text-gold-deep underline underline-offset-2 hover:text-charcoal">jewelry</Link> directly.
         </p>
       ) : (
         <div className="space-y-16">

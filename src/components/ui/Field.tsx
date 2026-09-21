@@ -21,7 +21,7 @@ export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectE
 }
 
 export function FieldHint({ children }: { children: React.ReactNode }) {
-  return <p className="mt-1.5 text-xs text-charcoal/55 leading-relaxed">{children}</p>;
+  return <p className="mt-1.5 text-xs text-charcoal/65 leading-relaxed">{children}</p>;
 }
 
 export function FieldError({ children, className }: { children?: string; className?: string }) {

@@ -27,7 +27,7 @@ export function BidForm({
     return (
       <div className="rounded-xl border border-border-subtle bg-surface p-5 text-center">
         <p className="text-sm text-charcoal/70">Sign in to place a bid.</p>
-        <Link href="/account/login" className="mt-3 inline-block text-sm text-gold underline">
+        <Link href="/account/login" className="mt-3 inline-block text-sm text-gold-deep underline">
           Sign in
         </Link>
       </div>

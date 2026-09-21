@@ -23,7 +23,7 @@ export default async function AccountQuotesPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-      <p className="text-xs uppercase tracking-widest text-gold">Account</p>
+      <p className="text-xs uppercase tracking-widest text-gold-deep">Account</p>
       <h1 className="mt-2 font-serif text-4xl text-charcoal">My Quote Requests</h1>
 
       {quotes.length === 0 ? (
@@ -50,7 +50,7 @@ export default async function AccountQuotesPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-serif text-lg text-charcoal">{label}</p>
-                    <p className="mt-1 text-xs text-charcoal/50">
+                    <p className="mt-1 text-xs text-charcoal/65">
                       Submitted {q.createdAt.toLocaleDateString()} · Qty {q.quantity}
                     </p>
                   </div>
@@ -67,14 +67,14 @@ export default async function AccountQuotesPage() {
                   <div className="mt-3 flex items-baseline justify-between border-t border-border-subtle pt-3">
                     <p className="font-serif text-xl text-charcoal">{formatPrice(q.quotedPrice)}</p>
                     {q.quoteValidUntil && (
-                      <p className="text-xs text-charcoal/45">Valid until {q.quoteValidUntil.toLocaleDateString()}</p>
+                      <p className="text-xs text-charcoal/65">Valid until {q.quoteValidUntil.toLocaleDateString()}</p>
                     )}
                   </div>
                 )}
                 {q.note && <p className="mt-3 whitespace-pre-line text-sm text-charcoal/70">&ldquo;{q.note}&rdquo;</p>}
                 {q.adminNotes && (
                   <div className="mt-3 rounded-lg bg-ivory-soft p-3 text-sm text-charcoal/75">
-                    <p className="text-xs uppercase tracking-wide text-charcoal/45">From Ratnavue</p>
+                    <p className="text-xs uppercase tracking-wide text-charcoal/65">From Ratnavue</p>
                     <p className="mt-1">{q.adminNotes}</p>
                   </div>
                 )}

@@ -77,7 +77,7 @@ export function SiteChrome({
         locale={locale}
       />
       {children}
-      <Footer messages={footerMessages} trustBarMessages={trustBarMessages} />
+      <Footer messages={footerMessages} trustBarMessages={trustBarMessages} showTrustBar={pathname !== "/"} />
       <BackToTop />
       {user && <FloatingChatButton />}
     </>

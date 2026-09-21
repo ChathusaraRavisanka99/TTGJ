@@ -32,8 +32,8 @@ export function CardPrice({ price, showPrice, retailPrice, promoPrice, priceClas
     const showRegular = displayable && displayPrice != null && displayPrice > promoPrice;
     return (
       <div className={cn("flex flex-wrap items-baseline gap-x-2", priceClassName)}>
-        <span className="font-serif text-gold">{formatPrice(promoPrice)}</span>
-        {showRegular && <span className="text-[0.85em] text-charcoal/40 line-through">{formatPrice(displayPrice!)}</span>}
+        <span className="font-serif text-gold-deep">{formatPrice(promoPrice)}</span>
+        {showRegular && <span className="text-[0.85em] text-charcoal/65 line-through">{formatPrice(displayPrice!)}</span>}
       </div>
     );
   }
@@ -43,7 +43,7 @@ export function CardPrice({ price, showPrice, retailPrice, promoPrice, priceClas
   }
 
   return (
-    <p className={cn("font-medium text-gold transition-colors group-hover:text-charcoal", quoteClassName)}>
+    <p className={cn("font-medium text-gold-deep transition-colors group-hover:text-charcoal", quoteClassName)}>
       Request a Quote →
     </p>
   );
@@ -55,7 +55,7 @@ export function CardPrice({ price, showPrice, retailPrice, promoPrice, priceClas
 // else it appears.
 export function PromotionBadge({ className }: { className?: string }) {
   return (
-    <span className={cn("rounded-full bg-gold px-2.5 py-1 text-[11px] uppercase tracking-wide text-charcoal", className)}>
+    <span className={cn("rounded-full bg-gold px-2 py-0.5 text-[10px] uppercase tracking-wide text-charcoal sm:px-2.5 sm:py-1 sm:text-[11px]", className)}>
       Promotion
     </span>
   );

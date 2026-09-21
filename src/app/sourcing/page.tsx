@@ -48,7 +48,7 @@ export default async function SourcingPage() {
       {/* ---------- Content side ---------- */}
       <div className="flex items-center px-5 py-14 sm:px-8 sm:py-20 lg:px-16 lg:py-24 xl:px-20">
         <div className="w-full max-w-xl">
-          <p className="text-xs uppercase tracking-widest text-gold">Bespoke Sourcing</p>
+          <p className="text-xs uppercase tracking-widest text-gold-deep">Bespoke Sourcing</p>
           <h1 className="mt-2 font-serif text-4xl text-charcoal sm:text-5xl">Can&apos;t find what you&apos;re looking for?</h1>
           <p className="mt-4 leading-relaxed text-charcoal/70">
             Beyond our catalog, we source specific gemstones on request directly from Sri Lanka&apos;s gem markets and

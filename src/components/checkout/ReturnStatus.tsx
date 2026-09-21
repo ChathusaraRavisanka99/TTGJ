@@ -45,7 +45,7 @@ export function ReturnStatus({ orderRecordId, initial }: { orderRecordId: string
 
   if (!result) {
     return (
-      <StatusShell icon={<HelpCircle size={40} className="text-charcoal/40" />} title="Order Not Found" animated={false}>
+      <StatusShell icon={<HelpCircle size={40} className="text-charcoal/65" />} title="Order Not Found" animated={false}>
         <p className="mt-4 text-charcoal/70">We couldn&apos;t find that order.</p>
       </StatusShell>
     );
@@ -75,7 +75,7 @@ export function ReturnStatus({ orderRecordId, initial }: { orderRecordId: string
 
   if (result.status === "CANCELLED") {
     return (
-      <StatusShell icon={<XCircle size={40} className="text-charcoal/40" />} title="Payment Cancelled" animated={false}>
+      <StatusShell icon={<XCircle size={40} className="text-charcoal/65" />} title="Payment Cancelled" animated={false}>
         <p className="mt-4 text-charcoal/70">No charge was made. Your cart is still here whenever you&apos;re ready.</p>
         <LinkButton href="/account/retail-cart" variant="primary" className="mt-8">Back to Cart</LinkButton>
       </StatusShell>
@@ -85,7 +85,7 @@ export function ReturnStatus({ orderRecordId, initial }: { orderRecordId: string
   // PENDING_PAYMENT — still animated/waiting.
   if (pollsRemaining <= 0) {
     return (
-      <StatusShell icon={<HelpCircle size={40} className="text-charcoal/40" />} title="Still Confirming" animated={false}>
+      <StatusShell icon={<HelpCircle size={40} className="text-charcoal/65" />} title="Still Confirming" animated={false}>
         <p className="mt-4 text-charcoal/70">
           This is taking longer than usual. Order <span className="font-mono">{result.orderNumber}</span> will update
           automatically once PayHere confirms it — check your orders in a few minutes.
@@ -96,7 +96,7 @@ export function ReturnStatus({ orderRecordId, initial }: { orderRecordId: string
   }
 
   return (
-    <StatusShell icon={<Loader2 size={40} className="animate-spin text-gold" />} title="Confirming Your Payment" animated>
+    <StatusShell icon={<Loader2 size={40} className="animate-spin text-gold-deep" />} title="Confirming Your Payment" animated>
       <p className="mt-4 text-charcoal/70">
         Order <span className="font-mono">{result.orderNumber}</span> — this usually only takes a few seconds.
       </p>
@@ -110,7 +110,7 @@ function StatusShell({ icon, title, animated, children }: { icon: React.ReactNod
       <div className={animated ? "inline-flex animate-pulse" : "inline-flex"}>{icon}</div>
       <h1 className="mt-4 font-serif text-4xl text-charcoal">{title}</h1>
       {children}
-      <p className="mt-8 text-sm text-charcoal/50">
+      <p className="mt-8 text-sm text-charcoal/65">
         <Link href="/gems" className="underline hover:text-charcoal">Continue Shopping</Link>
       </p>
     </div>

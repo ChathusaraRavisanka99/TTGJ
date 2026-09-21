@@ -45,7 +45,7 @@ export const SEASONAL_THEMES: Record<SeasonalThemeKey, SeasonalThemeDef> = {
     isDark: false,
     headingClass: "text-charcoal",
     bodyClass: "text-charcoal/70",
-    kickerClass: "text-gold",
+    kickerClass: "text-gold-deep",
     particleDirection: "rise",
     particles: ["✨", "☀️"],
     particleCount: 20,

@@ -13,7 +13,7 @@ const QUOTE_STATUS_STYLES: Record<string, string> = {
   QUOTED: "bg-gold-soft/25 text-charcoal border-gold/40",
   ACCEPTED: "bg-emerald-50 text-emerald-800 border-emerald-200",
   DECLINED: "bg-red-50 text-red-700 border-red-200",
-  EXPIRED: "bg-charcoal/5 text-charcoal/50 border-charcoal/15",
+  EXPIRED: "bg-charcoal/5 text-charcoal/65 border-charcoal/15",
 };
 
 export function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -50,7 +50,7 @@ const AUCTION_STATE_STYLES: Record<AuctionDisplayState, string> = {
   DRAFT: "bg-charcoal/5 text-charcoal/60 border-charcoal/15",
   SCHEDULED: "bg-sapphire-soft/15 text-sapphire border-sapphire-soft/30",
   OPEN: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  RESERVE_NOT_MET: "bg-charcoal/5 text-charcoal/50 border-charcoal/15",
+  RESERVE_NOT_MET: "bg-charcoal/5 text-charcoal/65 border-charcoal/15",
   AWAITING_CONFIRMATION: "bg-amber-50 text-amber-800 border-amber-200",
   WON: "bg-gold-soft/25 text-charcoal border-gold/40",
   CANCELLED: "bg-red-50 text-red-700 border-red-200",

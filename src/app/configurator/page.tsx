@@ -14,7 +14,7 @@ export default async function ConfiguratorPage() {
   return (
     <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
       <div className="mb-10 max-w-2xl">
-        <p className="text-xs uppercase tracking-widest text-gold">Design Your Gem</p>
+        <p className="text-xs uppercase tracking-widest text-gold-deep">Design Your Gem</p>
         <h1 className="mt-2 font-serif text-4xl text-charcoal">Configure your own Ceylon gemstone</h1>
         <p className="mt-3 text-charcoal/65">
           Choose a mineral, cut, size, colour, tone, and clarity to see an illustrative rendering update live.

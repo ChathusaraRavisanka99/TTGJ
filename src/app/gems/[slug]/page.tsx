@@ -78,7 +78,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
 
         <Reveal delay={0.1} y={16}>
           <div className="flex flex-wrap items-center gap-3">
-            <p className="text-xs uppercase tracking-widest text-gold">{gem.mineral.name}</p>
+            <p className="text-xs uppercase tracking-widest text-gold-deep">{gem.mineral.name}</p>
             <StockBadge status={gem.stockStatus} />
             {gem.origin.isCeylon && (
               <span className="rounded-full bg-charcoal/85 px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-ivory">
@@ -96,7 +96,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
               the one and only piece — once it sells, the listing is gone
               for good, not restocked. */}
           {gem.stockStatus === "AVAILABLE" && (
-            <p className="mt-4 flex items-center gap-1.5 text-xs font-medium text-gold">
+            <p className="mt-4 flex items-center gap-1.5 text-xs font-medium text-gold-deep">
               <Sparkles size={13} /> This is the only one — a single natural stone, not a reproducible design.
             </p>
           )}
@@ -172,7 +172,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
 
       {relatedGems.length > 0 && (
         <Reveal className="mt-20 border-t border-border-subtle pt-14 sm:mt-28 sm:pt-16">
-          <p className="text-xs uppercase tracking-[0.3em] text-gold">More From the Collection</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">More From the Collection</p>
           <h2 className="mt-2 font-serif text-3xl text-charcoal sm:text-4xl">You May Also Love</h2>
           <div className="mt-8">
             <CardSlider>
@@ -213,9 +213,9 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
 function Spec({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-charcoal/45">{label}</dt>
+      <dt className="text-xs uppercase tracking-wide text-charcoal/65">{label}</dt>
       <dd className="mt-0.5 text-sm text-charcoal">{value}</dd>
-      {hint && <p className="mt-0.5 text-xs text-charcoal/45">{hint}</p>}
+      {hint && <p className="mt-0.5 text-xs text-charcoal/65">{hint}</p>}
     </div>
   );
 }

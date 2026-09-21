@@ -7,6 +7,8 @@
   --color-charcoal-soft: #3a332d;
   --color-gold: #b3915a;
   --color-gold-soft: #d9c39a;
+  --color-gold-deep: #86662b;
+  --color-midnight: #131a29;
   --color-sapphire: #1f3a5f;
   --color-sapphire-soft: #345580;
 
@@ -27,6 +29,8 @@
   --color-charcoal-soft: var(--color-charcoal-soft);
   --color-gold: var(--color-gold);
   --color-gold-soft: var(--color-gold-soft);
+  --color-gold-deep: var(--color-gold-deep);
+  --color-midnight: var(--color-midnight);
   --color-sapphire: var(--color-sapphire);
   --color-sapphire-soft: var(--color-sapphire-soft);
   --font-serif: var(--font-cormorant);
@@ -73,6 +77,25 @@ html {
   html:not(.no-scroll-snap) {
     scroll-snap-type: y proximity;
   }
+}
+
+/* Anchor/section jumps (HeroScrollCue, SectionArrow, "View Options" on the
+   sticky buy bar) otherwise land the target's top edge under the fixed nav. */
+html {
+  scroll-padding-top: 5rem;
+}
+
+/* A visible keyboard-focus indicator on every interactive element — there
+   was none beyond form fields' own ring, so tabbing through nav, cards and
+   buttons gave no sign of where focus was. A 2px gold outline reads on
+   both the ivory and the dark charcoal/navy sections, and follows each
+   element's own corner radius. */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
 }
 
 h1, h2, h3, h4, .font-serif {

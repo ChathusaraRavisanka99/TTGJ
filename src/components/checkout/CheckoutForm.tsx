@@ -78,7 +78,7 @@ export function CheckoutForm() {
       <Button type="submit" variant="gold" size="lg" className="w-full" disabled={pending}>
         {pending ? "Preparing payment..." : "Continue to Payment"}
       </Button>
-      <p className="text-center text-xs text-charcoal/45">You&apos;ll be redirected to PayHere to complete payment securely.</p>
+      <p className="text-center text-xs text-charcoal/65">You&apos;ll be redirected to PayHere to complete payment securely.</p>
     </form>
   );
 }

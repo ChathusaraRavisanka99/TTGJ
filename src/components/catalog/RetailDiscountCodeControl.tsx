@@ -45,7 +45,7 @@ export function RetailDiscountCodeControl({ appliedCode }: { appliedCode: string
         <p className="text-charcoal/70">
           Code <span className="font-mono font-medium text-charcoal">{appliedCode}</span> applied
         </p>
-        <button type="button" onClick={handleRemove} disabled={pending} className="text-xs text-charcoal/50 underline hover:text-charcoal disabled:opacity-50">
+        <button type="button" onClick={handleRemove} disabled={pending} className="text-xs text-charcoal/65 underline hover:text-charcoal disabled:opacity-50">
           {pending ? "Removing..." : "Remove"}
         </button>
       </div>

@@ -66,7 +66,7 @@ export function QuoteRequestPanel({ isAuthenticated, gemstoneId, jewelryId, conf
   return (
     <div className="rounded-xl border border-border-subtle bg-surface p-5">
       <p className="font-serif text-lg text-charcoal">Request a Quote</p>
-      <p className="mt-1 text-xs text-charcoal/55">for {productLabel}</p>
+      <p className="mt-1 text-xs text-charcoal/65">for {productLabel}</p>
 
       <div className="mt-4 flex items-center gap-3">
         <Label htmlFor="quantity" className="mb-0 shrink-0">Quantity</Label>
@@ -89,8 +89,8 @@ export function QuoteRequestPanel({ isAuthenticated, gemstoneId, jewelryId, conf
           onChange={(e) => setNote(e.target.value)}
           placeholder="E.g. intended setting, timeline, or questions about the stone..."
         />
-        <p className="mt-1.5 flex items-start gap-1.5 text-xs text-charcoal/55">
-          <AlertTriangle size={13} className="mt-0.5 shrink-0 text-gold" />
+        <p className="mt-1.5 flex items-start gap-1.5 text-xs text-charcoal/65">
+          <AlertTriangle size={13} className="mt-0.5 shrink-0 text-gold-deep" />
           Please don&apos;t include a specific offer price here — we&apos;ll send you a quote based on the piece.
         </p>
       </div>

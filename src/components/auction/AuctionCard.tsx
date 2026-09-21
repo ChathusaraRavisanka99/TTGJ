@@ -42,11 +42,11 @@ export function AuctionCard({ name, href, imageUrl, state, startingPrice, highBi
         <p className="truncate font-serif text-lg text-charcoal">{name}</p>
         <div className="mt-2 flex items-center justify-between text-sm">
           <div>
-            <p className="text-xs uppercase tracking-wide text-charcoal/45">{highBid != null ? "Current Bid" : "Starting At"}</p>
+            <p className="text-xs uppercase tracking-wide text-charcoal/65">{highBid != null ? "Current Bid" : "Starting At"}</p>
             <p className="text-charcoal">{formatPrice(highBid ?? startingPrice)}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs uppercase tracking-wide text-charcoal/45">{state === "SCHEDULED" ? "Starts" : "Ends"}</p>
+            <p className="text-xs uppercase tracking-wide text-charcoal/65">{state === "SCHEDULED" ? "Starts" : "Ends"}</p>
             <p className="text-charcoal/70">{dateToShow.toLocaleDateString()}</p>
           </div>
         </div>

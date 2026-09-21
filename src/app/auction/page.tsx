@@ -23,8 +23,8 @@ export default async function AuctionListPage() {
   if (visibility === "COMING_SOON") {
     return (
       <div className="flex min-h-[70dvh] flex-col items-center justify-center px-5 text-center">
-        <Gavel size={40} strokeWidth={1} className="text-gold" />
-        <p className="mt-4 text-xs uppercase tracking-[0.35em] text-charcoal/50">Coming Soon</p>
+        <Gavel size={40} strokeWidth={1} className="text-gold-deep" />
+        <p className="mt-4 text-xs uppercase tracking-[0.35em] text-charcoal/65">Coming Soon</p>
         <h1 className="mt-3 font-serif text-4xl text-charcoal">Live Auctions</h1>
         <p className="mt-4 max-w-md text-charcoal/60">
           A rotating selection of exceptional pieces, sold to the highest bidder. Check back soon.
@@ -55,7 +55,7 @@ export default async function AuctionListPage() {
   return (
     <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
       <Reveal y={16}>
-        <p className="text-xs uppercase tracking-[0.35em] text-charcoal/50">Live Auctions</p>
+        <p className="text-xs uppercase tracking-[0.35em] text-charcoal/65">Live Auctions</p>
         <h1 className="mt-3 font-serif text-4xl text-charcoal sm:text-5xl">Bid on Exceptional Pieces</h1>
         <p className="mt-4 max-w-2xl text-charcoal/60">
           Highest bid wins, subject to a reserve. Sign in to place a bid — the winner is confirmed by our team once
@@ -64,7 +64,7 @@ export default async function AuctionListPage() {
       </Reveal>
 
       {withState.length === 0 ? (
-        <p className="mt-12 text-charcoal/50">No auctions are running right now — check back soon.</p>
+        <p className="mt-12 text-charcoal/65">No auctions are running right now — check back soon.</p>
       ) : (
         <div className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
           {withState.map(({ auction, state }, i) => {

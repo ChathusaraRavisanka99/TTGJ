@@ -161,10 +161,10 @@ export default async function HomePage() {
           switched off from Home Page content regardless of how many items
           are marked — see showFeaturedGems above. */}
       {showFeaturedGems && (
-        <section id="featured" className="relative mx-auto flex min-h-dvh w-full max-w-[120rem] snap-start flex-col justify-center px-5 py-24 sm:px-8 sm:py-32 lg:px-12 xl:px-16">
-          <Reveal className="mb-14 flex items-end justify-between">
+        <section id="featured" className="relative mx-auto flex w-full max-w-[120rem] snap-start flex-col justify-center px-5 py-16 sm:min-h-dvh sm:px-8 sm:py-32 lg:px-12 xl:px-16">
+          <Reveal className="mb-8 flex items-end justify-between sm:mb-14">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gold">Hand-Selected</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">Hand-Selected</p>
               <h2 className="mt-3 font-serif text-4xl text-charcoal sm:text-5xl">Featured Gemstones</h2>
             </div>
             <Link href="/gems" className="hidden text-sm text-charcoal/70 underline decoration-charcoal/30 underline-offset-4 hover:text-charcoal sm:block">
@@ -208,10 +208,10 @@ export default async function HomePage() {
       {/* Same curation pattern as Featured Gemstones, independently toggled
           (JewelryPiece.isFeatured + showFeaturedJewelry). */}
       {showFeaturedJewelry && (
-        <section id="featured-jewelry" className="relative mx-auto flex min-h-dvh w-full max-w-[120rem] snap-start flex-col justify-center bg-ivory-soft px-5 py-24 sm:px-8 sm:py-32 lg:px-12 xl:px-16">
-          <Reveal className="mb-14 flex items-end justify-between">
+        <section id="featured-jewelry" className="relative mx-auto flex w-full max-w-[120rem] snap-start flex-col justify-center bg-ivory-soft px-5 py-16 sm:min-h-dvh sm:px-8 sm:py-32 lg:px-12 xl:px-16">
+          <Reveal className="mb-8 flex items-end justify-between sm:mb-14">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gold">Hand-Selected</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">Hand-Selected</p>
               <h2 className="mt-3 font-serif text-4xl text-charcoal sm:text-5xl">Featured Jewelry</h2>
             </div>
             <Link href="/jewelry" className="hidden text-sm text-charcoal/70 underline decoration-charcoal/30 underline-offset-4 hover:text-charcoal sm:block">
@@ -244,7 +244,7 @@ export default async function HomePage() {
       )}
 
       {/* ---------- Editorial statement ---------- */}
-      <section id="editorial" className="relative flex min-h-dvh items-center border-y border-border-subtle bg-charcoal py-28 snap-start sm:py-36">
+      <section id="editorial" className="relative flex items-center border-y border-border-subtle bg-gradient-to-b from-midnight via-charcoal to-midnight py-20 snap-start sm:min-h-dvh sm:py-36">
         <Reveal className="mx-auto max-w-4xl px-5 text-center sm:px-8">
           <p className="font-serif text-3xl leading-snug text-ivory sm:text-5xl">
             &ldquo;{content.editorialQuote} <span className="text-gold-soft">{content.editorialQuoteHighlight}</span>&rdquo;
@@ -269,7 +269,7 @@ export default async function HomePage() {
           pulling the programmatic scroll past a section it didn't
           recognize as a stop. */}
       <section id="heritage-sourcing" className="relative snap-start lg:grid lg:grid-cols-2">
-        <Reveal className="relative h-dvh min-h-[520px] w-full overflow-hidden bg-charcoal lg:max-h-[1100px]">
+        <Reveal className="relative h-[80dvh] min-h-[460px] w-full overflow-hidden bg-charcoal sm:h-dvh sm:min-h-[520px] lg:max-h-[1100px]">
           <Image src={content.heritageImage} alt={content.heritageHeading} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
           <div
             className="pointer-events-none absolute inset-0"
@@ -288,7 +288,7 @@ export default async function HomePage() {
           </div>
         </Reveal>
 
-        <Reveal delay={0.1} className="relative h-dvh min-h-[520px] w-full overflow-hidden bg-charcoal lg:max-h-[1100px]">
+        <Reveal delay={0.1} className="relative h-[80dvh] min-h-[460px] w-full overflow-hidden bg-charcoal sm:h-dvh sm:min-h-[520px] lg:max-h-[1100px]">
           <Image src={content.sourcingImage} alt={content.sourcingHeading} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
           <div
             className="pointer-events-none absolute inset-0"
@@ -316,9 +316,9 @@ export default async function HomePage() {
           the closing CTA still has one real question left: "but is it
           genuine, and what if it isn't right for me?" Answers it before
           they ever have to ask. */}
-      <section id="promise" className="relative flex min-h-dvh w-full snap-start flex-col justify-center px-5 py-24 sm:px-8 sm:py-32 lg:px-12 xl:px-16">
+      <section id="promise" className="relative flex w-full snap-start flex-col justify-center bg-gradient-to-b from-ivory to-ivory-soft px-5 py-16 sm:min-h-dvh sm:px-8 sm:py-32 lg:px-12 xl:px-16">
         <Reveal className="mx-auto max-w-5xl text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-gold">The Ratnavue Promise</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">The Ratnavue Promise</p>
           <h2 className="mx-auto mt-3 max-w-2xl font-serif text-4xl text-charcoal sm:text-5xl">
             Buy with complete confidence.
           </h2>
@@ -327,7 +327,7 @@ export default async function HomePage() {
             sell is backed by the same four commitments, no exceptions.
           </p>
         </Reveal>
-        <Reveal delay={0.1} className="mx-auto mt-14 w-full max-w-5xl">
+        <Reveal delay={0.1} className="mx-auto mt-10 w-full max-w-5xl sm:mt-14">
           <TrustBar messages={trustBarMessages} />
         </Reveal>
         <SectionArrow target={prevSection("promise")} direction="up" tone="dark" />
@@ -341,7 +341,7 @@ export default async function HomePage() {
           to rest once you scrolled past it — the footer isn't a snap point,
           so the browser pulled the page back up to this section instead of
           letting you reach the bottom of the page at all. */}
-      <section id="closing-cta" className="relative flex min-h-dvh items-center overflow-hidden bg-charcoal py-28 sm:py-36">
+      <section id="closing-cta" className="relative flex items-center overflow-hidden bg-gradient-to-br from-midnight via-charcoal to-charcoal py-20 sm:min-h-dvh sm:py-36">
         <div
           className="pointer-events-none absolute inset-0 opacity-60"
           style={{ background: "radial-gradient(50% 60% at 50% 100%, rgba(179,145,90,0.18), transparent 70%)" }}

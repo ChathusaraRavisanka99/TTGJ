@@ -103,7 +103,7 @@ function GemCardList(props: GemCardProps) {
       <Thumbnail props={props} className="h-24 w-24 rounded-lg ring-1 ring-inset ring-charcoal/5 sm:h-28 sm:w-28" sizes="(min-width: 640px) 112px, 96px" />
       <div className="min-w-0 flex-1">
         <p className="truncate font-serif text-lg text-charcoal sm:text-xl">{props.name}</p>
-        <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/50">
+        <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/65">
           {props.mineralName} · {props.cutName}
         </p>
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -159,7 +159,7 @@ function GemCardGrid(props: GemCardProps) {
         {/* Tighter inset and smaller pills on phones: in the 2-column
             mobile grid a card is only ~130-160px wide, where the stock
             pill (right) and Ceylon pill (left) at full size overlapped. */}
-        <div className="absolute right-2 top-2 max-sm:[&>span]:px-2 max-sm:[&>span]:text-[10px] sm:right-3 sm:top-3">
+        <div className="absolute right-2 top-2 max-sm:bottom-2 max-sm:top-auto max-sm:[&>span]:px-2 max-sm:[&>span]:text-[10px] sm:right-3 sm:top-3">
           <StockBadge status={props.stockStatus} />
         </div>
         {/* Stacked, not side-by-side — Promotion and Ceylon can both apply
@@ -176,7 +176,7 @@ function GemCardGrid(props: GemCardProps) {
       </Thumbnail>
       <div className="flex flex-1 flex-col p-4">
         <p className="line-clamp-2 font-serif text-lg leading-snug text-charcoal">{props.name}</p>
-        <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/50">
+        <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/65">
           {props.mineralName} · {props.cutName}
         </p>
         <div className="mt-3"><SpecTags props={props} /></div>

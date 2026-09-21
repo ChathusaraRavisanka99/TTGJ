@@ -69,7 +69,7 @@ function TextSection({ block, animate }: { block: Extract<AboutBlock, { type: "t
     <section className="mx-auto max-w-[120rem] px-5 py-20 sm:px-8 sm:py-28 lg:px-12 xl:px-16">
       <Wrap animate={animate} className="grid gap-10 lg:grid-cols-2 lg:gap-20">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-gold">{block.label}</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">{block.label}</p>
           <div className="mt-4 h-px w-12 bg-gold" />
           <p className="mt-8 font-serif text-2xl leading-relaxed text-charcoal sm:text-3xl">{block.lead}</p>
         </div>
@@ -90,7 +90,7 @@ function ImageCaptionSection({ block, animate }: { block: Extract<AboutBlock, { 
           {block.image && <Image src={block.image} alt={block.kicker} fill sizes="(min-width: 1024px) 66vw, 100vw" className="object-cover" />}
         </div>
         <div className="lg:pb-4">
-          <p className="text-xs uppercase tracking-[0.25em] text-gold">{block.kicker}</p>
+          <p className="text-xs uppercase tracking-[0.25em] text-gold-deep">{block.kicker}</p>
           <p className="mt-3 leading-relaxed text-charcoal/70">{block.body}</p>
         </div>
       </Wrap>
@@ -113,7 +113,7 @@ function ImageBlockSection({ block, animate }: { block: Extract<AboutBlock, { ty
 
 function QuoteSection({ block, animate }: { block: Extract<AboutBlock, { type: "quote" }>; animate: boolean }) {
   return (
-    <section className="flex min-h-dvh items-center border-y border-border-subtle bg-charcoal py-24 sm:py-32">
+    <section className="flex items-center border-y border-border-subtle bg-gradient-to-b from-midnight via-charcoal to-midnight py-20 sm:min-h-dvh sm:py-32">
       <Wrap animate={animate} className="mx-auto w-full max-w-[120rem] px-5 sm:px-8 lg:px-12 xl:px-16">
         <p className="max-w-4xl font-serif text-4xl leading-snug text-ivory sm:text-6xl lg:text-7xl">
           {block.text} <span className="text-gold-soft">{block.highlight}</span>
@@ -234,7 +234,7 @@ function BoxedHero({ block }: { block: Extract<AboutBlock, { type: "hero" }> }) 
 function BoxedText({ block }: { block: Extract<AboutBlock, { type: "text" }> }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-[0.3em] text-gold">{block.label}</p>
+      <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">{block.label}</p>
       <div className="mt-3 h-px w-10 bg-gold" />
       <p className="mt-5 font-serif text-xl leading-relaxed text-charcoal sm:text-2xl">{block.lead}</p>
       <p className="mt-5 leading-relaxed text-charcoal/70">{block.body1}</p>
@@ -249,7 +249,7 @@ function BoxedImageCaption({ block }: { block: Extract<AboutBlock, { type: "imag
       <div className="relative aspect-[16/10] overflow-hidden rounded-3xl bg-charcoal shadow-xl shadow-charcoal/10">
         {block.image && <Image src={block.image} alt={block.kicker} fill sizes="100vw" className="object-cover" />}
       </div>
-      <p className="mt-4 text-xs uppercase tracking-[0.25em] text-gold">{block.kicker}</p>
+      <p className="mt-4 text-xs uppercase tracking-[0.25em] text-gold-deep">{block.kicker}</p>
       <p className="mt-2 leading-relaxed text-charcoal/70">{block.body}</p>
     </div>
   );

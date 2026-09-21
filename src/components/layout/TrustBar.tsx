@@ -42,7 +42,7 @@ export function TrustBar({
       <ul className={cn("flex flex-wrap gap-x-5 gap-y-2", className)}>
         {TRUST_ITEMS.map((item) => (
           <li key={item.titleKey} className="flex items-center gap-1.5 text-xs text-charcoal/65">
-            <item.icon size={14} className="shrink-0 text-gold" aria-hidden />
+            <item.icon size={14} className="shrink-0 text-gold-deep" aria-hidden />
             {messages[item.titleKey]}
           </li>
         ))}
@@ -54,12 +54,12 @@ export function TrustBar({
     <div className={cn("grid gap-8 sm:grid-cols-2 lg:grid-cols-4", className)}>
       {TRUST_ITEMS.map((item) => (
         <div key={item.titleKey} className="flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold/10 text-gold">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold/10 text-gold-deep">
             <item.icon size={17} aria-hidden />
           </span>
           <div>
             <p className="text-sm font-medium text-charcoal">{messages[item.titleKey]}</p>
-            <p className="mt-0.5 text-xs leading-relaxed text-charcoal/55">{messages[item.detailKey]}</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-charcoal/65">{messages[item.detailKey]}</p>
           </div>
         </div>
       ))}

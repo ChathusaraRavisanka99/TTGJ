@@ -10,10 +10,12 @@ const VARIANTS = {
   ghost: "text-charcoal hover:bg-charcoal/5",
 };
 
+// min-h keeps every size at a comfortable thumb target (~44px for md/lg,
+// 40px for the compact sm) even where the text is short.
 const SIZES = {
-  sm: "text-sm px-4 py-2",
-  md: "text-sm px-6 py-3",
-  lg: "text-base px-8 py-4",
+  sm: "min-h-10 text-sm px-4 py-2",
+  md: "min-h-11 text-sm px-6 py-3",
+  lg: "min-h-12 text-base px-8 py-4",
 };
 
 type Variant = keyof typeof VARIANTS;

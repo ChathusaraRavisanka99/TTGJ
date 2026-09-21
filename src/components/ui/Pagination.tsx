@@ -63,7 +63,7 @@ export function Pagination({
 
       {sorted.map((p, i) => (
         <span key={p} className="flex items-center gap-1.5">
-          {i > 0 && p - sorted[i - 1] > 1 && <span className="px-1 text-charcoal/40">…</span>}
+          {i > 0 && p - sorted[i - 1] > 1 && <span className="px-1 text-charcoal/65">…</span>}
           <Link
             href={hrefForPage(p)}
             aria-current={p === currentPage ? "page" : undefined}

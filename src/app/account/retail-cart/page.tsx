@@ -33,7 +33,7 @@ export default async function RetailCartPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-      <p className="text-xs uppercase tracking-widest text-gold">Your Cart</p>
+      <p className="text-xs uppercase tracking-widest text-gold-deep">Your Cart</p>
       <h1 className="mt-2 font-serif text-4xl text-charcoal">Retail Cart</h1>
 
       {cart.items.length === 0 ? (
@@ -77,7 +77,7 @@ export default async function RetailCartPage() {
             </p>
             <p className="font-serif text-2xl text-charcoal">{formatPrice(subtotal)}</p>
           </div>
-          <p className="mt-1 text-right text-xs text-charcoal/45">Tax, shipping, and handling are calculated at checkout.</p>
+          <p className="mt-1 text-right text-xs text-charcoal/65">Tax, shipping, and handling are calculated at checkout.</p>
 
           {hasUnavailableItem && (
             <p className="mt-4 text-right text-sm text-red-700">Remove the unavailable item(s) above to continue to checkout.</p>
@@ -94,7 +94,7 @@ export default async function RetailCartPage() {
         </>
       )}
 
-      <p className="mt-8 text-center text-sm text-charcoal/50">
+      <p className="mt-8 text-center text-sm text-charcoal/65">
         <Link href="/account" className="underline hover:text-charcoal">Back to My Account</Link>
       </p>
     </div>

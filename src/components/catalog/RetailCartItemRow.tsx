@@ -55,7 +55,7 @@ export function RetailCartItemRow({ item }: { item: Item }) {
           on a phone-width viewport. Stays inline, pushed to the right
           edge, from sm: up. */}
       <div className="flex w-full basis-full items-center justify-end gap-4 sm:w-auto sm:basis-auto">
-        <button type="button" title="Remove" disabled={pending} onClick={remove} className="text-charcoal/40 hover:text-red-700">
+        <button type="button" title="Remove" disabled={pending} onClick={remove} className="text-charcoal/65 hover:text-red-700">
           <Trash2 size={16} />
         </button>
         <p className="w-20 shrink-0 text-right font-serif text-charcoal sm:w-24">{formatPrice(item.unitPrice * item.quantity)}</p>

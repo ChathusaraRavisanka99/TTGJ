@@ -267,7 +267,7 @@ export function Navbar({
       {open && (
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto border-t border-border-subtle bg-ivory px-5 py-4 md:hidden">
           <form action="/search" method="get" className="mb-2 flex items-center gap-2 border-b border-border-subtle pb-3">
-            <Search size={16} className="shrink-0 text-charcoal/40" />
+            <Search size={16} className="shrink-0 text-charcoal/65" />
             <input
               name="q"
               placeholder="Search gems, jewelry..."

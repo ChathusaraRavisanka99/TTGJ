@@ -35,7 +35,7 @@ export function LoginForm({ callbackUrl, googleEnabled }: { callbackUrl: string;
 
       {googleEnabled && (
         <>
-          <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-charcoal/40">
+          <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-charcoal/65">
             <div className="h-px flex-1 bg-border-subtle" />
             or
             <div className="h-px flex-1 bg-border-subtle" />

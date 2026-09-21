@@ -16,7 +16,7 @@ export default async function CheckoutCancelPage({ searchParams }: PageProps<"/c
 
   return (
     <div className="mx-auto max-w-lg px-5 py-24 text-center sm:px-8">
-      <XCircle size={40} className="mx-auto text-charcoal/40" />
+      <XCircle size={40} className="mx-auto text-charcoal/65" />
       <h1 className="mt-4 font-serif text-4xl text-charcoal">No Charge Was Made</h1>
       <p className="mt-4 text-charcoal/70">Your cart is still here whenever you&apos;re ready to try again.</p>
       <LinkButton href="/account/retail-cart" variant="primary" className="mt-8">Back to Cart</LinkButton>

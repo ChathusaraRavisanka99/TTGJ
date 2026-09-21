@@ -38,8 +38,8 @@ export default async function AuctionDetailPage({ params }: PageProps<"/auction/
   if (visibility === "COMING_SOON") {
     return (
       <div className="flex min-h-[70dvh] flex-col items-center justify-center px-5 text-center">
-        <Gavel size={40} strokeWidth={1} className="text-gold" />
-        <p className="mt-4 text-xs uppercase tracking-[0.35em] text-charcoal/50">Coming Soon</p>
+        <Gavel size={40} strokeWidth={1} className="text-gold-deep" />
+        <p className="mt-4 text-xs uppercase tracking-[0.35em] text-charcoal/65">Coming Soon</p>
         <h1 className="mt-3 font-serif text-4xl text-charcoal">Live Auctions</h1>
         <Link href="/" className="mt-8 text-sm text-charcoal/60 underline underline-offset-4 hover:text-charcoal">
           Back to Ratnavue
@@ -74,18 +74,18 @@ export default async function AuctionDetailPage({ params }: PageProps<"/auction/
           </span>
           <h1 className="mt-3 font-serif text-4xl text-charcoal">{label}</h1>
           {catalogHref && (
-            <Link href={catalogHref} className="mt-1 inline-block text-sm text-gold underline">
+            <Link href={catalogHref} className="mt-1 inline-block text-sm text-gold-deep underline">
               View full details in the catalog
             </Link>
           )}
 
           <div className="mt-6 flex items-center gap-8 border-y border-border-subtle py-5">
             <div>
-              <p className="text-xs uppercase tracking-wide text-charcoal/45">{top != null ? "Current Bid" : "Starting Price"}</p>
-              <p className="mt-1 font-serif text-2xl text-gold">{formatPrice(top ?? auction.startingPrice)}</p>
+              <p className="text-xs uppercase tracking-wide text-charcoal/65">{top != null ? "Current Bid" : "Starting Price"}</p>
+              <p className="mt-1 font-serif text-2xl text-gold-deep">{formatPrice(top ?? auction.startingPrice)}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-charcoal/45">{auction.bids.length} bid{auction.bids.length === 1 ? "" : "s"}</p>
+              <p className="text-xs uppercase tracking-wide text-charcoal/65">{auction.bids.length} bid{auction.bids.length === 1 ? "" : "s"}</p>
               <p className="mt-1 text-sm text-charcoal/70">
                 {state === "SCHEDULED" ? `Starts ${auction.startsAt.toLocaleString()}` : `Ends ${auction.endsAt.toLocaleString()}`}
               </p>

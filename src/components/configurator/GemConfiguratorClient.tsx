@@ -101,7 +101,7 @@ export function GemConfiguratorClient({ minerals, cuts, clarityGrades, isAuthent
             />
           )}
         </div>
-        <p className="mt-2 text-center text-xs text-charcoal/45">
+        <p className="mt-2 text-center text-xs text-charcoal/65">
           Illustrative preview — actual dimensions vary by the mineral&apos;s density —{" "}
           {dimensions ? `approximately ${dimensions.lengthMm} x ${dimensions.widthMm} mm at ${caratWeight}ct.` : ""}
         </p>
@@ -164,7 +164,7 @@ export function GemConfiguratorClient({ minerals, cuts, clarityGrades, isAuthent
             style={{ accentColor: resolveGemColor(hue, darkness).base }}
           />
           <div className="mt-1.5 h-2 rounded-full" style={{ background: gradientStops }} />
-          <p className="mt-1.5 text-xs text-charcoal/50">
+          <p className="mt-1.5 text-xs text-charcoal/65">
             Constrained to hues realistic for {mineral?.name.toLowerCase()}.
           </p>
         </div>
@@ -192,7 +192,7 @@ export function GemConfiguratorClient({ minerals, cuts, clarityGrades, isAuthent
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </Select>
-          {clarity && <p className="mt-1.5 text-xs text-charcoal/55">{clarity.description}</p>}
+          {clarity && <p className="mt-1.5 text-xs text-charcoal/65">{clarity.description}</p>}
         </div>
 
         <div className="pt-2">

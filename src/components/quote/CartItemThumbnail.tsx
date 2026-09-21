@@ -37,7 +37,7 @@ export function CartItemThumbnail({
     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-ivory-soft ring-1 ring-inset ring-charcoal/5">
       {primary.type === "VIDEO" ? (
         <div className="flex h-full w-full items-center justify-center bg-charcoal/5">
-          <Video size={20} className="text-charcoal/50" />
+          <Video size={20} className="text-charcoal/65" />
         </div>
       ) : (
         <Image src={primary.url} alt="" fill sizes="64px" className="object-cover" />

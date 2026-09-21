@@ -105,9 +105,9 @@ export function FloatingChatButton() {
         <div className="absolute bottom-16 right-0">
           {!selected ? (
             <div className="w-80 max-w-[85vw] rounded-xl border border-border-subtle bg-surface p-2 text-left shadow-lg">
-              <p className="px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/50">Chat</p>
+              <p className="px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/65">Chat</p>
               <div className="max-h-80 overflow-y-auto">
-                {!loaded && <p className="px-2 py-6 text-center text-sm text-charcoal/50">Loading...</p>}
+                {!loaded && <p className="px-2 py-6 text-center text-sm text-charcoal/65">Loading...</p>}
                 {loaded &&
                   items.map((c, i) => (
                     <button
@@ -136,7 +136,7 @@ export function FloatingChatButton() {
                       {c.lastMessagePreview ? (
                         <>
                           <p className="truncate text-xs text-charcoal/60">{c.lastMessagePreview}</p>
-                          <p className="mt-0.5 text-xs text-charcoal/45">{timeAgo(c.lastMessageAt)}</p>
+                          <p className="mt-0.5 text-xs text-charcoal/65">{timeAgo(c.lastMessageAt)}</p>
                         </>
                       ) : (
                         <p className="text-xs text-charcoal/60">Start a conversation with our team.</p>
@@ -157,13 +157,13 @@ export function FloatingChatButton() {
                   {items.length > 1 ? "Back" : "Chat"}
                 </button>
                 <p className="truncate px-2 text-sm font-medium text-charcoal">{selected.itemLabel}</p>
-                <Link href={requestHref(selected)} className="shrink-0 text-xs text-gold hover:underline">
+                <Link href={requestHref(selected)} className="shrink-0 text-xs text-gold-deep hover:underline">
                   Open full page ↗
                 </Link>
               </div>
               {panelMessages === null || !currentUserId ? (
                 <div className="rounded-b-xl border border-t-0 border-border-subtle bg-surface p-5 shadow-lg">
-                  <p className="text-sm text-charcoal/50">Loading...</p>
+                  <p className="text-sm text-charcoal/65">Loading...</p>
                 </div>
               ) : (
                 <div className="[&>div]:rounded-t-none [&>div]:shadow-lg">

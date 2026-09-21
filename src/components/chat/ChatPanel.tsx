@@ -131,7 +131,7 @@ export function ChatPanel({
       <p className="font-serif text-lg text-charcoal">Messages</p>
 
       <div className="mt-4 max-h-96 space-y-3 overflow-y-auto pr-1">
-        {messages.length === 0 && <p className="text-sm text-charcoal/50">No messages yet — say hello.</p>}
+        {messages.length === 0 && <p className="text-sm text-charcoal/65">No messages yet — say hello.</p>}
         {messages.map((m) => (
           <ChatBubble key={m.id} message={m} isMine={m.senderId === currentUserId} />
         ))}
@@ -172,7 +172,7 @@ export function ChatPanel({
             {tagType === "cart" && (
               <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2.5 py-1 text-xs text-charcoal/70">
                 <Paperclip size={11} /> Cart contents
-                <button type="button" onClick={() => setTagType("none")} className="ml-0.5 text-charcoal/40 hover:text-charcoal">
+                <button type="button" onClick={() => setTagType("none")} className="ml-0.5 text-charcoal/65 hover:text-charcoal">
                   <X size={11} />
                 </button>
               </span>
@@ -193,7 +193,7 @@ function ChatBubble({ message, isMine }: { message: ChatMessageView; isMine: boo
   return (
     <div className={cn("flex", isMine ? "justify-end" : "justify-start")}>
       <div className={cn("max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm", isMine ? "bg-gold/15" : "bg-ivory-soft")}>
-        <p className="text-[10px] uppercase tracking-wide text-charcoal/40">
+        <p className="text-[10px] uppercase tracking-wide text-charcoal/65">
           {isMine ? "You" : message.senderName} · {time}
         </p>
         {message.body && <p className="mt-1 whitespace-pre-wrap text-charcoal">{message.body}</p>}
@@ -217,7 +217,7 @@ function TaggedItemCard({ href, item }: { href: string; item: { name: string; pr
       </div>
       <div className="min-w-0">
         <p className="truncate text-xs font-medium text-charcoal">{item.name}</p>
-        {item.showPrice && item.price != null && <p className="text-xs text-charcoal/50">{formatPrice(item.price)}</p>}
+        {item.showPrice && item.price != null && <p className="text-xs text-charcoal/65">{formatPrice(item.price)}</p>}
       </div>
     </Link>
   );
@@ -226,7 +226,7 @@ function TaggedItemCard({ href, item }: { href: string; item: { name: string; pr
 function TaggedCartCard({ snapshot }: { snapshot: { items: { label: string; amount: number }[]; total: number } }) {
   return (
     <div className="mt-2 rounded-lg border border-border-subtle bg-surface p-2.5">
-      <p className="text-[10px] uppercase tracking-wide text-charcoal/45">Cart at the time</p>
+      <p className="text-[10px] uppercase tracking-wide text-charcoal/65">Cart at the time</p>
       <div className="mt-1.5 space-y-1">
         {snapshot.items.map((item, i) => (
           <div key={i} className="flex items-center justify-between gap-3 text-xs text-charcoal/70">

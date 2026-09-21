@@ -35,9 +35,39 @@ function isBrowserRequest(userAgent: string): boolean {
   return /mozilla/i.test(userAgent);
 }
 
-export default auth((req) => {
+// Vercel runs this proxy a SECOND time on the rewritten request: after
+// "/lk/gems" is rewritten to "/gems", the proxy is invoked again with
+// pathname "/gems" (the request carries x-vercel-is-internal-rewrite). A proxy
+// that always re-derives the market from the path would then see no /lk
+// prefix and overwrite the "lk" stamped by the first pass — the page would
+// render the international store under a /lk URL. Local `next dev`/`start`
+// only runs it once, which is why this never showed up there.
+//
+// So the stamp carries a signature over (market, path) that only this
+// server can produce (HMAC with AUTH_SECRET). On the second pass a request
+// that arrives with a valid signature is trusted and keeps its market; one
+// with a missing or wrong signature — anything a visitor could send
+// themselves — is still overwritten from its own path.
+const MARKET_SIG_HEADER = "x-market-sig";
+
+async function signMarket(market: string, path: string): Promise<string> {
+  const secret = process.env.AUTH_SECRET ?? "market-stamp-dev-secret";
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${market}|${path}`));
+  return [...new Uint8Array(signature)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export default auth(async (req) => {
   const rawPath = req.nextUrl.pathname;
-  const isLk = isLkPath(rawPath);
+  // Second pass of a /lk rewrite (see above): no prefix left in the path, but
+  // the first pass's signed stamp says it's the Sri Lanka store.
+  const incomingSignature = req.headers.get(MARKET_SIG_HEADER);
+  const alreadyStampedLk =
+    !isLkPath(rawPath) &&
+    req.headers.get(MARKET_HEADER) === "lk" &&
+    !!incomingSignature &&
+    incomingSignature === (await signMarket("lk", rawPath));
+  const isLk = isLkPath(rawPath) || alreadyStampedLk;
   // Every check below runs against the path WITHOUT the market prefix, so
   // "/lk/admin" is protected exactly like "/admin" and can't be used to
   // sidestep a rule written against the international paths.
@@ -103,16 +133,19 @@ export default auth((req) => {
     if (!req.auth) return loginRedirect();
   }
 
-  // Stamp the request with its market. ALWAYS overwritten (never trusted
-  // from the client) so `x-market` can't be spoofed by sending the header
-  // yourself.
+  // Stamp the request with its market. Never trusted from the client: it is
+  // derived from the path here, or carried over only when it arrives with our
+  // own valid signature (the second pass above), so `x-market` can't be
+  // spoofed by sending the header yourself.
+  const market = isLk ? "lk" : "intl";
   const headers = new Headers(req.headers);
-  headers.set(MARKET_HEADER, isLk ? "lk" : "intl");
+  headers.set(MARKET_HEADER, market);
+  headers.set(MARKET_SIG_HEADER, await signMarket(market, pathname));
   // The market-stripped path, for the root layout's canonical/hreflang tags
   // (layouts can't read the URL themselves). Overwritten for the same reason.
   headers.set(APP_PATH_HEADER, pathname);
 
-  if (isLk) {
+  if (isLkPath(rawPath)) {
     const rewritten = req.nextUrl.clone();
     rewritten.pathname = pathname;
     return NextResponse.rewrite(rewritten, { request: { headers } });

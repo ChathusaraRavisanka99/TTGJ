@@ -1,5 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { computeProfit, type SoldItemForProfit } from "@/lib/analytics";
+import { computeProfit, parseDateParam, type SoldItemForProfit } from "@/lib/analytics";
+
+describe("parseDateParam", () => {
+  it("parses a valid yyyy-mm-dd as the start of that local day", () => {
+    const d = parseDateParam("2026-03-05", false);
+    expect(d).toEqual(new Date(2026, 2, 5, 0, 0, 0, 0));
+  });
+
+  it("parses a valid yyyy-mm-dd as the end of that local day when endOfDay is true", () => {
+    const d = parseDateParam("2026-03-05", true);
+    expect(d).toEqual(new Date(2026, 2, 5, 23, 59, 59, 999));
+  });
+
+  it("returns null for undefined, an array, or a malformed string — never throws", () => {
+    expect(parseDateParam(undefined, false)).toBeNull();
+    expect(parseDateParam(["2026-03-05"], false)).toBeNull();
+    expect(parseDateParam("not-a-date", false)).toBeNull();
+    expect(parseDateParam("2026-3-5", false)).toBeNull(); // not zero-padded
+  });
+});
 
 const intlSold = (lineTotal: number, quantity: number, costPrice: number | null): SoldItemForProfit => ({
   quantity,

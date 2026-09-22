@@ -1,3 +1,17 @@
+/** yyyy-mm-dd from an admin's date-range picker (see admin/analytics) —
+ * parsed as a plain calendar date, not a UTC instant, so "2026-01-15"
+ * means the start (or, for `to`, the end) of that day in the server's
+ * own local time, matching what typing that date actually means. */
+export function parseDateParam(value: string | string[] | undefined, endOfDay: boolean): Date | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [y, m, d] = value.split("-").map(Number);
+  return endOfDay ? new Date(y, m - 1, d, 23, 59, 59, 999) : new Date(y, m - 1, d, 0, 0, 0, 0);
+}
+
+export function toDateInputValue(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
 export interface SoldItemForProfit {
   quantity: number;
   lineTotal: number;

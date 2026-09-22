@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { cartTotal } from "@/lib/discount-codes";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
 
-export type ChatRequestType = "quote" | "sourcing" | "general";
+export type ChatRequestType = "quote" | "sourcing" | "order" | "general";
 
 export interface ChatContext {
   threadId: string | null;
@@ -36,6 +36,11 @@ export async function getChatContext(requestType: ChatRequestType, requestId: st
     if (!sourcing) return null;
     return { threadId: sourcing.chatThread?.id ?? null, customerId: sourcing.userId };
   }
+  if (requestType === "order") {
+    const order = await prisma.order.findUnique({ where: { id: requestId }, select: { userId: true, chatThread: { select: { id: true } } } });
+    if (!order) return null;
+    return { threadId: order.chatThread?.id ?? null, customerId: order.userId };
+  }
   // "general": requestId is the customer's own userId, and always resolves
   // (there's nothing separate to 404 on the way a bad quote/sourcing id
   // would) — the thread itself is still created lazily on first message.
@@ -48,7 +53,13 @@ export async function getChatContext(requestType: ChatRequestType, requestId: st
  * on ChatThread. Idempotent: safe to call even if one already exists. */
 export async function getOrCreateChatThread(requestType: ChatRequestType, requestId: string): Promise<string> {
   const where =
-    requestType === "quote" ? { quoteRequestId: requestId } : requestType === "sourcing" ? { sourcingRequestId: requestId } : generalThreadWhere(requestId);
+    requestType === "quote"
+      ? { quoteRequestId: requestId }
+      : requestType === "sourcing"
+        ? { sourcingRequestId: requestId }
+        : requestType === "order"
+          ? { orderId: requestId }
+          : generalThreadWhere(requestId);
 
   const existing = await prisma.chatThread.findFirst({ where, select: { id: true } });
   if (existing) return existing.id;
@@ -75,7 +86,13 @@ export async function getChatMessages(threadId: string | null) {
  * nothing to be unread. */
 export async function getUnreadCount(requestType: ChatRequestType, requestId: string, forRole: "CUSTOMER" | "ADMIN"): Promise<number> {
   const where =
-    requestType === "quote" ? { quoteRequestId: requestId } : requestType === "sourcing" ? { sourcingRequestId: requestId } : generalThreadWhere(requestId);
+    requestType === "quote"
+      ? { quoteRequestId: requestId }
+      : requestType === "sourcing"
+        ? { sourcingRequestId: requestId }
+        : requestType === "order"
+          ? { orderId: requestId }
+          : generalThreadWhere(requestId);
   const thread = await prisma.chatThread.findFirst({
     where,
     select: { id: true, lastReadByCustomerAt: true, lastReadByAdminAt: true },

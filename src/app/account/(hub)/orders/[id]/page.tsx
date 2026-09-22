@@ -7,9 +7,11 @@ import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { markNotificationsReadForRequest } from "@/lib/notifications";
+import { pollChatMessages } from "@/actions/chat";
 import { Badge } from "@/components/ui/Badge";
 import { BackLink } from "@/components/admin/BackLink";
 import { OrderShippingDetailsForm } from "@/components/account/OrderShippingDetailsForm";
+import { ChatPanel } from "@/components/chat/ChatPanel";
 import { formatPrice } from "@/lib/utils";
 import { withMarket, type Market } from "@/lib/market-shared";
 
@@ -60,6 +62,7 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
   if (!order || order.userId !== session.user.id) notFound();
 
   await markNotificationsReadForRequest("order", order.id, session.user.id);
+  const initialMessages = await pollChatMessages("order", order.id);
 
   const currency = order.currency === "LKR" ? "LKR" : "USD";
   const market = (order.market === "lk" ? "lk" : "intl") as Market;
@@ -204,6 +207,8 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
               </address>
             </section>
           )}
+
+          <ChatPanel requestType="order" requestId={order.id} currentUserId={session.user.id} initialMessages={initialMessages} hasOpenCart={false} />
         </div>
 
         <div className="space-y-6 lg:sticky lg:top-28 lg:self-start">

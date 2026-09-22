@@ -678,6 +678,10 @@ model ChatThread {
   // use, e.g. ChatMessage's own tag fields below).
   generalUserId String? @unique
   generalUser   User?   @relation("GeneralSupportThread", fields: [generalUserId], references: [id], onDelete: Cascade)
+  // A thread for one specific order — any order, not just one created from
+  // an accepted quote/sourcing request (see the admin order detail page).
+  orderId String? @unique
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   // Last time each side actually opened this thread — an unread count is
   // derived at read time ("messages from the other side created after
@@ -694,6 +698,7 @@ model ChatThread {
   @@index([quoteRequestId])
   @@index([sourcingRequestId])
   @@index([generalUserId])
+  @@index([orderId])
 }
 
 model ChatMessage {
@@ -1429,6 +1434,11 @@ model Order {
   // admin/orders) before it has one. Blocks markOrderPaid/markOrderShipped
   // until cleared.
   needsShippingDetails Boolean @default(false)
+
+  // One thread per order, created lazily on the first message — see
+  // getOrCreateChatThread("order", ...) in lib/chat.ts and the admin order
+  // detail page.
+  chatThread ChatThread?
 
   // Set from the placing user's businessRole/businessAccountId at
   // checkout, if any — lets a BusinessAccount owner see every order their

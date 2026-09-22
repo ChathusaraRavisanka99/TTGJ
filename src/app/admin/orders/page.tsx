@@ -103,7 +103,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
             {orders.map((o) => (
               <tr key={o.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
                 <td className="px-4 py-3 font-mono text-charcoal">
-                  {o.orderNumber}
+                  <Link href={`/admin/orders/${o.id}`} className="hover:text-gold-deep hover:underline">{o.orderNumber}</Link>
                   {(o.quoteRequestId || o.sourcingRequestId) && (
                     <span className="ml-2 rounded-full border border-border-subtle px-2 py-0.5 font-sans text-[10px] uppercase tracking-wide text-charcoal/55">
                       {o.quoteRequestId ? "Quote" : "Sourcing"}

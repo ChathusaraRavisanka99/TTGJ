@@ -21,6 +21,7 @@ export type ChatTag = { type: "gemstone" | "jewelry"; id: string } | { type: "ca
 function requestPaths(requestType: ChatRequestType, requestId: string): string[] {
   if (requestType === "quote") return [`/admin/quotes/${requestId}`, `/account/quotes/${requestId}`];
   if (requestType === "sourcing") return [`/admin/sourcing/${requestId}`, `/account/sourcing/${requestId}`];
+  if (requestType === "order") return [`/admin/orders/${requestId}`, `/admin/orders`, `/account/orders/${requestId}`];
   // "general": requestId is the customer's own userId, not a request id —
   // see getChatContext's own comment.
   return [`/admin/support/${requestId}`, `/account/support`];
@@ -97,7 +98,9 @@ export async function sendChatMessage(input: {
         ? "You have a new reply on your quote request."
         : input.requestType === "sourcing"
           ? "You have a new reply on your sourcing request."
-          : "You have a new reply from support.";
+          : input.requestType === "order"
+            ? "You have a new message about your order."
+            : "You have a new reply from support.";
     await createNotification({ userId: context.customerId, type: "CHAT_REPLY", message, requestType: input.requestType, requestId: input.requestId });
   }
 

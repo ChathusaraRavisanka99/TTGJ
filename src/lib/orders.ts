@@ -4,6 +4,9 @@ import { createNotification } from "@/lib/notifications";
 import { settlePointsForPaidOrder, settleReferralForPaidOrder } from "@/lib/rewards";
 import { getLoyaltySettings } from "@/lib/loyalty-settings";
 import { getCommerceSettings } from "@/lib/commerce-settings";
+import { sendEmail } from "@/lib/email";
+import { orderConfirmationEmail } from "@/lib/email-templates";
+import { withMarket, type Market } from "@/lib/market-shared";
 
 // Order lifecycle steps shared by every way an order gets settled: PayHere's
 // notify webhook (card) and an admin confirming a bank transfer landed
@@ -30,7 +33,7 @@ export async function nextOrderNumber(): Promise<string> {
  * re-check (buildCheckoutBreakdown) depends on.
  */
 export async function finalizePaidOrder(orderId: string, payment: { gatewayPaymentId?: string } = {}): Promise<{ alreadyPaid: boolean }> {
-  const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: { items: true } });
+  const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: { items: true, user: { select: { email: true } } } });
   if (order.status === "PAID") return { alreadyPaid: true };
 
   await prisma.order.update({
@@ -123,6 +126,21 @@ export async function finalizePaidOrder(orderId: string, payment: { gatewayPayme
     requestType: "order",
     requestId: order.id,
   });
+
+  // Best-effort, same as every other email send in this app — a customer
+  // who isn't currently signed in and checking the bell still learns their
+  // payment went through, but a misconfigured/down email provider must
+  // never fail an already-successful payment.
+  const orderUrl = `${process.env.AUTH_URL ?? "http://localhost:3000"}${withMarket(`/account/orders/${order.id}`, order.market as Market)}`;
+  const { subject, html, text } = orderConfirmationEmail({
+    orderNumber: order.orderNumber,
+    currency: order.currency === "LKR" ? "LKR" : "USD",
+    total: order.total,
+    items: order.items.map((item) => ({ label: item.label, quantity: item.quantity, lineTotal: item.lineTotal })),
+    orderUrl,
+  });
+  const emailResult = await sendEmail({ to: order.user.email, subject, html, text });
+  if (!emailResult.ok) console.warn(`Order confirmation email not sent for order ${order.orderNumber}: ${emailResult.error}`);
 
   return { alreadyPaid: false };
 }

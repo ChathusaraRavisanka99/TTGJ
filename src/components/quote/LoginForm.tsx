@@ -24,7 +24,12 @@ export function LoginForm({ callbackUrl, googleEnabled }: { callbackUrl: string;
           <Input id="email" name="email" type="email" required autoComplete="email" />
         </div>
         <div>
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="mb-0">Password</Label>
+            <Link href="/account/forgot-password" className="mb-1.5 text-xs text-charcoal/60 underline-offset-2 hover:text-charcoal hover:underline">
+              Forgot password?
+            </Link>
+          </div>
           <Input id="password" name="password" type="password" required autoComplete="current-password" />
         </div>
         {!state.ok && state.error && <p className="text-sm text-red-700">{state.error}</p>}

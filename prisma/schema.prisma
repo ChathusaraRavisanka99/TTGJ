@@ -108,6 +108,7 @@ model User {
   referralsAsReferrer  Referral[]          @relation("ReferralReferrer")
   referralAsReferee    Referral?           @relation("ReferralReferee")
   ownedBusinessAccount BusinessAccount?    @relation("BusinessAccountOwner")
+  passwordResetTokens  PasswordResetToken[]
 
   @@index([businessAccountId])
 }
@@ -146,6 +147,26 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// A single-use, short-lived, hashed token for the "forgot password" flow
+// (src/lib/password-reset.ts) — distinct from NextAuth's own
+// VerificationToken above, which belongs to its email-provider sign-in
+// flow (not configured in this app) and has no "already used" state, which
+// a one-time reset link needs. Only the SHA-256 hash of the raw token is
+// ever stored — the raw value exists only in the emailed link and in
+// memory for the length of one request — so a database leak alone can't
+// be used to take over an account via a still-valid reset link.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 // ---------- Master data ----------

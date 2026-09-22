@@ -111,7 +111,8 @@ export default auth(async (req) => {
     }
   }
 
-  if (pathname.startsWith("/account") && !pathname.startsWith("/account/login") && !pathname.startsWith("/account/register")) {
+  const PUBLIC_ACCOUNT_PATHS = ["/account/login", "/account/register", "/account/forgot-password", "/account/reset-password"];
+  if (pathname.startsWith("/account") && !PUBLIC_ACCOUNT_PATHS.some((p) => pathname.startsWith(p))) {
     if (!req.auth) return loginRedirect();
   }
 

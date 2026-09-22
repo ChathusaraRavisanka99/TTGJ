@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
 import { finalizePaidOrder, cancelPendingOrder } from "@/lib/orders";
+import { sendEmail } from "@/lib/email";
+
+vi.mock("@/lib/email", () => ({ sendEmail: vi.fn() }));
 
 const baseOrder = {
   id: "order-1",
@@ -9,11 +12,13 @@ const baseOrder = {
   market: "intl",
   currency: "USD",
   subtotal: 100,
+  total: 100,
   discountCodeId: null as string | null,
   birthdayDiscountAmount: 0,
   pointsRedeemed: 0,
   status: "PENDING_PAYMENT",
-  items: [] as { gemstoneId: string | null; jewelryId: string | null }[],
+  items: [] as { gemstoneId: string | null; jewelryId: string | null; label?: string; quantity?: number; lineTotal?: number }[],
+  user: { email: "customer@example.com" },
 };
 
 function mockCommonDependencies() {
@@ -31,6 +36,7 @@ function mockCommonDependencies() {
   prismaMock.notification.create.mockResolvedValue({} as never);
   prismaMock.order.update.mockResolvedValue({} as never);
   prismaMock.user.update.mockResolvedValue({} as never);
+  vi.mocked(sendEmail).mockResolvedValue({ ok: true });
 }
 
 describe("finalizePaidOrder", () => {
@@ -162,6 +168,31 @@ describe("finalizePaidOrder", () => {
     expect(prismaMock.notification.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ userId: "user-1", requestType: "order", requestId: "order-1" }) }),
     );
+  });
+
+  it("sends an order confirmation email to the customer's address with their items", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({
+      ...baseOrder,
+      items: [{ gemstoneId: "gem-1", jewelryId: null, label: "Blue Sapphire", quantity: 1, lineTotal: 100 }],
+    } as never);
+
+    await finalizePaidOrder("order-1");
+
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "customer@example.com", subject: expect.stringContaining("ORD-2026-0001") }),
+    );
+  });
+
+  it("does not fail the whole finalization when the confirmation email can't be sent", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder } as never);
+    vi.mocked(sendEmail).mockResolvedValue({ ok: false, error: "not configured" });
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await finalizePaidOrder("order-1");
+
+    expect(result).toEqual({ alreadyPaid: false });
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });
 

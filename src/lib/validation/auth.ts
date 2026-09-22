@@ -26,3 +26,15 @@ export const registerSchema = z
   });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+export const requestPasswordResetSchema = z.object({
+  email: z.string().email("Enter a valid email address"),
+});
+
+// Same minimum-length rule as registerSchema's password field — the two
+// should never drift apart, since a reset is just choosing a password the
+// same way registration does.
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Missing reset token"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});

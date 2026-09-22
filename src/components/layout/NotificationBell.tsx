@@ -141,7 +141,7 @@ export function NotificationBell({ transparent, size = 19 }: { transparent: bool
   }
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative inline-flex" ref={containerRef}>
       <button
         ref={buttonRef}
         type="button"

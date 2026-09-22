@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { BarChart } from "@/components/admin/charts/BarChart";
+import { computeProfit } from "@/lib/analytics";
 import { formatPrice } from "@/lib/utils";
 
 function monthsAgo(n: number): Date {
@@ -25,6 +26,7 @@ export default async function AdminAnalyticsPage() {
     pointsRedeemed,
     referralsConverted,
     activeBusinessAccounts,
+    soldItemsThisMonth,
   ] = await Promise.all([
     prisma.order.findMany({
       where: { status: "PAID", paidAt: { gte: sixMonthsAgo } },
@@ -36,6 +38,19 @@ export default async function AdminAnalyticsPage() {
     prisma.pointsTransaction.aggregate({ where: { reason: "REDEEMED_CHECKOUT" }, _sum: { amount: true } }),
     prisma.referral.count({ where: { status: "REWARDED" } }),
     prisma.businessAccount.count(),
+    // Profit is only ever computed from what actually sold (a PAID
+    // order's line items), never from raw catalog inventory — an unsold
+    // item's cost/retail spread isn't profit, it's just a listed margin.
+    prisma.orderItem.findMany({
+      where: { order: { status: "PAID", paidAt: { gte: startOfMonth } } },
+      select: {
+        quantity: true,
+        lineTotal: true,
+        order: { select: { market: true } },
+        gemstone: { select: { costPrice: true } },
+        jewelry: { select: { costPrice: true } },
+      },
+    }),
   ]);
 
   // Revenue is currency-specific (the international site charges USD, the
@@ -57,6 +72,9 @@ export default async function AdminAnalyticsPage() {
   });
 
   const statusChart = ordersThisMonthByStatus.map((g) => ({ label: g.status.replaceAll("_", " "), value: g._count._all }));
+
+  const intlProfit = computeProfit(soldItemsThisMonth, "intl");
+  const lkProfit = computeProfit(soldItemsThisMonth, "lk");
   const marketChart = [
     { label: "International", value: intlThisMonth.length },
     { label: "Sri Lanka", value: lkThisMonth.length },
@@ -76,6 +94,16 @@ export default async function AdminAnalyticsPage() {
         <StatCard label="Points Redeemed (all time)" value={Math.abs(pointsRedeemed._sum.amount ?? 0).toLocaleString()} />
         <StatCard label="Referrals Converted" value={String(referralsConverted)} />
         <StatCard label="Active Business Accounts" value={String(activeBusinessAccounts)} />
+        <StatCard
+          label="International Profit (this month)"
+          value={formatPrice(intlProfit.profit, "USD")}
+          note={intlProfit.uncostedCount > 0 ? `${intlProfit.uncostedCount} sold item(s) have no cost price set` : undefined}
+        />
+        <StatCard
+          label="Sri Lanka Profit (this month)"
+          value={formatPrice(lkProfit.profit, "LKR")}
+          note={lkProfit.uncostedCount > 0 ? `${lkProfit.uncostedCount} sold item(s) have no cost price set` : undefined}
+        />
       </div>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-3">
@@ -96,11 +124,12 @@ export default async function AdminAnalyticsPage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div className="rounded-xl border border-border-subtle bg-surface p-5">
       <p className="font-serif text-2xl text-charcoal">{value}</p>
       <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/55">{label}</p>
+      {note && <p className="mt-1.5 text-xs text-amber-700">{note}</p>}
     </div>
   );
 }

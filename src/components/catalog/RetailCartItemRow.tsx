@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "@/components/ui/MarketLink";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { removeRetailCartItem } from "@/actions/retail-cart";
 import { formatPrice, cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
@@ -30,16 +30,41 @@ export function RetailCartItemRow({ item }: { item: Item }) {
   const currency = useCurrency();
   const t = useTranslations("cart");
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
+  // Previously: fire-and-forget, ignoring removeRetailCartItem's own
+  // {ok:false} result entirely — a stale/already-removed item or an
+  // expired session just silently did nothing, no differently from the
+  // button being clicked while it was still loading. With this
+  // environment's multi-second DB round-trips, that read as the row being
+  // "stuck" (and, once a stray double-click's second request resolved,
+  // occasionally as the item "reappearing"). Now failures show a message,
+  // and the whole row visibly dims while the removal is in flight instead
+  // of only the trash icon quietly disabling.
   function remove() {
+    setError(null);
     startTransition(async () => {
-      await removeRetailCartItem(item.id);
-      router.refresh();
+      try {
+        const result = await removeRetailCartItem(item.id);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        router.refresh();
+      } catch {
+        setError("Something went wrong. Please try again.");
+      }
     });
   }
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-border-subtle py-4 last:border-0", item.unavailable && "opacity-60")}>
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-border-subtle py-4 last:border-0 transition-opacity",
+        pending && "pointer-events-none opacity-50",
+        item.unavailable && "opacity-60",
+      )}
+    >
       <Link href={item.href} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-ivory-soft">
         {item.imageUrl && <Image src={item.imageUrl} alt="" fill sizes="64px" className="object-cover" />}
       </Link>
@@ -59,11 +84,12 @@ export function RetailCartItemRow({ item }: { item: Item }) {
           on a phone-width viewport. Stays inline, pushed to the right
           edge, from sm: up. */}
       <div className="flex w-full basis-full items-center justify-end gap-4 sm:w-auto sm:basis-auto">
-        <button type="button" title={t("remove")} disabled={pending} onClick={remove} className="text-charcoal/65 hover:text-red-700">
-          <Trash2 size={16} />
+        <button type="button" title={t("remove")} disabled={pending} onClick={remove} className="text-charcoal/65 hover:text-red-700 disabled:cursor-wait">
+          {pending ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
         </button>
         <p className="w-20 shrink-0 text-right font-serif text-charcoal sm:w-24">{formatPrice(item.unitPrice * item.quantity, currency)}</p>
       </div>
+      {error && <p className="w-full basis-full text-right text-xs text-red-700">{error}</p>}
     </div>
   );
 }

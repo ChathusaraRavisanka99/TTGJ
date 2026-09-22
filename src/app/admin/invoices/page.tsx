@@ -4,21 +4,27 @@ import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
 import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 
 const PAGE_SIZE = 20;
 
 export default async function AdminInvoicesPage({ searchParams }: PageProps<"/admin/invoices">) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const where = q
+    ? { OR: [{ invoiceNumber: { contains: q, mode: "insensitive" as const } }, { user: { email: { contains: q, mode: "insensitive" as const } } }] }
+    : {};
 
   const [invoices, total] = await Promise.all([
     prisma.invoice.findMany({
+      where,
       orderBy: { issuedAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: { user: true, quoteRequest: { include: { gemstone: true, jewelry: true } } },
     }),
-    prisma.invoice.count(),
+    prisma.invoice.count({ where }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -29,6 +35,10 @@ export default async function AdminInvoicesPage({ searchParams }: PageProps<"/ad
       <p className="mt-1 text-sm text-charcoal/60">
         Created automatically whenever a quote is marked Accepted — see a quote&apos;s Documents panel to accept one.
       </p>
+
+      <div className="mt-4">
+        <AdminSearchBox placeholder="Search by invoice number or email..." />
+      </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
         <table className="w-full text-sm">

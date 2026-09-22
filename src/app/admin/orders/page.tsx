@@ -7,6 +7,7 @@ import { OrderActions } from "@/components/admin/OrderActions";
 import { ShipOrderForm } from "@/components/admin/ShipOrderForm";
 import { MarkDeliveredButton } from "@/components/admin/MarkDeliveredButton";
 import { CartContentForm } from "@/components/admin/CartContentForm";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { getPageContent, DEFAULT_LK_PAYMENTS_CONTENT, LK_PAYMENTS_KEY } from "@/lib/page-content";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -30,7 +31,12 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
   const page = Math.max(1, Number(sp.page) || 1);
 
   const market = sp.market === "lk" ? "lk" : sp.market === "intl" ? "intl" : undefined;
-  const where = { ...(status ? { status: status as never } : {}), ...(market ? { market } : {}) };
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const where = {
+    ...(status ? { status: status as never } : {}),
+    ...(market ? { market } : {}),
+    ...(q ? { OR: [{ orderNumber: { contains: q, mode: "insensitive" as const } }, { user: { email: { contains: q, mode: "insensitive" as const } } }] } : {}),
+  };
   const [orders, total, lkPayments] = await Promise.all([
     prisma.order.findMany({
       where,
@@ -57,11 +63,15 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
         <CartContentForm variant="lk" initialInstructions={lkPayments.wireTransferInstructions} />
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-6">
+        <AdminSearchBox placeholder="Search by order number or email..." />
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
         {([["All stores", undefined], ["International", "intl"], ["Sri Lanka", "lk"]] as const).map(([label, value]) => (
           <Link
             key={label}
-            href={`/admin/orders?${new URLSearchParams({ ...(status ? { status } : {}), ...(value ? { market: value } : {}) }).toString()}`}
+            href={`/admin/orders?${new URLSearchParams({ ...(status ? { status } : {}), ...(value ? { market: value } : {}), ...(q ? { q } : {}) }).toString()}`}
             className={cn("rounded-full border px-3 py-1 text-xs", market === value ? "border-gold-deep bg-gold/20 text-charcoal" : "border-border-subtle text-charcoal/70")}
           >
             {label}
@@ -70,13 +80,16 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <Link href={`/admin/orders${market ? `?market=${market}` : ""}`} className={cn("rounded-full border px-3 py-1 text-xs", !status ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}>
+        <Link
+          href={`/admin/orders?${new URLSearchParams({ ...(market ? { market } : {}), ...(q ? { q } : {}) }).toString()}`}
+          className={cn("rounded-full border px-3 py-1 text-xs", !status ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}
+        >
           All
         </Link>
         {STATUSES.map((s) => (
           <Link
             key={s}
-            href={`/admin/orders?status=${s}${market ? `&market=${market}` : ""}`}
+            href={`/admin/orders?${new URLSearchParams({ status: s, ...(market ? { market } : {}), ...(q ? { q } : {}) }).toString()}`}
             className={cn("rounded-full border px-3 py-1 text-xs", status === s ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}
           >
             {s.replaceAll("_", " ")}

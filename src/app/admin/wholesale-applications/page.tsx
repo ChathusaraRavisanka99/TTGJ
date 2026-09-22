@@ -4,6 +4,7 @@ import { WholesaleStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
 import { WholesaleApplicationActions } from "@/components/admin/WholesaleApplicationActions";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { cn } from "@/lib/utils";
 
 const STATUSES = ["PENDING", "APPROVED", "REJECTED"];
@@ -13,8 +14,13 @@ export default async function AdminWholesaleApplicationsPage({ searchParams }: P
   const sp = await searchParams;
   const status = typeof sp.status === "string" ? sp.status : undefined;
   const page = Math.max(1, Number(sp.page) || 1);
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
 
-  const where = { customerType: "WHOLESALE" as const, ...(status ? { wholesaleStatus: status as never } : {}) };
+  const where = {
+    customerType: "WHOLESALE" as const,
+    ...(status ? { wholesaleStatus: status as never } : {}),
+    ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" as const } }, { email: { contains: q, mode: "insensitive" as const } }] } : {}),
+  };
   const [applications, total] = await Promise.all([
     prisma.user.findMany({
       where,
@@ -35,14 +41,21 @@ export default async function AdminWholesaleApplicationsPage({ searchParams }: P
         and buy retail while pending. This is purely the review record.
       </p>
 
+      <div className="mt-4">
+        <AdminSearchBox placeholder="Search by name or email..." />
+      </div>
+
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link href="/admin/wholesale-applications" className={cn("rounded-full border px-3 py-1 text-xs", !status ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}>
+        <Link
+          href={`/admin/wholesale-applications${q ? `?q=${encodeURIComponent(q)}` : ""}`}
+          className={cn("rounded-full border px-3 py-1 text-xs", !status ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}
+        >
           All
         </Link>
         {STATUSES.map((s) => (
           <Link
             key={s}
-            href={`/admin/wholesale-applications?status=${s}`}
+            href={`/admin/wholesale-applications?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
             className={cn("rounded-full border px-3 py-1 text-xs", status === s ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}
           >
             {s.charAt(0) + s.slice(1).toLowerCase()}

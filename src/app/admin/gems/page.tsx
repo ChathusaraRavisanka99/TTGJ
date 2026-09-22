@@ -7,6 +7,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { ToggleFeaturedButton } from "@/components/admin/ToggleFeaturedButton";
 import { BackLink } from "@/components/admin/BackLink";
 import { StoreFilterTabs, parseStoreFilter } from "@/components/admin/StoreFilterTabs";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { formatPrice } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -15,7 +16,11 @@ export default async function AdminGemsPage({ searchParams }: PageProps<"/admin/
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
   const store = parseStoreFilter(sp.market);
-  const where = store === "all" ? undefined : { market: store };
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const where = {
+    ...(store === "all" ? {} : { market: store }),
+    ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+  };
 
   const [gems, total] = await Promise.all([
     prisma.gemstone.findMany({
@@ -51,7 +56,11 @@ export default async function AdminGemsPage({ searchParams }: PageProps<"/admin/
         </Link>.
       </p>
 
-      <StoreFilterTabs basePath="/admin/gems" current={store} />
+      <div className="mt-4">
+        <AdminSearchBox placeholder="Search gemstones by name..." />
+      </div>
+
+      <StoreFilterTabs basePath="/admin/gems" current={store} q={q} />
 
       <div className="mt-4 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
         <table className="w-full text-sm">

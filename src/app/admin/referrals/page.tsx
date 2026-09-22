@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
 import { Badge } from "@/components/ui/Badge";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 
 const PAGE_SIZE = 20;
 
@@ -15,9 +16,14 @@ const STATUS_STYLES: Record<string, string> = {
 export default async function AdminReferralsPage({ searchParams }: PageProps<"/admin/referrals">) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const where = q
+    ? { OR: [{ referrer: { email: { contains: q, mode: "insensitive" as const } } }, { referee: { email: { contains: q, mode: "insensitive" as const } } }] }
+    : {};
 
   const [referrals, total] = await Promise.all([
     prisma.referral.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -26,7 +32,7 @@ export default async function AdminReferralsPage({ searchParams }: PageProps<"/a
         referee: { select: { id: true, name: true, email: true } },
       },
     }),
-    prisma.referral.count(),
+    prisma.referral.count({ where }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -34,6 +40,10 @@ export default async function AdminReferralsPage({ searchParams }: PageProps<"/a
     <div>
       <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Referrals</h1>
+
+      <div className="mt-4">
+        <AdminSearchBox placeholder="Search by referrer or referee email..." />
+      </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
         <table className="w-full text-sm">

@@ -4,6 +4,7 @@ import { PaymentStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
 import { CartContentForm } from "@/components/admin/CartContentForm";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { getPageContent, DEFAULT_CART_CONTENT } from "@/lib/page-content";
 import { cartTotal } from "@/lib/discount-codes";
 import { cn, formatPrice } from "@/lib/utils";
@@ -14,8 +15,13 @@ export default async function AdminCartsPage({ searchParams }: PageProps<"/admin
   const sp = await searchParams;
   const paymentStatus = sp.payment === "PAID" ? "PAID" : sp.payment === "AWAITING_PAYMENT" ? "AWAITING_PAYMENT" : undefined;
   const page = Math.max(1, Number(sp.page) || 1);
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
 
-  const where = { status: "SUBMITTED" as const, ...(paymentStatus ? { paymentStatus: paymentStatus as never } : {}) };
+  const where = {
+    status: "SUBMITTED" as const,
+    ...(paymentStatus ? { paymentStatus: paymentStatus as never } : {}),
+    ...(q ? { user: { email: { contains: q, mode: "insensitive" as const } } } : {}),
+  };
   const [carts, total, cartContent] = await Promise.all([
     prisma.cart.findMany({
       where,
@@ -42,14 +48,27 @@ export default async function AdminCartsPage({ searchParams }: PageProps<"/admin
         <CartContentForm initialInstructions={cartContent.wireTransferInstructions} />
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        <Link href="/admin/carts" className={cn("rounded-full border px-3 py-1 text-xs", !paymentStatus ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}>
+      <div className="mt-6">
+        <AdminSearchBox placeholder="Search by customer email..." />
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          href={`/admin/carts?${new URLSearchParams({ ...(q ? { q } : {}) }).toString()}`}
+          className={cn("rounded-full border px-3 py-1 text-xs", !paymentStatus ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}
+        >
           All
         </Link>
-        <Link href="/admin/carts?payment=AWAITING_PAYMENT" className={cn("rounded-full border px-3 py-1 text-xs", paymentStatus === "AWAITING_PAYMENT" ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}>
+        <Link
+          href={`/admin/carts?${new URLSearchParams({ payment: "AWAITING_PAYMENT", ...(q ? { q } : {}) }).toString()}`}
+          className={cn("rounded-full border px-3 py-1 text-xs", paymentStatus === "AWAITING_PAYMENT" ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}
+        >
           Awaiting Payment
         </Link>
-        <Link href="/admin/carts?payment=PAID" className={cn("rounded-full border px-3 py-1 text-xs", paymentStatus === "PAID" ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}>
+        <Link
+          href={`/admin/carts?${new URLSearchParams({ payment: "PAID", ...(q ? { q } : {}) }).toString()}`}
+          className={cn("rounded-full border px-3 py-1 text-xs", paymentStatus === "PAID" ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}
+        >
           Paid
         </Link>
       </div>

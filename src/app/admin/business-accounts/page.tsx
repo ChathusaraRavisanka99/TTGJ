@@ -2,21 +2,27 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 
 const PAGE_SIZE = 20;
 
 export default async function AdminBusinessAccountsPage({ searchParams }: PageProps<"/admin/business-accounts">) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const where = q
+    ? { OR: [{ name: { contains: q, mode: "insensitive" as const } }, { owner: { email: { contains: q, mode: "insensitive" as const } } }] }
+    : {};
 
   const [accounts, total] = await Promise.all([
     prisma.businessAccount.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: { owner: { select: { name: true, email: true } }, _count: { select: { members: true, orders: true } } },
     }),
-    prisma.businessAccount.count(),
+    prisma.businessAccount.count({ where }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -25,6 +31,10 @@ export default async function AdminBusinessAccountsPage({ searchParams }: PagePr
       <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Business Accounts</h1>
       <p className="mt-1 text-sm text-charcoal/60">One row per wholesale team — created automatically when a wholesale application is approved.</p>
+
+      <div className="mt-4">
+        <AdminSearchBox placeholder="Search by company or owner email..." />
+      </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
         <table className="w-full text-sm">

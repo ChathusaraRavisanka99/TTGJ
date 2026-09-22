@@ -10,11 +10,12 @@ export function parseStoreFilter(value: string | string[] | undefined): StoreFil
 // All | International | Sri Lanka filter for the admin catalog lists. Plain
 // links with a `?market=` query param, so it survives a refresh and the
 // lists stay Server Components.
-export function StoreFilterTabs({ basePath, current }: { basePath: string; current: StoreFilter }) {
+export function StoreFilterTabs({ basePath, current, q }: { basePath: string; current: StoreFilter; q?: string }) {
+  const suffix = q ? `q=${encodeURIComponent(q)}` : "";
   const tabs: { key: StoreFilter; label: string; href: string }[] = [
-    { key: "all", label: "All stores", href: basePath },
-    { key: "intl", label: "International", href: `${basePath}?market=intl` },
-    { key: "lk", label: "Sri Lanka", href: `${basePath}?market=lk` },
+    { key: "all", label: "All stores", href: suffix ? `${basePath}?${suffix}` : basePath },
+    { key: "intl", label: "International", href: `${basePath}?market=intl${suffix ? `&${suffix}` : ""}` },
+    { key: "lk", label: "Sri Lanka", href: `${basePath}?market=lk${suffix ? `&${suffix}` : ""}` },
   ];
   return (
     <div className="mt-5 flex flex-wrap gap-2">

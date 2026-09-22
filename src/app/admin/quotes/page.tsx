@@ -8,6 +8,7 @@ import { cn, formatPrice } from "@/lib/utils";
 import { resolveGemColor } from "@/components/gem-visualizer/color";
 import { getQuoteGemVisual } from "@/lib/quote-visual";
 import { BackLink } from "@/components/admin/BackLink";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 
 const STATUSES = ["SUBMITTED", "UNDER_REVIEW", "QUOTED", "ACCEPTED", "DECLINED", "EXPIRED"];
 const PAGE_SIZE = 20;
@@ -16,8 +17,20 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
   const sp = await searchParams;
   const status = typeof sp.status === "string" ? sp.status : undefined;
   const page = Math.max(1, Number(sp.page) || 1);
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
 
-  const where = status ? { status: status as never } : undefined;
+  const where = {
+    ...(status ? { status: status as never } : {}),
+    ...(q
+      ? {
+          OR: [
+            { user: { email: { contains: q, mode: "insensitive" as const } } },
+            { gemstone: { name: { contains: q, mode: "insensitive" as const } } },
+            { jewelry: { name: { contains: q, mode: "insensitive" as const } } },
+          ],
+        }
+      : {}),
+  };
   const [quotes, total] = await Promise.all([
     prisma.quoteRequest.findMany({
       where,
@@ -41,14 +54,21 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
       <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Quote Requests</h1>
 
+      <div className="mt-4">
+        <AdminSearchBox placeholder="Search by customer email or item..." />
+      </div>
+
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link href="/admin/quotes" className={cn("rounded-full border px-3 py-1 text-xs", !status ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}>
+        <Link
+          href={`/admin/quotes${q ? `?q=${encodeURIComponent(q)}` : ""}`}
+          className={cn("rounded-full border px-3 py-1 text-xs", !status ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}
+        >
           All
         </Link>
         {STATUSES.map((s) => (
           <Link
             key={s}
-            href={`/admin/quotes?status=${s}`}
+            href={`/admin/quotes?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
             className={cn("rounded-full border px-3 py-1 text-xs", status === s ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}
           >
             {s.replaceAll("_", " ")}

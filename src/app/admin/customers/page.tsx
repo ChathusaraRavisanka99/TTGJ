@@ -2,14 +2,19 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 
 const PAGE_SIZE = 20;
 
 export default async function AdminCustomersPage({ searchParams }: PageProps<"/admin/customers">) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
 
-  const where = { role: "CUSTOMER" as const };
+  const where = {
+    role: "CUSTOMER" as const,
+    ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" as const } }, { email: { contains: q, mode: "insensitive" as const } }] } : {}),
+  };
   const [customers, total] = await Promise.all([
     prisma.user.findMany({
       where,
@@ -26,6 +31,10 @@ export default async function AdminCustomersPage({ searchParams }: PageProps<"/a
     <div>
       <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Customers</h1>
+
+      <div className="mt-4">
+        <AdminSearchBox placeholder="Search by name or email..." />
+      </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
         <table className="w-full text-sm">

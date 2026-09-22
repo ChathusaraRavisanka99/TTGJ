@@ -7,6 +7,7 @@ import { PageVisibilityControl } from "@/components/admin/PageVisibilityControl"
 import { BackLink } from "@/components/admin/BackLink";
 import { Pagination } from "@/components/ui/Pagination";
 import { Button } from "@/components/ui/Button";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { formatPrice } from "@/lib/utils";
 
 const PAGE_SIZE = 30;
@@ -14,15 +15,20 @@ const PAGE_SIZE = 30;
 export default async function AdminAuctionsPage({ searchParams }: PageProps<"/admin/auctions">) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const where = q
+    ? { OR: [{ gemstone: { name: { contains: q, mode: "insensitive" as const } } }, { jewelry: { name: { contains: q, mode: "insensitive" as const } } }] }
+    : {};
 
   const [auctions, total, visibility] = await Promise.all([
     prisma.auction.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: { gemstone: true, jewelry: true, bids: true },
     }),
-    prisma.auction.count(),
+    prisma.auction.count({ where }),
     getPageVisibility("auction"),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -50,7 +56,11 @@ export default async function AdminAuctionsPage({ searchParams }: PageProps<"/ad
         <PageVisibilityControl pageKey="auction" currentState={visibility} />
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
+      <div className="mt-6">
+        <AdminSearchBox placeholder="Search by item name..." />
+      </div>
+
+      <div className="mt-4 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">

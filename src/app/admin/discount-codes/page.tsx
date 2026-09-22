@@ -5,6 +5,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
 import { GenerateDiscountCodeForm } from "@/components/admin/GenerateDiscountCodeForm";
 import { DeleteDiscountCodeButton } from "@/components/admin/DeleteDiscountCodeButton";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { formatPrice } from "@/lib/utils";
 
 const PAGE_SIZE = 30;
@@ -23,15 +24,18 @@ function statusBadge(c: { active: boolean; expiresAt: Date | null; maxUses: numb
 export default async function AdminDiscountCodesPage({ searchParams }: PageProps<"/admin/discount-codes">) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
+  const where = q ? { code: { contains: q, mode: "insensitive" as const } } : {};
 
   const [codes, total, customers] = await Promise.all([
     prisma.discountCode.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: { assignedUser: true },
     }),
-    prisma.discountCode.count(),
+    prisma.discountCode.count({ where }),
     prisma.user.findMany({ where: { role: "CUSTOMER" }, select: { id: true, email: true, name: true }, orderBy: { email: "asc" } }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -44,6 +48,10 @@ export default async function AdminDiscountCodesPage({ searchParams }: PageProps
         Fixed-amount codes a customer can apply to their cart â€” site-wide or tied to one customer, with an optional
         use limit and expiry date.
       </p>
+
+      <div className="mt-6">
+        <AdminSearchBox placeholder="Search by code..." />
+      </div>
 
       <div className="mt-6">
         <GenerateDiscountCodeForm customers={customers} />

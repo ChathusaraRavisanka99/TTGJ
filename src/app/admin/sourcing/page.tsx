@@ -6,6 +6,7 @@ import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { cn } from "@/lib/utils";
 import { BackLink } from "@/components/admin/BackLink";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 
 const STATUSES = ["SUBMITTED", "UNDER_REVIEW", "QUOTED", "ACCEPTED", "DECLINED", "EXPIRED"];
 const PAGE_SIZE = 20;
@@ -14,8 +15,12 @@ export default async function AdminSourcingPage({ searchParams }: PageProps<"/ad
   const sp = await searchParams;
   const status = typeof sp.status === "string" ? sp.status : undefined;
   const page = Math.max(1, Number(sp.page) || 1);
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
 
-  const where = status ? { status: status as never } : undefined;
+  const where = {
+    ...(status ? { status: status as never } : {}),
+    ...(q ? { OR: [{ user: { email: { contains: q, mode: "insensitive" as const } } }, { mineralDescription: { contains: q, mode: "insensitive" as const } }] } : {}),
+  };
   const [requests, total] = await Promise.all([
     prisma.sourcingRequest.findMany({
       where,
@@ -34,14 +39,21 @@ export default async function AdminSourcingPage({ searchParams }: PageProps<"/ad
       <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Sourcing Requests</h1>
 
+      <div className="mt-4">
+        <AdminSearchBox placeholder="Search by customer email or description..." />
+      </div>
+
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link href="/admin/sourcing" className={cn("rounded-full border px-3 py-1 text-xs", !status ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}>
+        <Link
+          href={`/admin/sourcing${q ? `?q=${encodeURIComponent(q)}` : ""}`}
+          className={cn("rounded-full border px-3 py-1 text-xs", !status ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}
+        >
           All
         </Link>
         {STATUSES.map((s) => (
           <Link
             key={s}
-            href={`/admin/sourcing?status=${s}`}
+            href={`/admin/sourcing?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
             className={cn("rounded-full border px-3 py-1 text-xs", status === s ? "border-charcoal bg-charcoal text-ivory" : "border-border-subtle text-charcoal/70")}
           >
             {s.replaceAll("_", " ")}

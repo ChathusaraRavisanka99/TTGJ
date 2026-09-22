@@ -1,5 +1,6 @@
 import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getHomeContent } from "@/lib/page-content";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
@@ -29,24 +30,48 @@ const MINERAL_MARQUEE = [
   { label: "Zircon", color: "#5a9bc4" },
 ];
 
-export default async function HomePage() {
-  const market = await getMarket();
-  // Each storefront features its own listings only (a listing belongs to one
-  // storefront) and has its own home copy (see getHomeContent).
-  const featuredWhere = { isPublished: true, isFeatured: true, market };
-  const [rawFeaturedGems, rawFeaturedJewelry, content, { gemstonePrices, jewelryPrices }, trustBarMessages] = await Promise.all([
+// The home page's two heaviest queries (each a multi-table join over the
+// full catalog) — cached per market for 60s, with an on-demand
+// revalidateTag("home-featured") wherever a gem/jewelry piece's featured
+// flag changes (see toggleGemstoneFeatured/toggleJewelryFeatured), so an
+// admin's change still shows up immediately rather than waiting out the
+// window. This is what was making a slow DB round-trip (this environment's
+// known multi-second latency to Supabase) show up as a visible layout
+// jump on every single home page load — the loading skeleton is far
+// shorter than the real page, so a slow load meant a jarring swap once
+// the real content finally arrived. See lib/orders.ts and friends for the
+// same latency being the root cause of several other reports this pass.
+const getFeaturedGemsForMarket = unstable_cache(
+  (market: string) =>
     prisma.gemstone.findMany({
-      where: featuredWhere,
+      where: { isPublished: true, isFeatured: true, market },
       orderBy: { createdAt: "desc" },
       take: 8,
       include: { mineral: true, cut: true, clarityGrade: true, treatment: true, origin: true, media: true },
     }),
+  ["home-featured-gems"],
+  { revalidate: 60, tags: ["home-featured"] },
+);
+
+const getFeaturedJewelryForMarket = unstable_cache(
+  (market: string) =>
     prisma.jewelryPiece.findMany({
-      where: featuredWhere,
+      where: { isPublished: true, isFeatured: true, market },
       orderBy: { createdAt: "desc" },
       take: 8,
       include: { media: { orderBy: { sortOrder: "asc" } } },
     }),
+  ["home-featured-jewelry"],
+  { revalidate: 60, tags: ["home-featured"] },
+);
+
+export default async function HomePage() {
+  const market = await getMarket();
+  // Each storefront features its own listings only (a listing belongs to one
+  // storefront) and has its own home copy (see getHomeContent).
+  const [rawFeaturedGems, rawFeaturedJewelry, content, { gemstonePrices, jewelryPrices }, trustBarMessages] = await Promise.all([
+    getFeaturedGemsForMarket(market),
+    getFeaturedJewelryForMarket(market),
     getHomeContent(market),
     getActivePromotionMaps(market),
     getTrustBarMessages(),

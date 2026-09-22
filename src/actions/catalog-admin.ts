@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
@@ -164,6 +164,12 @@ export async function toggleGemstoneFeatured(id: string, featured: boolean): Pro
   revalidatePath("/admin/gems");
   revalidatePath("/");
   revalidatePath("/lk");
+  // The home page's own featured-items query is cached separately (see
+  // app/page.tsx) — revalidatePath alone doesn't reach into that.
+  // { expire: 0 }: this Next version's revalidateTag defaults to
+  // stale-while-revalidate otherwise, and an admin toggling "featured"
+  // expects to see it reflected immediately, not eventually.
+  revalidateTag("home-featured", { expire: 0 });
   return { ok: true };
 }
 
@@ -312,6 +318,7 @@ export async function toggleJewelryFeatured(id: string, featured: boolean): Prom
   revalidatePath("/admin/jewelry");
   revalidatePath("/");
   revalidatePath("/lk");
+  revalidateTag("home-featured", { expire: 0 });
   return { ok: true };
 }
 

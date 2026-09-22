@@ -169,16 +169,33 @@ export async function placeBid(auctionId: string, amount: number): Promise<Actio
   const visibility = await getPageVisibility(marketVisibilityKey("auction", await getMarket()));
   if (visibility !== "LIVE") return { ok: false, error: "Auctions aren't open right now." };
 
-  const auction = await prisma.auction.findUnique({ where: { id: auctionId }, include: { bids: true } });
-  if (!auction) return { ok: false, error: "Auction not found." };
+  const userId = session.user.id;
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Locks this auction's row for the transaction's duration, so two
+      // concurrent bids on the same auction can't both read the same
+      // "current highest" and both pass the minimum-bid check — the second
+      // waits for the first to commit, then re-reads the now-updated
+      // highest bid before deciding. Same race-safety goal as the
+      // conditional-updateMany claim pattern in checkout.ts/discount-codes.ts,
+      // just via a row lock since this is an insert, not a claim on an
+      // existing row.
+      await tx.$queryRaw`SELECT id FROM "Auction" WHERE id = ${auctionId} FOR UPDATE`;
 
-  const state = getAuctionDisplayState(auction);
-  if (state !== "OPEN") return { ok: false, error: "This auction isn't open for bidding right now." };
+      const auction = await tx.auction.findUnique({ where: { id: auctionId }, include: { bids: true } });
+      if (!auction) throw new Error("Auction not found.");
 
-  const minimum = minimumNextBid(auction, auction.bids);
-  if (amount < minimum) return { ok: false, error: `Bid at least $${minimum.toLocaleString()}.` };
+      const state = getAuctionDisplayState(auction);
+      if (state !== "OPEN") throw new Error("This auction isn't open for bidding right now.");
 
-  await prisma.auctionBid.create({ data: { auctionId, userId: session.user.id, amount } });
+      const minimum = minimumNextBid(auction, auction.bids);
+      if (amount < minimum) throw new Error(`Bid at least $${minimum.toLocaleString()}.`);
+
+      await tx.auctionBid.create({ data: { auctionId, userId, amount } });
+    });
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Couldn't place that bid." };
+  }
 
   revalidatePath(`/auction/${auctionId}`);
   return { ok: true };

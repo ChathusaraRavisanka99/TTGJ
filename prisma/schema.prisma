@@ -347,7 +347,12 @@ model Gemstone {
   @@index([stockStatus])
   @@index([isFeatured])
   @@index([isFeaturedLk])
-  @@index([market])
+  // Every public catalog query filters exactly this pair (getGemstones,
+  // getRelatedGemstones — see lib/catalog.ts) — the single most common
+  // storefront query, so it gets a composite index rather than just the
+  // standalone `market` this replaces (a market-only filter is still
+  // served by this index's leftmost prefix).
+  @@index([market, isPublished])
 }
 
 enum PieceType {
@@ -420,7 +425,8 @@ model JewelryPiece {
   @@index([stockStatus])
   @@index([isFeatured])
   @@index([isFeaturedLk])
-  @@index([market])
+  // Same reasoning as Gemstone's — see that model's comment.
+  @@index([market, isPublished])
 }
 
 model JewelryGemstoneLink {
@@ -1375,6 +1381,10 @@ model Order {
   @@index([status])
   @@index([discountCodeId])
   @@index([businessAccountId])
+  @@index([market])
+  // Serves the admin analytics dashboard's "paid orders in the last N
+  // months" query (status: PAID, paidAt: { gte }) — previously unindexed.
+  @@index([status, paidAt])
 }
 
 model OrderItem {

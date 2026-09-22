@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/prisma";
 import { getPageContent, savePageContent } from "@/lib/page-content";
 import { SUBCULTURE_KEYS, SUBCULTURE_COLLECTIONS, type SubcultureKey } from "@/lib/subculture-collections";
 
@@ -161,8 +162,18 @@ export async function getSubcultureContent(key: SubcultureKey): Promise<Subcultu
   return getPageContent<SubcultureContent>(contentKey(key), DEFAULT_SUBCULTURE_CONTENT[key]);
 }
 
+// One batched query instead of SUBCULTURE_KEYS.length separate
+// getPageContent calls — this runs on every /collections/[slug] view (via
+// resolveCollectionKeyBySlug below), so collapsing it to a single
+// findMany matters even at today's small row count.
 export async function getAllSubcultureContent(): Promise<Record<SubcultureKey, SubcultureContent>> {
-  const entries = await Promise.all(SUBCULTURE_KEYS.map(async (key) => [key, await getSubcultureContent(key)] as const));
+  const rows = await prisma.pageContent.findMany({ where: { page: { in: SUBCULTURE_KEYS.map(contentKey) } } });
+  const byKey = new Map(rows.map((row) => [row.page, row.data]));
+  const entries = SUBCULTURE_KEYS.map((key) => {
+    const data = byKey.get(contentKey(key));
+    const content = data && typeof data === "object" ? { ...DEFAULT_SUBCULTURE_CONTENT[key], ...(data as Partial<SubcultureContent>) } : DEFAULT_SUBCULTURE_CONTENT[key];
+    return [key, content] as const;
+  });
   return Object.fromEntries(entries) as Record<SubcultureKey, SubcultureContent>;
 }
 

@@ -141,6 +141,16 @@ export async function updateGemstone(id: string, formData: FormData): Promise<Ac
 
 export async function deleteGemstone(id: string): Promise<ActionResult> {
   await requireAdmin();
+  const gemstone = await prisma.gemstone.findUnique({
+    where: { id },
+    include: { _count: { select: { orderItems: true, quoteRequests: true, auctions: true } } },
+  });
+  if (!gemstone) return { ok: false, error: "Gemstone not found." };
+  const { orderItems, quoteRequests, auctions } = gemstone._count;
+  if (orderItems > 0 || quoteRequests > 0 || auctions > 0) {
+    return { ok: false, error: "This gemstone has order, quote, or auction history and can't be deleted — unpublish it instead." };
+  }
+
   await prisma.gemstone.delete({ where: { id } });
   revalidatePath("/admin/gems");
   return { ok: true };
@@ -279,6 +289,16 @@ export async function updateJewelry(id: string, formData: FormData): Promise<Act
 
 export async function deleteJewelry(id: string): Promise<ActionResult> {
   await requireAdmin();
+  const jewelry = await prisma.jewelryPiece.findUnique({
+    where: { id },
+    include: { _count: { select: { orderItems: true, quoteRequests: true, auctions: true } } },
+  });
+  if (!jewelry) return { ok: false, error: "Jewelry piece not found." };
+  const { orderItems, quoteRequests, auctions } = jewelry._count;
+  if (orderItems > 0 || quoteRequests > 0 || auctions > 0) {
+    return { ok: false, error: "This piece has order, quote, or auction history and can't be deleted — unpublish it instead." };
+  }
+
   await prisma.jewelryPiece.delete({ where: { id } });
   revalidatePath("/admin/jewelry");
   return { ok: true };

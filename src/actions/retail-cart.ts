@@ -124,7 +124,8 @@ export async function applyRetailPoints(rawPoints: string): Promise<ActionResult
   const points = Math.floor(Number(rawPoints));
   if (!Number.isFinite(points) || points <= 0) return { ok: false, error: "Enter a positive number of points." };
 
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id }, select: { pointsBalance: true } });
+  const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { pointsBalance: true } });
+  if (!user) return { ok: false, error: "Your account could not be found — please sign in again." };
   if (points > user.pointsBalance) return { ok: false, error: "You don't have that many points." };
 
   const cart = await getOrCreateRetailCart(session.user.id, await getMarket());

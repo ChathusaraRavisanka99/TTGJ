@@ -46,7 +46,13 @@ export async function updateMineral(id: string, formData: FormData): Promise<Act
   const parsed = mineralSchema.safeParse(obj(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid mineral." };
   const d = parsed.data;
-  await prisma.mineral.update({ where: { id }, data: { ...d, description: d.description || undefined } });
+  try {
+    await prisma.mineral.update({ where: { id }, data: { ...d, description: d.description || undefined } });
+  } catch (err) {
+    const message = uniqueConstraintMessage(err, "mineral");
+    if (message) return { ok: false, error: message };
+    throw err;
+  }
   revalidatePath("/admin/master-data/minerals");
   return { ok: true };
 }

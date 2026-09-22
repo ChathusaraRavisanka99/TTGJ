@@ -52,7 +52,8 @@ export async function initiateRetailCheckout(formData: FormData): Promise<Initia
     return { ok: false, error: "Please fill in every shipping field." };
   }
 
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!user) return { ok: false, error: "Your account could not be found — please sign in again." };
   // Attributes the order to the placing member's team, if any — surfaces
   // it at /account/business for the owner alongside every other member's
   // orders, without touching this member's own personal /account/orders

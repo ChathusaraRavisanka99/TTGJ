@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { createHash, timingSafeEqual } from "crypto";
 
 // PayHere Checkout API — see https://support.payhere.lk/api-&-mobile-sdk/checkout-api.
 // Sri Lanka's dominant payment gateway (Stripe doesn't support Sri
@@ -130,5 +130,12 @@ export function verifyPayhereNotification(input: {
   const expected = md5Upper(
     `${input.merchantId}${input.orderId}${input.payhereAmount}${input.payhereCurrency}${input.statusCode}${md5Upper(merchantSecret)}`,
   );
-  return expected === input.md5sig.toUpperCase();
+  // Constant-time compare — defense in depth. Low practical risk on an MD5
+  // hash either way, but a plain `===` is a timing side-channel by
+  // construction and there's no reason not to close it. timingSafeEqual
+  // throws on a length mismatch rather than returning false, so a
+  // malformed (wrong-length) md5sig has to be ruled out first.
+  const received = input.md5sig.toUpperCase();
+  if (received.length !== expected.length) return false;
+  return timingSafeEqual(Buffer.from(expected), Buffer.from(received));
 }

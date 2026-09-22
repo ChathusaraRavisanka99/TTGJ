@@ -72,6 +72,27 @@ export async function POST(req: Request) {
     return new NextResponse("OK", { status: 200 });
   }
 
+  // Defense in depth on top of the signature check above: the signature is
+  // itself computed over (orderId, amount, currency, statusCode), so a
+  // forged amount can't produce a valid signature without the merchant
+  // secret — but cross-checking against the order's own stored total costs
+  // nothing and catches any scenario where a validly-signed notification
+  // still doesn't match what this order was actually invoiced for. Scoped
+  // to just this success path (not the failed-status branch above) so a
+  // declined-payment notification with an unusual amount format still gets
+  // recorded — this check only ever gates the "mark as PAID" action.
+  // Currency compared case-insensitively; amount with a small epsilon for
+  // floating-point formatting differences.
+  const notifiedAmount = Number(payhereAmount);
+  const amountMismatch = !Number.isFinite(notifiedAmount) || Math.abs(notifiedAmount - order.total) > 0.01;
+  const currencyMismatch = payhereCurrency.toUpperCase() !== order.currency.toUpperCase();
+  if (amountMismatch || currencyMismatch) {
+    console.error(
+      `PayHere notify: amount/currency mismatch for order ${orderId} — notified ${payhereAmount} ${payhereCurrency}, expected ${order.total} ${order.currency}`,
+    );
+    return new NextResponse("Amount/currency mismatch", { status: 400 });
+  }
+
   // Items -> SOLD, discount redemption, birthday stamp and cart clearing all
   // live in lib/orders.ts, shared with an admin confirming a bank transfer.
   await finalizePaidOrder(order.id, { gatewayPaymentId: paymentId });

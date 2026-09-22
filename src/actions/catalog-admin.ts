@@ -136,6 +136,9 @@ export async function updateGemstone(id: string, formData: FormData): Promise<Ac
   revalidatePath(`/admin/gems/${id}`);
   revalidatePath("/");
   revalidatePath("/lk");
+  // Covers editing an already-featured item's name/price/photo/etc, or its
+  // isFeatured flag directly via this form — not just the dedicated toggle.
+  revalidateTag("home-featured", { expire: 0 });
   return { ok: true };
 }
 
@@ -153,6 +156,9 @@ export async function deleteGemstone(id: string): Promise<ActionResult> {
 
   await prisma.gemstone.delete({ where: { id } });
   revalidatePath("/admin/gems");
+  revalidatePath("/");
+  revalidatePath("/lk");
+  revalidateTag("home-featured", { expire: 0 });
   return { ok: true };
 }
 
@@ -290,6 +296,7 @@ export async function updateJewelry(id: string, formData: FormData): Promise<Act
   revalidatePath(`/admin/jewelry/${id}`);
   revalidatePath("/");
   revalidatePath("/lk");
+  revalidateTag("home-featured", { expire: 0 });
   return { ok: true };
 }
 
@@ -307,6 +314,9 @@ export async function deleteJewelry(id: string): Promise<ActionResult> {
 
   await prisma.jewelryPiece.delete({ where: { id } });
   revalidatePath("/admin/jewelry");
+  revalidatePath("/");
+  revalidatePath("/lk");
+  revalidateTag("home-featured", { expire: 0 });
   return { ok: true };
 }
 

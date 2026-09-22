@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { requireAdmin } from "@/lib/rbac";
-import { finalizePaidOrder, cancelPendingOrder } from "@/lib/orders";
+import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered } from "@/lib/orders";
+import { shipOrderSchema } from "@/lib/validation/orders";
 import type { ActionResult } from "./auth";
 
 function revalidateOrders() {
@@ -36,6 +37,39 @@ export async function cancelOrderAsAdmin(orderId: string): Promise<ActionResult>
   await requireAdmin();
   const { cancelled } = await cancelPendingOrder(orderId);
   if (!cancelled) return { ok: false, error: "This order isn't awaiting payment." };
+  revalidateOrders();
+  return { ok: true };
+}
+
+// An admin entering the carrier + tracking number once an order has
+// actually been shipped — only reachable from PAID (see markOrderShipped's
+// own comment for the 17track registration and notification/email it
+// triggers).
+export async function markOrderShippedByAdmin(orderId: string, formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = shipOrderSchema.safeParse({
+    carrier: formData.get("carrier"),
+    trackingNumber: formData.get("trackingNumber"),
+    trackingUrl: formData.get("trackingUrl") ?? "",
+  });
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid shipping details." };
+
+  const result = await markOrderShipped(orderId, {
+    carrier: parsed.data.carrier,
+    trackingNumber: parsed.data.trackingNumber,
+    trackingUrl: parsed.data.trackingUrl || undefined,
+  });
+  if (!result.ok) return { ok: false, error: result.error ?? "Couldn't mark this order shipped." };
+  revalidateOrders();
+  return { ok: true };
+}
+
+// An admin manually confirming delivery — the fallback when no 17track API
+// key is configured (or their webhook hasn't reported it yet).
+export async function markOrderDeliveredByAdmin(orderId: string): Promise<ActionResult> {
+  await requireAdmin();
+  const result = await markOrderDelivered(orderId, { source: "admin" });
+  if (!result.ok) return { ok: false, error: "This order isn't marked shipped yet." };
   revalidateOrders();
   return { ok: true };
 }

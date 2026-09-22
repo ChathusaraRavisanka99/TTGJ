@@ -244,6 +244,8 @@
     "status": {
       "PENDING_PAYMENT": "Pending payment",
       "PAID": "Paid",
+      "SHIPPED": "Shipped",
+      "DELIVERED": "Delivered",
       "PAYMENT_FAILED": "Payment failed",
       "CANCELLED": "Cancelled"
     },
@@ -264,6 +266,9 @@
       "kicker": "Order",
       "backToOrders": "Back to My Orders",
       "items": "Items",
+      "tracking": "Tracking",
+      "carrier": "Carrier",
+      "trackingNumber": "Tracking number",
       "shippingAddress": "Shipping Address",
       "paymentInfo": "Payment",
       "method": "Payment method",

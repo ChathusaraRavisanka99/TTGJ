@@ -1322,6 +1322,13 @@ enum OrderStatus {
   PAID
   PAYMENT_FAILED
   CANCELLED
+  // Admin enters carrier + tracking number by hand (lib/orders.ts's
+  // markOrderShipped) — only reachable from PAID. If a 17track API key is
+  // configured the tracking number is also registered with them
+  // best-effort, and their webhook (app/api/17track/webhook) can advance
+  // an order straight to DELIVERED; otherwise an admin marks it by hand.
+  SHIPPED
+  DELIVERED
 }
 
 enum PaymentMethod {
@@ -1384,6 +1391,20 @@ model Order {
   gatewayPaymentId String?
   paidAt           DateTime?
 
+  // Entered by hand by an admin (lib/orders.ts's markOrderShipped) —
+  // trackingUrl is the carrier's own tracking page, admin-entered too
+  // since a per-carrier URL template isn't worth maintaining for the
+  // small set of carriers this business actually ships with. When a
+  // 17track API key is configured the number is also registered with
+  // them (best-effort — see lib/track17.ts) for automatic delivery
+  // detection via their webhook; without one, an admin marks DELIVERED
+  // by hand from the same place.
+  carrier        String?
+  trackingNumber String?
+  trackingUrl    String?
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+
   discountCodeId String?
   discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id])
 
@@ -1406,6 +1427,8 @@ model Order {
   // Serves the admin analytics dashboard's "paid orders in the last N
   // months" query (status: PAID, paidAt: { gte }) — previously unindexed.
   @@index([status, paidAt])
+  // The 17track webhook looks an order up by its tracking number.
+  @@index([trackingNumber])
 }
 
 model OrderItem {

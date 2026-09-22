@@ -17,6 +17,8 @@ export const metadata: Metadata = { title: "Order Details" };
 const STATUS_STYLES: Record<string, string> = {
   PENDING_PAYMENT: "bg-amber-50 text-amber-800 border-amber-200",
   PAID: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  SHIPPED: "bg-sapphire-soft/15 text-sapphire border-sapphire-soft/30",
+  DELIVERED: "bg-gold-soft/25 text-charcoal border-gold/40",
   PAYMENT_FAILED: "bg-red-50 text-red-700 border-red-200",
   CANCELLED: "bg-charcoal/5 text-charcoal/60 border-charcoal/15",
 };
@@ -131,6 +133,46 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
               })}
             </div>
           </section>
+
+          {(order.status === "SHIPPED" || order.status === "DELIVERED") && (
+            <section className="rounded-xl border border-border-subtle bg-surface p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">{t("detail.tracking")}</p>
+              <dl className="mt-3 space-y-2 text-sm">
+                {order.carrier && (
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-charcoal/60">{t("detail.carrier")}</dt>
+                    <dd className="text-charcoal">{order.carrier}</dd>
+                  </div>
+                )}
+                {order.trackingNumber && (
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-charcoal/60">{t("detail.trackingNumber")}</dt>
+                    <dd className="text-charcoal">
+                      {order.trackingUrl ? (
+                        <a href={order.trackingUrl} target="_blank" rel="noopener noreferrer" className="text-gold-deep underline-offset-2 hover:underline">
+                          {order.trackingNumber}
+                        </a>
+                      ) : (
+                        order.trackingNumber
+                      )}
+                    </dd>
+                  </div>
+                )}
+                {order.shippedAt && (
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-charcoal/60">{t("status.SHIPPED")}</dt>
+                    <dd className="text-charcoal">{order.shippedAt.toLocaleDateString()}</dd>
+                  </div>
+                )}
+                {order.deliveredAt && (
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-charcoal/60">{t("status.DELIVERED")}</dt>
+                    <dd className="text-charcoal">{order.deliveredAt.toLocaleDateString()}</dd>
+                  </div>
+                )}
+              </dl>
+            </section>
+          )}
 
           <section className="rounded-xl border border-border-subtle bg-surface p-5">
             <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">{t("detail.shippingAddress")}</p>

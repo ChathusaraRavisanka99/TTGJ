@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { finalizePaidOrder, cancelPendingOrder } from "@/lib/orders";
+import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered } from "@/lib/orders";
 import { sendEmail } from "@/lib/email";
+import { registerTracking } from "@/lib/track17";
 
 vi.mock("@/lib/email", () => ({ sendEmail: vi.fn() }));
+vi.mock("@/lib/track17", () => ({ registerTracking: vi.fn() }));
 
 const baseOrder = {
   id: "order-1",
@@ -241,5 +243,101 @@ describe("cancelPendingOrder", () => {
     await cancelPendingOrder("order-1", { notifyCustomer: false });
 
     expect(prismaMock.notification.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("markOrderShipped", () => {
+  beforeEach(() => {
+    prismaMock.order.update.mockResolvedValue({} as never);
+    prismaMock.notification.create.mockResolvedValue({} as never);
+    vi.mocked(sendEmail).mockResolvedValue({ ok: true });
+    vi.mocked(registerTracking).mockResolvedValue({ ok: true });
+  });
+
+  it("refuses to ship an order that isn't PAID", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PENDING_PAYMENT" } as never);
+
+    const result = await markOrderShipped("order-1", { carrier: "DHL", trackingNumber: "123" });
+
+    expect(result).toEqual({ ok: false, error: "Only a paid order can be marked shipped." });
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
+  });
+
+  it("marks a paid order shipped with the carrier/tracking details and a shippedAt timestamp", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PAID" } as never);
+
+    const result = await markOrderShipped("order-1", { carrier: "DHL Express", trackingNumber: "1Z999", trackingUrl: "https://dhl.com/track/1Z999" });
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.order.update).toHaveBeenCalledWith({
+      where: { id: "order-1" },
+      data: { status: "SHIPPED", carrier: "DHL Express", trackingNumber: "1Z999", trackingUrl: "https://dhl.com/track/1Z999", shippedAt: expect.any(Date) },
+    });
+  });
+
+  it("registers the tracking number with 17track", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PAID" } as never);
+
+    await markOrderShipped("order-1", { carrier: "DHL", trackingNumber: "1Z999" });
+
+    expect(registerTracking).toHaveBeenCalledWith("1Z999");
+  });
+
+  it("still succeeds even if 17track registration fails (best-effort)", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PAID" } as never);
+    vi.mocked(registerTracking).mockResolvedValue({ ok: false, error: "not configured" });
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await markOrderShipped("order-1", { carrier: "DHL", trackingNumber: "1Z999" });
+
+    expect(result).toEqual({ ok: true });
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it("notifies the customer and sends a shipment email", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PAID" } as never);
+
+    await markOrderShipped("order-1", { carrier: "DHL", trackingNumber: "1Z999" });
+
+    expect(prismaMock.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ userId: "user-1", requestType: "order", requestId: "order-1" }) }),
+    );
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "customer@example.com", subject: expect.stringContaining("shipped") }));
+  });
+});
+
+describe("markOrderDelivered", () => {
+  beforeEach(() => {
+    prismaMock.order.update.mockResolvedValue({} as never);
+    prismaMock.notification.create.mockResolvedValue({} as never);
+    vi.mocked(sendEmail).mockResolvedValue({ ok: true });
+  });
+
+  it("is a no-op (not an error) for an order that isn't SHIPPED — safe for a retried webhook or a double-click", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PAID" } as never);
+
+    const result = await markOrderDelivered("order-1");
+
+    expect(result).toEqual({ ok: false });
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
+  });
+
+  it("marks a shipped order delivered with a deliveredAt timestamp", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "SHIPPED" } as never);
+
+    const result = await markOrderDelivered("order-1", { source: "admin" });
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.order.update).toHaveBeenCalledWith({ where: { id: "order-1" }, data: { status: "DELIVERED", deliveredAt: expect.any(Date) } });
+  });
+
+  it("works identically whether triggered by an admin or the 17track webhook", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "SHIPPED" } as never);
+
+    const result = await markOrderDelivered("order-1", { source: "17track" });
+
+    expect(result).toEqual({ ok: true });
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ subject: expect.stringContaining("delivered") }));
   });
 });

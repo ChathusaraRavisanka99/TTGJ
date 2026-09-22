@@ -5,7 +5,8 @@ import { settlePointsForPaidOrder, settleReferralForPaidOrder } from "@/lib/rewa
 import { getLoyaltySettings } from "@/lib/loyalty-settings";
 import { getCommerceSettings } from "@/lib/commerce-settings";
 import { sendEmail } from "@/lib/email";
-import { orderConfirmationEmail } from "@/lib/email-templates";
+import { orderConfirmationEmail, shipmentStatusEmail } from "@/lib/email-templates";
+import { registerTracking } from "@/lib/track17";
 import { withMarket, type Market } from "@/lib/market-shared";
 
 // Order lifecycle steps shared by every way an order gets settled: PayHere's
@@ -183,4 +184,77 @@ export async function cancelPendingOrder(orderId: string, options: { notifyCusto
   }
 
   return { cancelled: true };
+}
+
+/**
+ * Moves a PAID order to SHIPPED — an admin's manual entry of the carrier
+ * and tracking number (see actions/orders.ts's markOrderShippedByAdmin).
+ * If a 17track API key is configured, the tracking number is also
+ * registered with them best-effort (lib/track17.ts) — their webhook
+ * (app/api/17track/webhook) can then advance the order straight to
+ * DELIVERED automatically; without one, an admin marks it delivered by
+ * hand from the same place they marked it shipped.
+ */
+export async function markOrderShipped(
+  orderId: string,
+  input: { carrier: string; trackingNumber: string; trackingUrl?: string },
+): Promise<{ ok: boolean; error?: string }> {
+  const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: { user: { select: { email: true } } } });
+  if (order.status !== "PAID") return { ok: false, error: "Only a paid order can be marked shipped." };
+
+  const shippedAt = new Date();
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { status: "SHIPPED", carrier: input.carrier, trackingNumber: input.trackingNumber, trackingUrl: input.trackingUrl || null, shippedAt },
+  });
+
+  const registerResult = await registerTracking(input.trackingNumber);
+  if (!registerResult.ok) console.warn(`Order ${order.orderNumber}: tracking number not registered with 17track: ${registerResult.error}`);
+
+  const orderUrl = `${process.env.AUTH_URL ?? "http://localhost:3000"}${withMarket(`/account/orders/${order.id}`, order.market as Market)}`;
+  await createNotification({
+    userId: order.userId,
+    type: "STATUS_CHANGE",
+    message: `Order ${order.orderNumber} has shipped${input.carrier ? ` via ${input.carrier}` : ""}.`,
+    requestType: "order",
+    requestId: order.id,
+  });
+  const { subject, html, text } = shipmentStatusEmail({
+    orderNumber: order.orderNumber, status: "SHIPPED", carrier: input.carrier, trackingNumber: input.trackingNumber, orderUrl,
+  });
+  const emailResult = await sendEmail({ to: order.user.email, subject, html, text });
+  if (!emailResult.ok) console.warn(`Shipment email not sent for order ${order.orderNumber}: ${emailResult.error}`);
+
+  return { ok: true };
+}
+
+/**
+ * Moves a SHIPPED order to DELIVERED — either an admin confirming it by
+ * hand, or 17track's webhook reporting a delivery event for a registered
+ * tracking number. `source` is purely for the caller's own logging; the
+ * transition itself is identical either way. Idempotent the same way
+ * finalizePaidOrder is: called on an order that isn't SHIPPED, this is a
+ * no-op rather than an error, since a retried webhook push (or a
+ * double-click) shouldn't fail.
+ */
+export async function markOrderDelivered(orderId: string, options: { source: "admin" | "17track" } = { source: "admin" }): Promise<{ ok: boolean }> {
+  const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: { user: { select: { email: true } } } });
+  if (order.status !== "SHIPPED") return { ok: false };
+
+  const deliveredAt = new Date();
+  await prisma.order.update({ where: { id: order.id }, data: { status: "DELIVERED", deliveredAt } });
+
+  const orderUrl = `${process.env.AUTH_URL ?? "http://localhost:3000"}${withMarket(`/account/orders/${order.id}`, order.market as Market)}`;
+  await createNotification({
+    userId: order.userId,
+    type: "STATUS_CHANGE",
+    message: `Order ${order.orderNumber} has been delivered.`,
+    requestType: "order",
+    requestId: order.id,
+  });
+  const { subject, html, text } = shipmentStatusEmail({ orderNumber: order.orderNumber, status: "DELIVERED", orderUrl });
+  const emailResult = await sendEmail({ to: order.user.email, subject, html, text });
+  if (!emailResult.ok) console.warn(`Delivery email not sent for order ${order.orderNumber} (source: ${options.source}): ${emailResult.error}`);
+
+  return { ok: true };
 }

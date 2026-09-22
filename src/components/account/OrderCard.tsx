@@ -22,6 +22,8 @@ export type OrderForCard = Prisma.OrderGetPayload<{ include: typeof orderCardInc
 const STATUS_STYLES: Record<string, string> = {
   PENDING_PAYMENT: "bg-amber-50 text-amber-800 border-amber-200",
   PAID: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  SHIPPED: "bg-sapphire-soft/15 text-sapphire border-sapphire-soft/30",
+  DELIVERED: "bg-gold-soft/25 text-charcoal border-gold/40",
   PAYMENT_FAILED: "bg-red-50 text-red-700 border-red-200",
   CANCELLED: "bg-charcoal/5 text-charcoal/60 border-charcoal/15",
 };

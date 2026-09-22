@@ -4,18 +4,22 @@ import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
 import { OrderActions } from "@/components/admin/OrderActions";
+import { ShipOrderForm } from "@/components/admin/ShipOrderForm";
+import { MarkDeliveredButton } from "@/components/admin/MarkDeliveredButton";
 import { CartContentForm } from "@/components/admin/CartContentForm";
 import { getPageContent, DEFAULT_LK_PAYMENTS_CONTENT, LK_PAYMENTS_KEY } from "@/lib/page-content";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
-const STATUSES = ["PENDING_PAYMENT", "PAID", "PAYMENT_FAILED", "CANCELLED"];
+const STATUSES = ["PENDING_PAYMENT", "PAID", "SHIPPED", "DELIVERED", "PAYMENT_FAILED", "CANCELLED"];
 const PAGE_SIZE = 20;
 const METHOD_LABELS: Record<string, string> = { PAYHERE_CARD: "Card (PayHere)", WIRE_TRANSFER: "Bank transfer", COD: "Cash on delivery" };
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING_PAYMENT: "bg-amber-50 text-amber-800 border-amber-200",
   PAID: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  SHIPPED: "bg-sapphire-soft/15 text-sapphire border-sapphire-soft/30",
+  DELIVERED: "bg-gold-soft/25 text-charcoal border-gold/40",
   PAYMENT_FAILED: "bg-red-50 text-red-700 border-red-200",
   CANCELLED: "bg-charcoal/5 text-charcoal/60 border-charcoal/15",
 };
@@ -108,6 +112,16 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                 <td className="px-4 py-3"><Badge className={STATUS_STYLES[o.status] ?? ""}>{o.status.replaceAll("_", " ")}</Badge></td>
                 <td className="px-4 py-3">
                   {o.status === "PENDING_PAYMENT" && o.paymentMethod === "WIRE_TRANSFER" && <OrderActions orderId={o.id} orderNumber={o.orderNumber} />}
+                  {o.status === "PAID" && <ShipOrderForm orderId={o.id} orderNumber={o.orderNumber} />}
+                  {o.status === "SHIPPED" && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-charcoal/60">{o.carrier} · {o.trackingNumber}</p>
+                      <MarkDeliveredButton orderId={o.id} orderNumber={o.orderNumber} />
+                    </div>
+                  )}
+                  {o.status === "DELIVERED" && o.deliveredAt && (
+                    <p className="text-xs text-charcoal/60">Delivered {o.deliveredAt.toLocaleDateString()}</p>
+                  )}
                 </td>
               </tr>
             ))}

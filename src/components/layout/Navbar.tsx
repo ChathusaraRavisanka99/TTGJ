@@ -8,13 +8,12 @@ import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { Menu, X, User, ShoppingBag, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AccountMenu, ACCOUNT_MENU_LINKS } from "@/components/layout/AccountMenu";
+import { AccountMenu } from "@/components/layout/AccountMenu";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { MarketSwitcher, MarketSwitcherInline } from "@/components/layout/MarketSwitcher";
 import { KandyanBand } from "@/components/decor/Kandyan";
 import { HeaderSearch } from "@/components/layout/HeaderSearch";
-import { signOutAction } from "@/actions/auth";
 import type { AppLocale } from "@/i18n/request";
 
 // `key` looks up the label in messages/*.json's "nav" namespace (see
@@ -171,11 +170,14 @@ export function Navbar({
       className={cn(
         "fixed top-0 z-50 w-full backdrop-blur-sm",
         transparent && !open && "backdrop-blur-0",
-        // Full-viewport-height flex column while open, so the dropdown
-        // below can fill "the rest of the screen" (flex-1) without a
-        // hardcoded height that would need to match the row's own height
-        // by hand.
-        open && "flex h-dvh flex-col overflow-hidden bg-ivory",
+        // Capped at (not forced to) full-viewport height while open — the
+        // dropdown sizes to its own content and scrolls internally if it's
+        // genuinely taller than the screen; forcing a solid h-dvh fill
+        // regardless of content left a large blank ivory area below a
+        // short menu (e.g. signed out, or a locale with few nav links).
+        // Background scroll is blocked independently below (body overflow
+        // lock), so this doesn't need to claim the full viewport itself.
+        open && "flex max-h-dvh flex-col overflow-hidden bg-ivory",
       )}
     >
       <div className="mx-auto flex w-full max-w-[120rem] shrink-0 items-center justify-between px-5 py-5 sm:px-8 lg:px-12 xl:px-16">
@@ -282,6 +284,19 @@ export function Navbar({
             )}
           </Link>
           {user && <NotificationBell transparent={transparent} size={21} />}
+          {/* A dedicated account entry point, same as the desktop row's
+              own AccountMenu/sign-in link — kept separate from the
+              hamburger below rather than folded into its dropdown, so
+              that menu is purely navigation (search, nav links, store/
+              language) and account actions (orders, messages, sign out)
+              don't require opening it first. */}
+          {user ? (
+            <AccountMenu user={user} transparent={transparent} />
+          ) : (
+            <Link href="/account/login" aria-label={t("signIn")} className={cn("transition-colors duration-300", transparent ? "text-ivory" : "text-charcoal")}>
+              <User size={21} />
+            </Link>
+          )}
           <MarketSwitcher transparent={transparent} />
           <LocaleSwitcher locale={locale} transparent={transparent} />
           <button
@@ -305,7 +320,7 @@ export function Navbar({
       )}
 
       {open && (
-        <nav className={cn(wide ? "2xl:hidden" : "lg:hidden", "flex flex-1 flex-col gap-1 overflow-y-auto border-t border-border-subtle bg-ivory px-5 py-4")}>
+        <nav className={cn(wide ? "2xl:hidden" : "lg:hidden", "flex flex-col gap-1 overflow-y-auto border-t border-border-subtle bg-ivory px-5 py-4")}>
           <form action={withMarket("/search", market)} method="get" className="mb-2 flex items-center gap-2 border-b border-border-subtle pb-3">
             <Search size={16} className="shrink-0 text-charcoal/65" />
             <input
@@ -331,47 +346,6 @@ export function Navbar({
             <p className="mb-2 text-xs uppercase tracking-wide text-charcoal/65">{tMarket("switchLabel")}</p>
             <MarketSwitcherInline />
           </div>
-          {user ? (
-            <>
-              <div className="mt-2 border-t border-border-subtle pt-2">
-                {ACCOUNT_MENU_LINKS.map((link) => {
-                  const active = pathname === link.href;
-                  // Same "already here, so show it rather than link it"
-                  // treatment as the desktop AccountMenu dropdown — see
-                  // its own comment for the reasoning.
-                  if (active) {
-                    return (
-                      <span key={link.href} aria-current="page" className="block cursor-default py-3 text-sm font-medium text-charcoal">
-                        {link.label}
-                      </span>
-                    );
-                  }
-                  return (
-                    <Link key={link.href} href={link.href} className="block py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
-                      {link.label}
-                    </Link>
-                  );
-                })}
-              </div>
-              {/* No onClick={() => setOpen(false)} here (unlike the Links
-                  above) — closing the menu is a state update that
-                  unmounts this very form mid-click, which raced with and
-                  silently swallowed the submit before signOutAction ever
-                  ran (verified live: the session cookie survived the
-                  click). signOutAction's own redirectTo navigates away
-                  once it actually completes, which closes this menu by
-                  replacing the whole page — no manual close needed. */}
-              <form action={signOutAction}>
-                <button type="submit" className="py-3 text-left text-sm text-charcoal/60">
-                  {t("signOut")}
-                </button>
-              </form>
-            </>
-          ) : (
-            <Link href="/account/login" className="py-3 text-sm text-charcoal/80" onClick={() => setOpen(false)}>
-              {t("signIn")}
-            </Link>
-          )}
         </nav>
       )}
     </motion.header>

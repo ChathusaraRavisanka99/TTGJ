@@ -100,10 +100,15 @@ export function Navbar({
     ...BASE_NAV_LINKS.slice(4),
   ];
   // With the optional Auctions and Promotions links showing there are seven
-  // links plus the store/language controls — that only fits from 1280px;
-  // with the usual five it fits from 1024px. Narrower than that the
-  // hamburger menu takes over (it used to switch at 768px, which wrapped the
-  // link labels onto two lines).
+  // links plus the store/language controls and (signed in) an account menu
+  // showing the customer's name — 1280px (xl) was the original threshold,
+  // but that's the exact width real browsers start needing for this row at
+  // 100% zoom with no slack for font-metric variance or a longer name,
+  // and it was reported packed tight against the logo in practice. 1536px
+  // (2xl) leaves real headroom. With the usual five links it still fits
+  // from 1024px (lg). Narrower than its own threshold the hamburger menu
+  // takes over (it used to switch at 768px, which wrapped the link labels
+  // onto two lines).
   const wide = showAuction || showPromotions;
   const isHome = pathname === "/";
   const isTransparentRoute =
@@ -196,7 +201,7 @@ export function Navbar({
           )}
         </Link>
 
-        <nav className={cn(wide ? "hidden xl:flex" : "hidden lg:flex", "items-center gap-5 xl:gap-6 2xl:gap-8")}>
+        <nav className={cn(wide ? "hidden 2xl:flex" : "hidden lg:flex", "items-center gap-5 xl:gap-6 2xl:gap-8")}>
           {navLinks.map((link) => {
             const active = pathname.startsWith(link.href);
             return (
@@ -227,7 +232,7 @@ export function Navbar({
           })}
         </nav>
 
-        <div className={cn(wide ? "hidden xl:flex" : "hidden lg:flex", "items-center gap-5")}>
+        <div className={cn(wide ? "hidden 2xl:flex" : "hidden lg:flex", "items-center gap-5")}>
           <HeaderSearch transparent={transparent} />
           <Link
             href={user ? "/account/retail-cart" : "/account/login?callbackUrl=%2Faccount%2Fretail-cart"}
@@ -263,7 +268,7 @@ export function Navbar({
           <LocaleSwitcher locale={locale} transparent={transparent} />
         </div>
 
-        <div className={cn(wide ? "xl:hidden" : "lg:hidden", "flex items-center gap-2.5 min-[430px]:gap-4")}>
+        <div className={cn(wide ? "2xl:hidden" : "lg:hidden", "flex items-center gap-2.5 min-[430px]:gap-4")}>
           <Link
             href={user ? "/account/retail-cart" : "/account/login?callbackUrl=%2Faccount%2Fretail-cart"}
             aria-label={t("cart")}
@@ -300,7 +305,7 @@ export function Navbar({
       )}
 
       {open && (
-        <nav className={cn(wide ? "xl:hidden" : "lg:hidden", "flex flex-1 flex-col gap-1 overflow-y-auto border-t border-border-subtle bg-ivory px-5 py-4")}>
+        <nav className={cn(wide ? "2xl:hidden" : "lg:hidden", "flex flex-1 flex-col gap-1 overflow-y-auto border-t border-border-subtle bg-ivory px-5 py-4")}>
           <form action={withMarket("/search", market)} method="get" className="mb-2 flex items-center gap-2 border-b border-border-subtle pb-3">
             <Search size={16} className="shrink-0 text-charcoal/65" />
             <input

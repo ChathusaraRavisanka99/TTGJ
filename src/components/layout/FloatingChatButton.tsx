@@ -78,6 +78,14 @@ export function FloatingChatButton() {
   async function openConversation(c: ConversationView) {
     setSelected(c);
     setPanelMessages(null);
+    // Opening a conversation is what actually marks it read (ChatPanel
+    // does this itself on mount) - clear its badge here right away rather
+    // than waiting up to POLL_INTERVAL_MS for the next background poll to
+    // notice, which read as the unread number never going away.
+    if (c.unreadCount > 0) {
+      setItems((prev) => prev.map((item) => (item.requestType === c.requestType && item.requestId === c.requestId ? { ...item, unreadCount: 0 } : item)));
+      setUnreadCount((prev) => Math.max(0, prev - c.unreadCount));
+    }
     const [messages, hasOpenCart] = await Promise.all([pollChatMessages(c.requestType, c.requestId), getHasOpenCartForRequest(c.requestType, c.requestId)]);
     setPanelMessages(messages);
     setPanelHasOpenCart(hasOpenCart);

@@ -40,7 +40,8 @@ function rowKey(r: Pick<InboxRow, "requestType" | "requestId">): string {
  * every reply requiring a full navigation to that request's own detail
  * page (still one click away via "Full page" for anything that needs
  * more, like changing a quote's status). */
-export function AdminMessagesInbox({ rows, currentAdminId }: { rows: InboxRow[]; currentAdminId: string }) {
+export function AdminMessagesInbox({ rows: initialRows, currentAdminId }: { rows: InboxRow[]; currentAdminId: string }) {
+  const [rows, setRows] = useState(initialRows);
   const [selected, setSelected] = useState<InboxRow | null>(null);
   const [panelMessages, setPanelMessages] = useState<ChatMessageView[] | null>(null);
   const [panelHasOpenCart, setPanelHasOpenCart] = useState(false);
@@ -48,6 +49,13 @@ export function AdminMessagesInbox({ rows, currentAdminId }: { rows: InboxRow[];
   async function select(r: InboxRow) {
     setSelected(r);
     setPanelMessages(null);
+    // Opening a conversation is what actually marks it read (ChatPanel
+    // does this itself on mount) - the row list is otherwise static data
+    // from the initial server render, so without this its unread badge
+    // would sit there until the whole page was reloaded.
+    if (r.unread > 0) {
+      setRows((prev) => prev.map((row) => (rowKey(row) === rowKey(r) ? { ...row, unread: 0 } : row)));
+    }
     const [messages, hasOpenCart] = await Promise.all([
       pollChatMessages(r.requestType, r.requestId),
       getHasOpenCartForRequest(r.requestType, r.requestId),

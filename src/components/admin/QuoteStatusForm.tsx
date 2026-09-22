@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateQuoteRequest, updateSourcingRequest } from "@/actions/admin-requests";
+import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { Select, Textarea, Input, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
@@ -34,24 +35,18 @@ export function QuoteStatusForm({
   const [adminNotes, setAdminNotes] = useState(currentAdminNotes);
   const [price, setPrice] = useState(currentQuotedPrice != null ? String(currentQuotedPrice) : "");
   const [validUntil, setValidUntil] = useState(toDateInputValue(currentQuoteValidUntil));
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const { pending, error, run } = useAdminAction();
 
   function handleSave() {
-    setError(null);
-    startTransition(async () => {
-      const priceArg = price.trim() === "" ? undefined : Number(price);
-      const validUntilArg = validUntil === toDateInputValue(currentQuoteValidUntil) ? undefined : validUntil || null;
-      const result =
+    const priceArg = price.trim() === "" ? undefined : Number(price);
+    const validUntilArg = validUntil === toDateInputValue(currentQuoteValidUntil) ? undefined : validUntil || null;
+    run(
+      () =>
         kind === "quote"
-          ? await updateQuoteRequest(id, status as never, adminNotes, priceArg, validUntilArg)
-          : await updateSourcingRequest(id, status as never, adminNotes, priceArg, validUntilArg);
-      if (result && !result.ok) {
-        setError(result.error);
-        return;
-      }
-      router.refresh();
-    });
+          ? updateQuoteRequest(id, status as never, adminNotes, priceArg, validUntilArg)
+          : updateSourcingRequest(id, status as never, adminNotes, priceArg, validUntilArg),
+      () => router.refresh(),
+    );
   }
 
   return (

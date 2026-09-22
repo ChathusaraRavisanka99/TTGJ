@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { markOrderShippedByAdmin } from "@/actions/orders";
+import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { Input, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -10,20 +11,16 @@ import { Modal } from "@/components/ui/Modal";
 export function ShipOrderForm({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const { pending, error, run } = useAdminAction();
 
-  async function handleSubmit(formData: FormData) {
-    setError(null);
-    setPending(true);
-    const result = await markOrderShippedByAdmin(orderId, formData);
-    setPending(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    setOpen(false);
-    router.refresh();
+  function handleSubmit(formData: FormData) {
+    run(
+      () => markOrderShippedByAdmin(orderId, formData),
+      () => {
+        setOpen(false);
+        router.refresh();
+      },
+    );
   }
 
   return (

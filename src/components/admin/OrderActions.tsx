@@ -1,27 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { markOrderPaid, cancelOrderAsAdmin } from "@/actions/orders";
+import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { Button } from "@/components/ui/Button";
 
 // Shown only for a bank-transfer order still awaiting payment.
 export function OrderActions({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const { pending, error, run } = useAdminAction();
 
-  function run(action: (id: string) => Promise<{ ok: true } | { ok: false; error: string }>, confirmText: string) {
+  function handleClick(action: (id: string) => Promise<{ ok: true } | { ok: false; error: string }>, confirmText: string) {
     if (!window.confirm(confirmText)) return;
-    setError(null);
-    startTransition(async () => {
-      const result = await action(orderId);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      router.refresh();
-    });
+    run(() => action(orderId), () => router.refresh());
   }
 
   return (
@@ -32,7 +23,7 @@ export function OrderActions({ orderId, orderNumber }: { orderId: string; orderN
           size="sm"
           variant="gold"
           disabled={pending}
-          onClick={() => run(markOrderPaid, `Confirm the bank transfer for ${orderNumber} has arrived? The items will be marked sold.`)}
+          onClick={() => handleClick(markOrderPaid, `Confirm the bank transfer for ${orderNumber} has arrived? The items will be marked sold.`)}
         >
           Mark paid
         </Button>
@@ -41,7 +32,7 @@ export function OrderActions({ orderId, orderNumber }: { orderId: string; orderN
           size="sm"
           variant="outline"
           disabled={pending}
-          onClick={() => run(cancelOrderAsAdmin, `Cancel ${orderNumber}? Its held items go back on sale.`)}
+          onClick={() => handleClick(cancelOrderAsAdmin, `Cancel ${orderNumber}? Its held items go back on sale.`)}
         >
           Cancel
         </Button>

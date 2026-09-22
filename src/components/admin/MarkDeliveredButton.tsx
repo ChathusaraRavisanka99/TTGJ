@@ -1,28 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { markOrderDeliveredByAdmin } from "@/actions/orders";
+import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { Button } from "@/components/ui/Button";
 
 // The fallback for when no 17track webhook has (or ever will) mark this
 // order delivered automatically — see lib/orders.ts's markOrderDelivered.
 export function MarkDeliveredButton({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const { pending, error, run } = useAdminAction();
 
   function handleClick() {
     if (!window.confirm(`Mark ${orderNumber} delivered?`)) return;
-    setError(null);
-    startTransition(async () => {
-      const result = await markOrderDeliveredByAdmin(orderId);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      router.refresh();
-    });
+    run(() => markOrderDeliveredByAdmin(orderId), () => router.refresh());
   }
 
   return (

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { ensureInvoiceForQuote } from "@/lib/invoicing";
-import { ensureCartItemForQuote, ensureCartItemForSourcing } from "@/lib/cart";
+import { ensureOrderForQuote, ensureOrderForSourcing } from "@/lib/orders";
 import { createNotification } from "@/lib/notifications";
 import type { ActionResult } from "./auth";
 
@@ -30,7 +30,7 @@ export async function updateQuoteRequest(
   quotedPrice?: number,
   quoteValidUntil?: string | null,
 ): Promise<ActionResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   if (!QUOTE_STATUSES.includes(status)) return { ok: false, error: "Invalid status." };
 
   const current = await prisma.quoteRequest.findUnique({ where: { id }, select: { quotedPrice: true, status: true, userId: true } });
@@ -60,7 +60,14 @@ export async function updateQuoteRequest(
 
   if (status === "ACCEPTED") {
     await ensureInvoiceForQuote(id);
-    await ensureCartItemForQuote(id);
+    const orderResult = await ensureOrderForQuote(id, admin.id);
+    if (!orderResult.ok) {
+      // The order (and the reservation it needs) couldn't be created —
+      // leave everything else (price, notes) saved, but don't leave this
+      // quote sitting in ACCEPTED with no order behind it.
+      await prisma.quoteRequest.update({ where: { id }, data: { status: current.status } });
+      return orderResult;
+    }
   }
 
   // Only a genuine transition notifies — re-saving the same status (e.g.
@@ -79,8 +86,7 @@ export async function updateQuoteRequest(
   revalidatePath("/admin/quotes");
   revalidatePath(`/admin/quotes/${id}`);
   revalidatePath("/account/quotes");
-  revalidatePath("/account/cart");
-  revalidatePath("/admin/carts");
+  revalidatePath("/admin/orders");
   return { ok: true };
 }
 
@@ -93,7 +99,7 @@ export async function updateSourcingRequest(
   quotedPrice?: number,
   quoteValidUntil?: string | null,
 ): Promise<ActionResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   if (!QUOTE_STATUSES.includes(status)) return { ok: false, error: "Invalid status." };
 
   const current = await prisma.sourcingRequest.findUnique({ where: { id }, select: { quotedPrice: true, status: true, userId: true } });
@@ -116,7 +122,11 @@ export async function updateSourcingRequest(
   });
 
   if (status === "ACCEPTED") {
-    await ensureCartItemForSourcing(id);
+    const orderResult = await ensureOrderForSourcing(id, admin.id);
+    if (!orderResult.ok) {
+      await prisma.sourcingRequest.update({ where: { id }, data: { status: current.status } });
+      return orderResult;
+    }
   }
 
   if (status !== current.status) {
@@ -132,7 +142,6 @@ export async function updateSourcingRequest(
   revalidatePath("/admin/sourcing");
   revalidatePath(`/admin/sourcing/${id}`);
   revalidatePath("/account/sourcing");
-  revalidatePath("/account/cart");
-  revalidatePath("/admin/carts");
+  revalidatePath("/admin/orders");
   return { ok: true };
 }

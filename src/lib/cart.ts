@@ -108,7 +108,7 @@ export async function getOrCreateOpenCart(userId: string) {
   return prisma.cart.create({ data: { userId } });
 }
 
-function quoteItemLabel(quote: {
+export function quoteItemLabel(quote: {
   gemstone: { name: string } | null;
   jewelry: { name: string } | null;
   configuredSpec: unknown;

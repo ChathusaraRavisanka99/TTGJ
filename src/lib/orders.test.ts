@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered } from "@/lib/orders";
+import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails } from "@/lib/orders";
 import { sendEmail } from "@/lib/email";
 import { registerTracking } from "@/lib/track17";
 
@@ -339,5 +339,143 @@ describe("markOrderDelivered", () => {
 
     expect(result).toEqual({ ok: true });
     expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ subject: expect.stringContaining("delivered") }));
+  });
+});
+
+describe("ensureOrderForQuote", () => {
+  const baseQuote = {
+    id: "quote-1",
+    userId: "user-1",
+    quotedPrice: 5000,
+    quantity: 1,
+    gemstoneId: "gem-1",
+    jewelryId: null as string | null,
+    gemstone: { name: "Ceylon Blue Sapphire" },
+    jewelry: null,
+    configuredSpec: null,
+  };
+
+  beforeEach(() => {
+    prismaMock.order.count.mockResolvedValue(0);
+    prismaMock.chatThread.findFirst.mockResolvedValue(null);
+    prismaMock.chatThread.create.mockResolvedValue({ id: "thread-1" } as never);
+    prismaMock.chatMessage.create.mockResolvedValue({} as never);
+    prismaMock.notification.create.mockResolvedValue({} as never);
+  });
+
+  it("is idempotent — an already-accepted quote returns its existing order without creating a second one", async () => {
+    prismaMock.order.findUnique.mockResolvedValue({ id: "order-existing" } as never);
+
+    const result = await ensureOrderForQuote("quote-1", "admin-1");
+
+    expect(result).toEqual({ ok: true, orderId: "order-existing" });
+    expect(prismaMock.order.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses to create an order for a quote with no price set", async () => {
+    prismaMock.order.findUnique.mockResolvedValue(null);
+    prismaMock.quoteRequest.findUnique.mockResolvedValue({ ...baseQuote, quotedPrice: null } as never);
+
+    const result = await ensureOrderForQuote("quote-1", "admin-1");
+
+    expect(result.ok).toBe(false);
+    expect(prismaMock.order.create).not.toHaveBeenCalled();
+  });
+
+  it("creates an unpaid order needing shipping details, reserves the gemstone, and notifies + messages the customer", async () => {
+    prismaMock.order.findUnique.mockResolvedValue(null);
+    prismaMock.quoteRequest.findUnique.mockResolvedValue(baseQuote as never);
+    prismaMock.order.create.mockResolvedValue({ id: "order-1", orderNumber: "ORD-2026-0001" } as never);
+    prismaMock.gemstone.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await ensureOrderForQuote("quote-1", "admin-1");
+
+    expect(result).toEqual({ ok: true, orderId: "order-1" });
+    expect(prismaMock.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          needsShippingDetails: true,
+          shipName: "",
+          paymentMethod: "WIRE_TRANSFER",
+          quoteRequestId: "quote-1",
+        }),
+      }),
+    );
+    expect(prismaMock.gemstone.updateMany).toHaveBeenCalledWith({ where: { id: "gem-1", stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+    expect(prismaMock.notification.create).toHaveBeenCalledOnce();
+    expect(prismaMock.chatMessage.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ threadId: "thread-1", senderId: "admin-1", senderRole: "ADMIN" }) }),
+    );
+  });
+
+  it("fails without creating anything (or notifying) if the gemstone is no longer available", async () => {
+    prismaMock.order.findUnique.mockResolvedValue(null);
+    prismaMock.quoteRequest.findUnique.mockResolvedValue(baseQuote as never);
+    prismaMock.order.create.mockResolvedValue({ id: "order-1", orderNumber: "ORD-2026-0001" } as never);
+    prismaMock.gemstone.updateMany.mockResolvedValue({ count: 0 }); // someone else already has it
+
+    const result = await ensureOrderForQuote("quote-1", "admin-1");
+
+    expect(result.ok).toBe(false);
+    expect(prismaMock.notification.create).not.toHaveBeenCalled();
+    expect(prismaMock.chatMessage.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("ensureOrderForSourcing", () => {
+  beforeEach(() => {
+    prismaMock.order.count.mockResolvedValue(0);
+    prismaMock.chatThread.findFirst.mockResolvedValue(null);
+    prismaMock.chatThread.create.mockResolvedValue({ id: "thread-1" } as never);
+    prismaMock.chatMessage.create.mockResolvedValue({} as never);
+    prismaMock.notification.create.mockResolvedValue({} as never);
+  });
+
+  it("creates an order for an accepted sourcing request with no stock to reserve", async () => {
+    prismaMock.order.findUnique.mockResolvedValue(null);
+    prismaMock.sourcingRequest.findUnique.mockResolvedValue({ id: "sourcing-1", userId: "user-1", quotedPrice: 1200, mineralDescription: "2ct rough spinel" } as never);
+    prismaMock.order.create.mockResolvedValue({ id: "order-2", orderNumber: "ORD-2026-0002" } as never);
+
+    const result = await ensureOrderForSourcing("sourcing-1", "admin-1");
+
+    expect(result).toEqual({ ok: true, orderId: "order-2" });
+    expect(prismaMock.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ sourcingRequestId: "sourcing-1", needsShippingDetails: true }) }),
+    );
+  });
+});
+
+describe("submitOrderShippingDetails", () => {
+  const address = { shipName: "A B", shipPhone: "123", shipCountry: "US", shipCity: "NYC", shipAddressLine1: "1 Main St" };
+
+  it("saves the address and clears needsShippingDetails", async () => {
+    prismaMock.order.findUnique.mockResolvedValue({ userId: "user-1", needsShippingDetails: true } as never);
+    prismaMock.order.update.mockResolvedValue({} as never);
+
+    const result = await submitOrderShippingDetails("order-1", "user-1", address);
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.order.update).toHaveBeenCalledWith({
+      where: { id: "order-1" },
+      data: { ...address, shipAddressLine2: null, shipPostalCode: null, needsShippingDetails: false },
+    });
+  });
+
+  it("refuses an order that belongs to someone else", async () => {
+    prismaMock.order.findUnique.mockResolvedValue({ userId: "someone-else", needsShippingDetails: true } as never);
+
+    const result = await submitOrderShippingDetails("order-1", "user-1", address);
+
+    expect(result.ok).toBe(false);
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
+  });
+
+  it("is a no-op for an order that doesn't need shipping details (no overwriting a real address)", async () => {
+    prismaMock.order.findUnique.mockResolvedValue({ userId: "user-1", needsShippingDetails: false } as never);
+
+    const result = await submitOrderShippingDetails("order-1", "user-1", address);
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
   });
 });

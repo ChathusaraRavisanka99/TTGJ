@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { requireAdmin } from "@/lib/rbac";
-import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered } from "@/lib/orders";
+import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, submitOrderShippingDetails } from "@/lib/orders";
 import { shipOrderSchema } from "@/lib/validation/orders";
+import { shippingSchema } from "@/lib/validation/checkout";
 import type { ActionResult } from "./auth";
 
 function revalidateOrders() {
@@ -21,10 +22,11 @@ function revalidateOrders() {
 // settled by PayHere itself, never by hand.
 export async function markOrderPaid(orderId: string): Promise<ActionResult> {
   await requireAdmin();
-  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, paymentMethod: true } });
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, paymentMethod: true, needsShippingDetails: true } });
   if (!order) return { ok: false, error: "Order not found." };
   if (order.paymentMethod !== "WIRE_TRANSFER") return { ok: false, error: "Only bank-transfer orders can be marked paid by hand." };
   if (order.status !== "PENDING_PAYMENT") return { ok: false, error: "This order isn't awaiting payment." };
+  if (order.needsShippingDetails) return { ok: false, error: "The customer hasn't added shipping details for this order yet." };
 
   await finalizePaidOrder(orderId);
   revalidateOrders();
@@ -87,6 +89,38 @@ export async function cancelMyWireOrder(orderId: string): Promise<ActionResult> 
   // something they just did themselves (see cancelPendingOrder's own comment).
   const { cancelled } = await cancelPendingOrder(orderId, { notifyCustomer: false });
   if (!cancelled) return { ok: false, error: "This order can no longer be cancelled." };
+  revalidateOrders();
+  return { ok: true };
+}
+
+// The customer completing the shipping address a quote/sourcing-derived
+// order was created without (see ensureOrderForQuote/ensureOrderForSourcing
+// in lib/orders.ts and this order's needsShippingDetails flag) — reuses
+// checkout's own shipping form/schema so it's the same fields the customer
+// already knows from a normal purchase.
+export async function submitOrderShippingDetailsAction(orderId: string, formData: FormData): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user) return { ok: false, error: "Sign in required." };
+
+  const parsed = shippingSchema.safeParse({
+    firstName: String(formData.get("firstName") ?? "").trim(),
+    lastName: String(formData.get("lastName") ?? "").trim(),
+    phone: String(formData.get("phone") ?? "").trim(),
+    address: String(formData.get("address") ?? "").trim(),
+    city: String(formData.get("city") ?? "").trim(),
+    country: String(formData.get("country") ?? "").trim(),
+  });
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Check the shipping details you entered." };
+  const { firstName, lastName, phone, address, city, country } = parsed.data;
+
+  const result = await submitOrderShippingDetails(orderId, session.user.id, {
+    shipName: `${firstName} ${lastName}`.trim(),
+    shipPhone: phone,
+    shipCountry: country,
+    shipCity: city,
+    shipAddressLine1: address,
+  });
+  if (!result.ok) return { ok: false, error: result.error ?? "Couldn't save those details." };
   revalidateOrders();
   return { ok: true };
 }

@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { markNotificationsReadForRequest } from "@/lib/notifications";
 import { Badge } from "@/components/ui/Badge";
 import { BackLink } from "@/components/admin/BackLink";
+import { OrderShippingDetailsForm } from "@/components/account/OrderShippingDetailsForm";
 import { formatPrice } from "@/lib/utils";
 import { withMarket, type Market } from "@/lib/market-shared";
 
@@ -91,7 +92,13 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
         <Badge className={STATUS_STYLES[order.status] ?? ""}>{t(`status.${order.status}`)}</Badge>
       </div>
 
-      {order.status === "PENDING_PAYMENT" && (
+      {order.needsShippingDetails && (
+        <div className="mt-4 rounded-xl border border-gold/40 bg-gold/10 p-5">
+          <OrderShippingDetailsForm orderId={order.id} />
+        </div>
+      )}
+
+      {!order.needsShippingDetails && order.status === "PENDING_PAYMENT" && (
         <div className="mt-4 rounded-xl border border-gold/40 bg-gold/10 p-4">
           <NextLink
             href={withMarket(order.paymentMethod === "WIRE_TRANSFER" ? `/checkout/wire?order=${order.id}` : `/checkout/return?order=${order.id}`, market)}
@@ -174,27 +181,29 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
             </section>
           )}
 
-          <section className="rounded-xl border border-border-subtle bg-surface p-5">
-            <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">{t("detail.shippingAddress")}</p>
-            <address className="mt-2 text-sm not-italic leading-relaxed text-charcoal/80">
-              {order.shipName}
-              <br />
-              {order.shipAddressLine1}
-              {order.shipAddressLine2 && (
-                <>
-                  <br />
-                  {order.shipAddressLine2}
-                </>
-              )}
-              <br />
-              {order.shipCity}
-              {order.shipPostalCode ? ` ${order.shipPostalCode}` : ""}
-              <br />
-              {order.shipCountry}
-              <br />
-              {order.shipPhone}
-            </address>
-          </section>
+          {!order.needsShippingDetails && (
+            <section className="rounded-xl border border-border-subtle bg-surface p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">{t("detail.shippingAddress")}</p>
+              <address className="mt-2 text-sm not-italic leading-relaxed text-charcoal/80">
+                {order.shipName}
+                <br />
+                {order.shipAddressLine1}
+                {order.shipAddressLine2 && (
+                  <>
+                    <br />
+                    {order.shipAddressLine2}
+                  </>
+                )}
+                <br />
+                {order.shipCity}
+                {order.shipPostalCode ? ` ${order.shipPostalCode}` : ""}
+                <br />
+                {order.shipCountry}
+                <br />
+                {order.shipPhone}
+              </address>
+            </section>
+          )}
         </div>
 
         <div className="space-y-6 lg:sticky lg:top-28 lg:self-start">

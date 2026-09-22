@@ -105,7 +105,12 @@ export async function OrderCard({ order, highlight, compact }: { order: OrderFor
           <NextLink href={detailHref} className="text-xs text-gold-deep underline-offset-4 hover:underline">
             {t("viewDetails")} →
           </NextLink>
-          {order.status === "PENDING_PAYMENT" && (
+          {order.needsShippingDetails && (
+            <NextLink href={detailHref} className="rounded-full border border-gold bg-gold/10 px-4 py-1.5 text-xs font-medium text-charcoal transition-colors hover:bg-gold/25">
+              Add shipping details
+            </NextLink>
+          )}
+          {!order.needsShippingDetails && order.status === "PENDING_PAYMENT" && (
             <NextLink
               href={withMarket(order.paymentMethod === "WIRE_TRANSFER" ? `/checkout/wire?order=${order.id}` : `/checkout/return?order=${order.id}`, market)}
               className="rounded-full border border-gold bg-gold/10 px-4 py-1.5 text-xs font-medium text-charcoal transition-colors hover:bg-gold/25"

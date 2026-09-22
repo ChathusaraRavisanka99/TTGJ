@@ -102,17 +102,25 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
           <tbody>
             {orders.map((o) => (
               <tr key={o.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
-                <td className="px-4 py-3 font-mono text-charcoal">{o.orderNumber}</td>
+                <td className="px-4 py-3 font-mono text-charcoal">
+                  {o.orderNumber}
+                  {(o.quoteRequestId || o.sourcingRequestId) && (
+                    <span className="ml-2 rounded-full border border-border-subtle px-2 py-0.5 font-sans text-[10px] uppercase tracking-wide text-charcoal/55">
+                      {o.quoteRequestId ? "Quote" : "Sourcing"}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-charcoal/70">{o.user.email}</td>
                 <td className="px-4 py-3 text-charcoal/70">{o.market === "lk" ? "Sri Lanka" : "International"}</td>
                 <td className="px-4 py-3 text-charcoal/70">{METHOD_LABELS[o.paymentMethod] ?? o.paymentMethod}</td>
                 <td className="px-4 py-3 text-charcoal/70">{formatPrice(o.total, o.currency === "LKR" ? "LKR" : "USD")}{o.currency === "LKR" ? "" : ` ${o.currency}`}</td>
-                <td className="px-4 py-3 text-charcoal/70">{o.shipCity}, {o.shipCountry}</td>
+                <td className="px-4 py-3 text-charcoal/70">{o.needsShippingDetails ? "—" : `${o.shipCity}, ${o.shipCountry}`}</td>
                 <td className="px-4 py-3 text-charcoal/70">{o.createdAt.toLocaleDateString()}</td>
                 <td className="px-4 py-3"><Badge className={STATUS_STYLES[o.status] ?? ""}>{o.status.replaceAll("_", " ")}</Badge></td>
                 <td className="px-4 py-3">
-                  {o.status === "PENDING_PAYMENT" && o.paymentMethod === "WIRE_TRANSFER" && <OrderActions orderId={o.id} orderNumber={o.orderNumber} />}
-                  {o.status === "PAID" && <ShipOrderForm orderId={o.id} orderNumber={o.orderNumber} />}
+                  {o.needsShippingDetails && <p className="text-xs text-charcoal/60">Awaiting customer&apos;s shipping details</p>}
+                  {!o.needsShippingDetails && o.status === "PENDING_PAYMENT" && o.paymentMethod === "WIRE_TRANSFER" && <OrderActions orderId={o.id} orderNumber={o.orderNumber} />}
+                  {!o.needsShippingDetails && o.status === "PAID" && <ShipOrderForm orderId={o.id} orderNumber={o.orderNumber} />}
                   {o.status === "SHIPPED" && (
                     <div className="space-y-1">
                       <p className="text-xs text-charcoal/60">{o.carrier} · {o.trackingNumber}</p>

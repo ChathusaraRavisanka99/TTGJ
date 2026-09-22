@@ -8,6 +8,8 @@ import { sendEmail } from "@/lib/email";
 import { orderConfirmationEmail, shipmentStatusEmail } from "@/lib/email-templates";
 import { registerTracking } from "@/lib/track17";
 import { withMarket, type Market } from "@/lib/market-shared";
+import { quoteItemLabel } from "@/lib/cart";
+import { getOrCreateChatThread } from "@/lib/chat";
 
 // Order lifecycle steps shared by every way an order gets settled: PayHere's
 // notify webhook (card) and an admin confirming a bank transfer landed
@@ -256,5 +258,190 @@ export async function markOrderDelivered(orderId: string, options: { source: "ad
   const emailResult = await sendEmail({ to: order.user.email, subject, html, text });
   if (!emailResult.ok) console.warn(`Delivery email not sent for order ${order.orderNumber} (source: ${options.source}): ${emailResult.error}`);
 
+  return { ok: true };
+}
+
+// ---------- Orders created from an accepted quote/sourcing request ----------
+//
+// Replaces the old accept-time CartItem (see the schema comment on
+// Order.quoteRequestId) — accepting now creates a real, immediately
+// visible-in-admin/orders Order instead of a line item the customer had to
+// separately bundle and submit. Neither a quote nor a sourcing request
+// collects a shipping address, so the order starts with
+// needsShippingDetails: true and empty shipping fields; the customer fills
+// them in themselves (see actions/orders.ts's submitOrderShippingDetails)
+// before it can be marked paid or shipped.
+
+type EnsureOrderResult = { ok: true; orderId: string } | { ok: false; error: string };
+
+async function notifyAndMessageForNewOrder(input: {
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  requestType: "quote" | "sourcing";
+  requestId: string;
+  adminUserId: string;
+}) {
+  const kind = input.requestType === "quote" ? "quote" : "sourcing request";
+  const orderUrl = `${process.env.AUTH_URL ?? "http://localhost:3000"}${withMarket(`/account/orders/${input.orderId}`, "intl")}`;
+
+  await createNotification({
+    userId: input.customerId,
+    type: "STATUS_CHANGE",
+    message: `Order ${input.orderNumber} has been created for your accepted ${kind} — add your shipping details to complete it.`,
+    requestType: "order",
+    requestId: input.orderId,
+  });
+
+  // Posted into the same thread the quote/sourcing conversation already
+  // happened in, as the accepting admin — not a separate "system" sender,
+  // since this app has no notion of one and the admin is the one whose
+  // action this actually is.
+  const threadId = await getOrCreateChatThread(input.requestType, input.requestId);
+  await prisma.chatMessage.create({
+    data: {
+      threadId,
+      senderId: input.adminUserId,
+      senderRole: "ADMIN",
+      body: `Your ${kind} has been accepted — order ${input.orderNumber} is ready. Please add your shipping details and complete payment here: ${orderUrl}`,
+    },
+  });
+}
+
+/**
+ * Idempotent: an already-accepted quote just returns its existing order
+ * rather than creating a second one (a re-save of an already-ACCEPTED
+ * quote, e.g. editing admin notes, goes through this same path — see
+ * updateQuoteRequest). Reserves the linked catalog item the same
+ * conditional-atomic way checkout does (AVAILABLE -> RESERVED inside the
+ * same transaction as the order); if it's no longer available (sold or
+ * reserved some other way since the quote was submitted), the whole thing
+ * rolls back and this returns an error rather than overselling.
+ */
+export async function ensureOrderForQuote(quoteId: string, adminUserId: string): Promise<EnsureOrderResult> {
+  const existing = await prisma.order.findUnique({ where: { quoteRequestId: quoteId }, select: { id: true } });
+  if (existing) return { ok: true, orderId: existing.id };
+
+  const quote = await prisma.quoteRequest.findUnique({ where: { id: quoteId }, include: { gemstone: true, jewelry: true } });
+  if (!quote || quote.quotedPrice == null) return { ok: false, error: "This quote has no price set yet." };
+
+  const orderNumber = await nextOrderNumber();
+  const label = quoteItemLabel(quote);
+  const quotedPrice = quote.quotedPrice;
+
+  let orderId: string;
+  let createdOrderNumber: string;
+  try {
+    const order = await prisma.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          orderNumber,
+          userId: quote.userId,
+          currency: "USD",
+          market: "intl",
+          subtotal: quotedPrice,
+          total: quotedPrice,
+          shipName: "",
+          shipPhone: "",
+          shipCountry: "",
+          shipCity: "",
+          shipAddressLine1: "",
+          needsShippingDetails: true,
+          paymentMethod: "WIRE_TRANSFER",
+          quoteRequestId: quote.id,
+          items: {
+            create: {
+              gemstoneId: quote.gemstoneId ?? undefined,
+              jewelryId: quote.jewelryId ?? undefined,
+              label,
+              unitPrice: quotedPrice,
+              quantity: quote.quantity,
+              lineTotal: quotedPrice,
+            },
+          },
+        },
+      });
+      if (quote.gemstoneId) {
+        const res = await tx.gemstone.updateMany({ where: { id: quote.gemstoneId, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+        if (res.count !== 1) throw new Error("ITEM_UNAVAILABLE");
+      }
+      if (quote.jewelryId) {
+        const res = await tx.jewelryPiece.updateMany({ where: { id: quote.jewelryId, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+        if (res.count !== 1) throw new Error("ITEM_UNAVAILABLE");
+      }
+      return created;
+    });
+    orderId = order.id;
+    createdOrderNumber = order.orderNumber;
+  } catch (err) {
+    if (err instanceof Error && err.message === "ITEM_UNAVAILABLE") {
+      return { ok: false, error: "That item is no longer available to sell — it may have already been sold or reserved elsewhere." };
+    }
+    throw err;
+  }
+
+  await notifyAndMessageForNewOrder({ orderId, orderNumber: createdOrderNumber, customerId: quote.userId, requestType: "quote", requestId: quote.id, adminUserId });
+  return { ok: true, orderId };
+}
+
+/** Same idea as ensureOrderForQuote, for sourcing requests — a sourcing
+ * request never references a specific catalog item, so there's nothing to
+ * reserve. */
+export async function ensureOrderForSourcing(sourcingId: string, adminUserId: string): Promise<EnsureOrderResult> {
+  const existing = await prisma.order.findUnique({ where: { sourcingRequestId: sourcingId }, select: { id: true } });
+  if (existing) return { ok: true, orderId: existing.id };
+
+  const request = await prisma.sourcingRequest.findUnique({ where: { id: sourcingId } });
+  if (!request || request.quotedPrice == null) return { ok: false, error: "This sourcing request has no price set yet." };
+
+  const quotedPrice = request.quotedPrice;
+  const orderNumber = await nextOrderNumber();
+  const label = `Sourcing: ${request.mineralDescription}`;
+
+  const order = await prisma.order.create({
+    data: {
+      orderNumber,
+      userId: request.userId,
+      currency: "USD",
+      market: "intl",
+      subtotal: quotedPrice,
+      total: quotedPrice,
+      shipName: "",
+      shipPhone: "",
+      shipCountry: "",
+      shipCity: "",
+      shipAddressLine1: "",
+      needsShippingDetails: true,
+      paymentMethod: "WIRE_TRANSFER",
+      sourcingRequestId: request.id,
+      items: { create: { label, unitPrice: quotedPrice, quantity: 1, lineTotal: quotedPrice } },
+    },
+  });
+
+  await notifyAndMessageForNewOrder({ orderId: order.id, orderNumber: order.orderNumber, customerId: request.userId, requestType: "sourcing", requestId: request.id, adminUserId });
+  return { ok: true, orderId: order.id };
+}
+
+/**
+ * Called by the customer to fill in the shipping address an accepted
+ * quote/sourcing order was created without (see ensureOrderForQuote/
+ * ensureOrderForSourcing) — the one time an Order's shipping fields are
+ * set after creation instead of at checkout. A no-op guard rather than an
+ * error for an order that doesn't need this, so a stale/reloaded form
+ * submit can't overwrite a real address with a re-submission.
+ */
+export async function submitOrderShippingDetails(
+  orderId: string,
+  userId: string,
+  address: { shipName: string; shipPhone: string; shipCountry: string; shipCity: string; shipAddressLine1: string; shipAddressLine2?: string; shipPostalCode?: string },
+): Promise<{ ok: boolean; error?: string }> {
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true, needsShippingDetails: true } });
+  if (!order || order.userId !== userId) return { ok: false, error: "Order not found." };
+  if (!order.needsShippingDetails) return { ok: true };
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { ...address, shipAddressLine2: address.shipAddressLine2 || null, shipPostalCode: address.shipPostalCode || null, needsShippingDetails: false },
+  });
   return { ok: true };
 }

@@ -564,12 +564,14 @@ model QuoteRequest {
   // one invoice.
   invoice Invoice?
 
-  // Same moment an Invoice is created — also added as a line item to the
-  // customer's open Cart (see ensureCartItemForQuote). The two aren't
-  // redundant: Invoice is a per-quote historical record; CartItem is what
-  // actually lets several accepted quotes/sourcing requests be reviewed
-  // and submitted for payment together.
+  // Historical — CartItem was how an accepted quote used to reach payment
+  // (bundled with other accepted requests into one Cart, paid by wire).
+  // Kept for quotes accepted before ensureOrderForQuote replaced it; a
+  // newly-accepted quote gets `order` below instead.
   cartItem CartItem?
+  // Set the moment this quote is accepted — see ensureOrderForQuote in
+  // lib/orders.ts.
+  order    Order?
 
   // One chat thread per request, created lazily on first message (see
   // getOrCreateChatThread) — not eagerly for every request.
@@ -628,9 +630,11 @@ model SourcingRequest {
   quoteValidUntil DateTime?
   quotedAt        DateTime?
 
-  // Added to the customer's open Cart the moment status is set to
-  // ACCEPTED — see ensureCartItemForSourcing.
+  // Historical — see QuoteRequest.cartItem's own comment.
   cartItem CartItem?
+  // Set the moment this request is accepted — see ensureOrderForSourcing
+  // in lib/orders.ts.
+  order    Order?
 
   // See QuoteRequest.chatThread — same lazy-create convention.
   chatThread ChatThread?
@@ -1407,6 +1411,24 @@ model Order {
 
   discountCodeId String?
   discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id])
+
+  // Set the moment an admin accepts a quote/sourcing request — see
+  // ensureOrderForQuote/ensureOrderForSourcing in lib/orders.ts, which
+  // replaced the old accept-time CartItem for these two request types
+  // (Cart/CartItem stays in use for auction wins only, see
+  // ensureCartItemForAuction). Exactly one of these two is ever set; never
+  // both, and never either for an order placed through normal checkout.
+  quoteRequestId    String?          @unique
+  quoteRequest      QuoteRequest?    @relation(fields: [quoteRequestId], references: [id])
+  sourcingRequestId String?          @unique
+  sourcingRequest   SourcingRequest? @relation(fields: [sourcingRequestId], references: [id])
+  // True from creation until the customer fills in shipCountry/shipCity/etc
+  // themselves (see actions/orders.ts's submitOrderShippingDetails) — a
+  // quote/sourcing request never collects a shipping address the way
+  // checkout does, so this order exists (and is visible/searchable in
+  // admin/orders) before it has one. Blocks markOrderPaid/markOrderShipped
+  // until cleared.
+  needsShippingDetails Boolean @default(false)
 
   // Set from the placing user's businessRole/businessAccountId at
   // checkout, if any — lets a BusinessAccount owner see every order their

@@ -1,8 +1,12 @@
-import Link from "next/link";
+import Link from "@/components/ui/MarketLink";
 import { ArrowLeft } from "lucide-react";
 
-/** Consistent "back to the list this page was reached from" link, for
- * every admin detail/edit/new page — sits just above the page's own <h1>. */
+/** Consistent "back to the list this page was reached from" link — sits just
+ * above the page's own <h1>. Despite living under components/admin, this is
+ * also the account hub's back link (quotes/sourcing/orders detail pages);
+ * the app's market-aware Link is a no-op for /admin/... hrefs (excluded in
+ * withMarket) but correctly keeps an /account/... href inside /lk when
+ * viewed from there. */
 export function BackLink({ href, label }: { href: string; label: string }) {
   return (
     <Link

@@ -257,6 +257,25 @@
       "pending": "ගෙවීම බලාපොරොත්තුවෙන්",
       "paid": "ගෙවා ඇත",
       "closed": "අවලංගු කළ"
+    },
+    "viewDetails": "විස්තර බලන්න",
+    "detail": {
+      "kicker": "ඇණවුම",
+      "backToOrders": "මගේ ඇණවුම් වෙත ආපසු",
+      "items": "අයිතම",
+      "shippingAddress": "බෙදාහැරීමේ ලිපිනය",
+      "paymentInfo": "ගෙවීම",
+      "method": "ගෙවීමේ ක්‍රමය",
+      "reference": "ගෙවීම් යොමුව",
+      "paidOn": "{date} දින ගෙවා ඇත",
+      "subtotal": "උප එකතුව",
+      "discount": "වට්ටම",
+      "birthday": "උපන්දින වට්ටම",
+      "tax": "බදු",
+      "shipping": "බෙදාහැරීම",
+      "handling": "හසුරුවීමේ ගාස්තුව",
+      "total": "මුළු මුදල",
+      "completePayment": "ගෙවීම සම්පූර්ණ කරන්න"
     }
   },
   "checkoutPage": {

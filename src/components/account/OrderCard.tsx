@@ -5,6 +5,7 @@ import { Gem } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/Badge";
 import { formatPrice, cn } from "@/lib/utils";
+import { getMarket } from "@/lib/market";
 import { withMarket, type Market } from "@/lib/market-shared";
 
 export const orderCardInclude = {
@@ -33,9 +34,15 @@ const STATUS_STYLES: Record<string, string> = {
  * own market rather than the visitor's.
  */
 export async function OrderCard({ order, highlight, compact }: { order: OrderForCard; highlight?: boolean; compact?: boolean }) {
-  const [t, tMarket] = await Promise.all([getTranslations("orders"), getTranslations("market")]);
+  const [t, tMarket, viewerMarket] = await Promise.all([getTranslations("orders"), getTranslations("market"), getMarket()]);
   const currency = order.currency === "LKR" ? "LKR" : "USD";
+  // Product links go to the store the order was placed on (a customer with
+  // orders on both stores sees both here); the "view details" link instead
+  // follows whichever storefront the visitor is currently browsing — the
+  // detail page itself isn't market-specific, so it should stay wherever
+  // they already are rather than jumping them into the order's own store.
   const market = (order.market === "lk" ? "lk" : "intl") as Market;
+  const detailHref = withMarket(`/account/orders/${order.id}`, viewerMarket);
   const shown = compact ? order.items.slice(0, 2) : order.items;
 
   return (
@@ -48,7 +55,9 @@ export async function OrderCard({ order, highlight, compact }: { order: OrderFor
     >
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border-subtle bg-ivory-soft px-5 py-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <p className="font-mono text-sm text-charcoal">{order.orderNumber}</p>
+          <NextLink href={detailHref} className="font-mono text-sm text-charcoal underline-offset-2 hover:text-gold-deep hover:underline">
+            {order.orderNumber}
+          </NextLink>
           <p className="text-xs text-charcoal/60">{t("placed", { date: order.createdAt.toLocaleDateString() })}</p>
           <span className="rounded-full border border-border-subtle bg-surface px-2 py-0.5 text-[11px] text-charcoal/70">{tMarket(`name.${market}`)}</span>
         </div>
@@ -90,14 +99,19 @@ export async function OrderCard({ order, highlight, compact }: { order: OrderFor
           {t("total")} <span className="ml-1 font-serif text-xl text-charcoal">{formatPrice(order.total, currency)}</span>
           {currency === "USD" && <span className="ml-1 text-xs text-charcoal/60">USD</span>}
         </p>
-        {order.status === "PENDING_PAYMENT" && (
-          <NextLink
-            href={withMarket(order.paymentMethod === "WIRE_TRANSFER" ? `/checkout/wire?order=${order.id}` : `/checkout/return?order=${order.id}`, market)}
-            className="rounded-full border border-gold bg-gold/10 px-4 py-1.5 text-xs font-medium text-charcoal transition-colors hover:bg-gold/25"
-          >
-            {order.paymentMethod === "WIRE_TRANSFER" ? t("paymentInstructions") : t("checkStatus")}
+        <div className="flex items-center gap-3">
+          <NextLink href={detailHref} className="text-xs text-gold-deep underline-offset-4 hover:underline">
+            {t("viewDetails")} →
           </NextLink>
-        )}
+          {order.status === "PENDING_PAYMENT" && (
+            <NextLink
+              href={withMarket(order.paymentMethod === "WIRE_TRANSFER" ? `/checkout/wire?order=${order.id}` : `/checkout/return?order=${order.id}`, market)}
+              className="rounded-full border border-gold bg-gold/10 px-4 py-1.5 text-xs font-medium text-charcoal transition-colors hover:bg-gold/25"
+            >
+              {order.paymentMethod === "WIRE_TRANSFER" ? t("paymentInstructions") : t("checkStatus")}
+            </NextLink>
+          )}
+        </div>
       </div>
     </div>
   );

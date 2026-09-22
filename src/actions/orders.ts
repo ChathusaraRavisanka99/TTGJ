@@ -49,7 +49,9 @@ export async function cancelMyWireOrder(orderId: string): Promise<ActionResult> 
   const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true, paymentMethod: true } });
   if (!order || order.userId !== session.user.id || order.paymentMethod !== "WIRE_TRANSFER") return { ok: false, error: "Order not found." };
 
-  const { cancelled } = await cancelPendingOrder(orderId);
+  // Their own action — no "your order was cancelled" notification for
+  // something they just did themselves (see cancelPendingOrder's own comment).
+  const { cancelled } = await cancelPendingOrder(orderId, { notifyCustomer: false });
   if (!cancelled) return { ok: false, error: "This order can no longer be cancelled." };
   revalidateOrders();
   return { ok: true };

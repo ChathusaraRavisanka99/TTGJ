@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPayhereNotification, PAYHERE_STATUS } from "@/lib/payhere";
 import { finalizePaidOrder } from "@/lib/orders";
+import { createNotification } from "@/lib/notifications";
 
 // PayHere's server-to-server payment notification — see
 // https://support.payhere.lk/api-&-mobile-sdk/checkout-api. Not a
@@ -55,7 +56,19 @@ export async function POST(req: Request) {
   }
 
   if (Number(statusCode) !== PAYHERE_STATUS.SUCCESS) {
-    await prisma.order.update({ where: { id: order.id }, data: { status: "PAYMENT_FAILED" } });
+    // Guarded the same way the PAID branch above is — a retried notification
+    // for an order already marked failed shouldn't re-fire the customer
+    // notification a second time.
+    if (order.status !== "PAYMENT_FAILED") {
+      await prisma.order.update({ where: { id: order.id }, data: { status: "PAYMENT_FAILED" } });
+      await createNotification({
+        userId: order.userId,
+        type: "STATUS_CHANGE",
+        message: `Order ${order.orderNumber} couldn't be charged. No further action was taken — your items are still in your cart.`,
+        requestType: "order",
+        requestId: order.id,
+      });
+    }
     return new NextResponse("OK", { status: 200 });
   }
 

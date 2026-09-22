@@ -257,6 +257,25 @@
       "pending": "கட்டணம் நிலுவை",
       "paid": "செலுத்தப்பட்டது",
       "closed": "ரத்துசெய்யப்பட்டவை"
+    },
+    "viewDetails": "விவரங்களைக் காண",
+    "detail": {
+      "kicker": "ஆர்டர்",
+      "backToOrders": "என் ஆர்டர்களுக்குத் திரும்பு",
+      "items": "பொருட்கள்",
+      "shippingAddress": "விநியோக முகவரி",
+      "paymentInfo": "கட்டணம்",
+      "method": "கட்டண முறை",
+      "reference": "கட்டணக் குறிப்பு",
+      "paidOn": "{date} அன்று செலுத்தப்பட்டது",
+      "subtotal": "துணைத் தொகை",
+      "discount": "தள்ளுபடி",
+      "birthday": "பிறந்தநாள் தள்ளுபடி",
+      "tax": "வரி",
+      "shipping": "விநியோகம்",
+      "handling": "கையாளுதல் கட்டணம்",
+      "total": "மொத்தம்",
+      "completePayment": "கட்டணத்தை முடிக்கவும்"
     }
   },
   "checkoutPage": {

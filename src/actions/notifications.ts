@@ -1,8 +1,14 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { getNotificationsForUser, markAllNotificationsRead as markAllRead, markNotificationRead as markOneRead } from "@/lib/notifications";
-import type { ChatRequestType } from "@/lib/chat";
+import {
+  getNotificationsForUser,
+  markAllNotificationsRead as markAllRead,
+  markNotificationRead as markOneRead,
+  dismissNotification as dismissOne,
+  dismissAllNotifications as dismissAll,
+} from "@/lib/notifications";
+import type { NotificationRequestType } from "@/lib/notifications";
 import type { ActionResult } from "./auth";
 
 /** The bell's polling endpoint — same "plain polling, not a websocket"
@@ -22,7 +28,7 @@ export async function pollNotifications() {
       id: n.id,
       type: n.type,
       message: n.message,
-      requestType: n.requestType as ChatRequestType,
+      requestType: n.requestType as NotificationRequestType,
       requestId: n.requestId,
       readAt: n.readAt?.toISOString() ?? null,
       createdAt: n.createdAt.toISOString(),
@@ -43,5 +49,21 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user) return { ok: false, error: "Sign in required." };
   await markAllRead(session.user.id);
+  return { ok: true };
+}
+
+/** Hides one notification from the bell for good — read or not. */
+export async function dismissNotification(id: string): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user) return { ok: false, error: "Sign in required." };
+  await dismissOne(id, session.user.id);
+  return { ok: true };
+}
+
+/** "Clear all" — dismisses every notification currently showing. */
+export async function dismissAllNotifications(): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user) return { ok: false, error: "Sign in required." };
+  await dismissAll(session.user.id);
   return { ok: true };
 }

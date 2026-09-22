@@ -690,16 +690,22 @@ model Notification {
   message String
 
   // Same requestType/requestId discriminator lib/chat.ts's ChatRequestType
-  // already uses — every notification today originates from a
-  // QuoteRequest or SourcingRequest, so this is enough to link back to it
+  // uses, plus "order" (a payment/cancellation update, which has no chat
+  // thread of its own) — enough to link back to whatever this is about
   // without a second nullable-FK-pair the way ChatThread needs.
   requestType String
   requestId   String
 
   readAt    DateTime?
-  createdAt DateTime @default(now())
+  // Set when the customer dismisses it from the bell — distinct from readAt:
+  // "read" just tracks whether it counts toward the badge, "dismissed" is
+  // "stop showing me this at all." A dismissed notification never appears
+  // again, whether or not it was ever read first.
+  dismissedAt DateTime?
+  createdAt   DateTime  @default(now())
 
   @@index([userId, readAt])
+  @@index([userId, dismissedAt])
 }
 
 // ---------- Cart & payment ----------

@@ -257,6 +257,25 @@
       "pending": "Awaiting payment",
       "paid": "Paid",
       "closed": "Cancelled"
+    },
+    "viewDetails": "View details",
+    "detail": {
+      "kicker": "Order",
+      "backToOrders": "Back to My Orders",
+      "items": "Items",
+      "shippingAddress": "Shipping Address",
+      "paymentInfo": "Payment",
+      "method": "Payment method",
+      "reference": "Payment reference",
+      "paidOn": "Paid {date}",
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "birthday": "Birthday discount",
+      "tax": "Tax",
+      "shipping": "Shipping",
+      "handling": "Handling fee",
+      "total": "Total",
+      "completePayment": "Complete payment"
     }
   },
   "checkoutPage": {

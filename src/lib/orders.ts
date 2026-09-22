@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { finalizeDiscountRedemption } from "@/lib/discount-codes";
+import { createNotification } from "@/lib/notifications";
 
 // Order lifecycle steps shared by every way an order gets settled: PayHere's
 // notify webhook (card) and an admin confirming a bank transfer landed
@@ -68,6 +69,18 @@ export async function finalizePaidOrder(orderId: string, payment: { gatewayPayme
     await prisma.retailCart.update({ where: { id: cart.id }, data: { discountCodeId: null } });
   }
 
+  // Always fires — unlike a chat reply or a status an admin sets by hand,
+  // "paid" is never something the customer themselves just did (the webhook
+  // and an admin's "Mark paid" are the only two callers), so there's no
+  // "don't notify me about my own action" case to skip here.
+  await createNotification({
+    userId: order.userId,
+    type: "STATUS_CHANGE",
+    message: `Payment received for order ${order.orderNumber} — we're preparing it for delivery.`,
+    requestType: "order",
+    requestId: order.id,
+  });
+
   return { alreadyPaid: false };
 }
 
@@ -77,8 +90,13 @@ export async function finalizePaidOrder(orderId: string, payment: { gatewayPayme
  * never reserves, so this is a no-op for it). Only touches items still
  * RESERVED — never resurrects one that has since been sold some other way.
  * The customer's cart is left alone so they can retry.
+ *
+ * `notifyCustomer` defaults to true (an admin cancelling on the customer's
+ * behalf) — pass false when the customer is cancelling their own order (see
+ * actions/orders.ts's cancelMyWireOrder), matching the "never notify someone
+ * about their own action" rule every other notification here follows.
  */
-export async function cancelPendingOrder(orderId: string): Promise<{ cancelled: boolean }> {
+export async function cancelPendingOrder(orderId: string, options: { notifyCustomer?: boolean } = {}): Promise<{ cancelled: boolean }> {
   const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: { items: true } });
   if (order.status !== "PENDING_PAYMENT") return { cancelled: false };
 
@@ -92,5 +110,16 @@ export async function cancelPendingOrder(orderId: string): Promise<{ cancelled: 
   if (jewelryIds.length > 0) {
     await prisma.jewelryPiece.updateMany({ where: { id: { in: jewelryIds }, stockStatus: "RESERVED" }, data: { stockStatus: "AVAILABLE" } });
   }
+
+  if (options.notifyCustomer ?? true) {
+    await createNotification({
+      userId: order.userId,
+      type: "STATUS_CHANGE",
+      message: `Order ${order.orderNumber} has been cancelled and its items released.`,
+      requestType: "order",
+      requestId: order.id,
+    });
+  }
+
   return { cancelled: true };
 }

@@ -8,6 +8,7 @@ import { nextOrderNumber, cancelPendingOrder as cancelOrder } from "@/lib/orders
 import { getMarket } from "@/lib/market";
 import { LK_PREFIX } from "@/lib/market-shared";
 import { defaultPaymentMethod, isPaymentMethodLive } from "@/lib/payment-methods";
+import { shippingSchema } from "@/lib/validation/checkout";
 
 // Not ActionResult — that type's success case is a bare { ok: true },
 // which would make it indistinguishable at the call site from this
@@ -31,26 +32,30 @@ export async function initiateRetailCheckout(formData: FormData): Promise<Initia
   const session = await auth();
   if (!session?.user) return { ok: false, error: "Sign in required." };
 
-  const firstName = String(formData.get("firstName") ?? "").trim();
-  const lastName = String(formData.get("lastName") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").trim();
-  const address = String(formData.get("address") ?? "").trim();
-  const city = String(formData.get("city") ?? "").trim();
   const market = await getMarket();
   // The Sri Lanka store delivers within Sri Lanka only (v1), so the country
   // isn't a free-text field there — it also drives the domestic VAT rule and
   // the LKR shipping zone.
-  const country = market === "lk" ? "Sri Lanka" : String(formData.get("country") ?? "").trim();
+  const rawCountry = market === "lk" ? "Sri Lanka" : String(formData.get("country") ?? "");
+
+  const parsedShipping = shippingSchema.safeParse({
+    firstName: String(formData.get("firstName") ?? "").trim(),
+    lastName: String(formData.get("lastName") ?? "").trim(),
+    phone: String(formData.get("phone") ?? "").trim(),
+    address: String(formData.get("address") ?? "").trim(),
+    city: String(formData.get("city") ?? "").trim(),
+    country: rawCountry.trim(),
+  });
+  if (!parsedShipping.success) {
+    return { ok: false, error: parsedShipping.error.issues[0]?.message ?? "Please check your shipping details." };
+  }
+  const { firstName, lastName, phone, address, city, country } = parsedShipping.data;
 
   const requestedMethod = String(formData.get("paymentMethod") ?? "") || defaultPaymentMethod(market);
   if (!isPaymentMethodLive(market, requestedMethod)) {
     return { ok: false, error: "That payment method isn't available yet — please choose another." };
   }
   const paymentMethod = requestedMethod;
-
-  if (!firstName || !lastName || !phone || !address || !city || !country) {
-    return { ok: false, error: "Please fill in every shipping field." };
-  }
 
   const user = await prisma.user.findUnique({ where: { id: session.user.id } });
   if (!user) return { ok: false, error: "Your account could not be found — please sign in again." };

@@ -6,7 +6,17 @@ import { auth } from "@/lib/auth";
 import { looksLikePriceOffer } from "@/lib/moderation";
 import { saveUploadedMedia } from "@/lib/media";
 import { customJewelryRequestSchema, quoteRequestSchema, sourcingRequestSchema, type ConfiguredSpec } from "@/lib/validation/quote";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { ActionResult } from "./auth";
+
+// Shared per-user cap across all three submission kinds below — a scripted
+// flood through any one of them is equally unwanted, and the custom-design
+// form's file uploads make it also a storage-flood vector specifically.
+async function checkSubmissionRateLimit(userId: string): Promise<ActionResult | null> {
+  const limit = await checkRateLimit(`submit-request:${userId}`, { limit: 10, windowSeconds: 60 * 60 });
+  if (limit.allowed) return null;
+  return { ok: false, error: "You've submitted a lot of requests recently — please wait a while before submitting another." };
+}
 
 const MAX_CUSTOM_REQUEST_IMAGES = 5;
 
@@ -21,6 +31,8 @@ export async function submitQuoteRequest(input: {
   if (!session?.user) {
     return { ok: false, error: "Please sign in to request a quote." };
   }
+  const limited = await checkSubmissionRateLimit(session.user.id);
+  if (limited) return limited;
 
   const parsed = quoteRequestSchema.safeParse(input);
   if (!parsed.success) {
@@ -58,6 +70,8 @@ export async function submitCustomJewelryRequest(formData: FormData): Promise<Ac
   if (!session?.user) {
     return { ok: false, error: "Please sign in to submit a custom design request." };
   }
+  const limited = await checkSubmissionRateLimit(session.user.id);
+  if (limited) return limited;
 
   const parsed = customJewelryRequestSchema.safeParse({
     description: formData.get("description"),
@@ -102,6 +116,8 @@ export async function submitSourcingRequest(formData: FormData): Promise<ActionR
   if (!session?.user) {
     return { ok: false, error: "Please sign in to submit a sourcing request." };
   }
+  const limited = await checkSubmissionRateLimit(session.user.id);
+  if (limited) return limited;
 
   const raw = {
     mineralDescription: formData.get("mineralDescription"),

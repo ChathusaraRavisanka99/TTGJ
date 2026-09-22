@@ -23,6 +23,39 @@ import { writeCached, deleteCached } from "@/lib/media-cache";
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 const VIDEO_TYPES = new Set(["video/mp4", "video/webm", "video/quicktime"]);
 
+// This path is routed through a Server Action, capped at 4MB by
+// next.config.ts's bodySizeLimit — but that cap is incidental (it exists
+// for every action's request body, not specifically for this function),
+// so relying on it alone means a change to that config would silently
+// change this function's behavior too. Checked explicitly here instead.
+// A real product photo/video gallery upload bypasses Server Actions
+// entirely (see the direct-upload section below, MAX_IMAGE_BYTES/
+// MAX_VIDEO_BYTES) — this cap is specifically for the smaller
+// customer-facing uploads that still go through saveUploadedMedia
+// (custom-design reference photos, lab logos, certificate scans).
+const MAX_ACTION_UPLOAD_BYTES = 4 * 1024 * 1024;
+
+// A minimal content sniff — not a full parser, just enough to reject
+// arbitrary bytes wearing a video Content-Type label, which
+// saveUploadedMedia previously trusted outright (images are incidentally
+// protected because sharp() below throws on non-image bytes; nothing
+// equivalent existed for video). MP4 and QuickTime .mov are both
+// ISO-base-media-file-format containers: a 4-byte box size followed by a
+// 4-byte ASCII box type at offset 4, and real files start with one of a
+// handful of common top-level box types. WebM is EBML-based and always
+// starts with the same 4-byte magic number.
+export function looksLikeVideo(buffer: Buffer, mimeType: string): boolean {
+  if (mimeType === "video/webm") {
+    return buffer.length >= 4 && buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+  }
+  if (mimeType === "video/mp4" || mimeType === "video/quicktime") {
+    if (buffer.length < 8) return false;
+    const boxType = buffer.subarray(4, 8).toString("ascii");
+    return ["ftyp", "moov", "mdat", "free", "skip", "wide"].includes(boxType);
+  }
+  return false;
+}
+
 // Self-provisioning: create the bucket on first use rather than requiring
 // a manual dashboard step per environment — a fresh Supabase project (or a
 // second one for a new deployment) works out of the box. Memoized per
@@ -101,8 +134,16 @@ export async function saveUploadedMedia(file: File): Promise<SavedMedia> {
   if (!isImage && !isVideo) {
     throw new Error("Unsupported file type. Please upload a JPEG/PNG/WEBP image or an MP4/WEBM video.");
   }
+  if (file.size <= 0) throw new Error("That file is empty.");
+  if (file.size > MAX_ACTION_UPLOAD_BYTES) {
+    throw new Error(`Files here can be at most ${MAX_ACTION_UPLOAD_BYTES / (1024 * 1024)}MB.`);
+  }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+  if (isVideo && !looksLikeVideo(buffer, file.type)) {
+    throw new Error("That file doesn't look like a valid video — please check it isn't corrupted and try again.");
+  }
+
   const id = randomUUID();
 
   if (isImage) {

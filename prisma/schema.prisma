@@ -1464,3 +1464,21 @@ model CommerceSettings {
 
   updatedAt DateTime @updatedAt
 }
+
+// ---------- Rate limiting ----------
+//
+// A minimal fixed-window counter, Postgres-backed rather than an in-memory
+// map or a new Redis dependency: this app runs on Vercel (serverless), so
+// an in-memory counter wouldn't survive across function instances, and
+// there's no Redis anywhere else in the stack. One row per (action,
+// identifier) pair — e.g. "login:user@example.com" or "login:203.0.113.4"
+// — atomically incremented-or-reset by a single upsert query (see
+// lib/rate-limit.ts's checkRateLimit) rather than a read-then-write, so two
+// concurrent requests against the same key can't both slip through a
+// stale count.
+model RateLimitBucket {
+  id          String   @id
+  count       Int      @default(1)
+  windowStart DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

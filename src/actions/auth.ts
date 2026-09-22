@@ -11,10 +11,18 @@ import { safeCallbackPath } from "@/lib/utils";
 import { getMarket, withMarket } from "@/lib/market";
 import { captureReferral, REF_COOKIE } from "@/lib/rewards";
 import { captureBusinessInvite, BIZ_INVITE_COOKIE } from "@/lib/business";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
 export async function registerCustomer(formData: FormData): Promise<ActionResult> {
+  // Bulk fake-account creation is otherwise cheap (bcrypt's ~100ms cost is
+  // the only friction) — a per-IP cap, not per-email, since the point is
+  // slowing down a scripted flood, not any one address in particular.
+  const ip = await getClientIp();
+  const ipLimit = await checkRateLimit(`register:${ip}`, { limit: 5, windowSeconds: 60 * 60 });
+  if (!ipLimit.allowed) return { ok: false, error: "Too many accounts created recently — please try again later." };
+
   const raw = {
     name: formData.get("name"),
     email: formData.get("email"),
@@ -74,6 +82,21 @@ export async function registerCustomer(formData: FormData): Promise<ActionResult
 }
 
 export async function authenticateWithCredentials(formData: FormData): Promise<ActionResult> {
+  // Two independent limits, since credential attacks come in two shapes:
+  // many guesses against one account (email-keyed catches this even from
+  // a botnet spread across many IPs) and one source spraying guesses
+  // across many accounts (IP-keyed catches this even against a fresh
+  // email each time). Checked before touching NextAuth at all.
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const ip = await getClientIp();
+  const [emailLimit, ipLimit] = await Promise.all([
+    email ? checkRateLimit(`login-email:${email}`, { limit: 5, windowSeconds: 15 * 60 }) : Promise.resolve({ allowed: true, remaining: 0 }),
+    checkRateLimit(`login-ip:${ip}`, { limit: 20, windowSeconds: 15 * 60 }),
+  ]);
+  if (!emailLimit.allowed || !ipLimit.allowed) {
+    return { ok: false, error: "Too many sign-in attempts — please wait a few minutes and try again." };
+  }
+
   // callbackUrl always comes from a URL query param (see login/register
   // page.tsx) — never trust it as-is. This redirect() call is Next's own,
   // not NextAuth's (redirect: false below opts out of NextAuth's built-in

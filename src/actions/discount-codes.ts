@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { requireAdmin } from "@/lib/rbac";
 import { normalizeCode, generateUniqueCode, discountCodeError } from "@/lib/discount-codes";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { ActionResult } from "./auth";
 
 // ---------- Admin: generate/manage codes ----------
@@ -98,6 +99,11 @@ export async function setDiscountCodeActive(id: string, active: boolean): Promis
 export async function applyDiscountCode(rawCode: string): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user) return { ok: false, error: "Sign in required." };
+
+  // Same reasoning as applyRetailDiscountCode's identical guard — a short
+  // admin-set custom code is otherwise brute-forceable.
+  const limit = await checkRateLimit(`apply-discount:${session.user.id}`, { limit: 10, windowSeconds: 10 * 60 });
+  if (!limit.allowed) return { ok: false, error: "Too many attempts — please wait a few minutes and try again." };
 
   const code = normalizeCode(rawCode);
   if (!code) return { ok: false, error: "Enter a code." };

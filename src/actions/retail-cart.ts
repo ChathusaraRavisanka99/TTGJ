@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { getOrCreateRetailCart } from "@/lib/retail-cart";
 import { getMarket } from "@/lib/market";
 import { normalizeCode, discountCodeError } from "@/lib/discount-codes";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { ActionResult } from "./auth";
 
 export async function addToRetailCart(input: { gemstoneId?: string; jewelryId?: string }): Promise<ActionResult> {
@@ -74,6 +75,13 @@ export async function removeRetailCartItem(itemId: string): Promise<ActionResult
 export async function applyRetailDiscountCode(rawCode: string): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user) return { ok: false, error: "Sign in required." };
+
+  // A short admin-set custom code (as few as 3 characters — see
+  // generateDiscountCode) has a small enough keyspace to be guessable by
+  // brute force without this; keyed by user since applying a code already
+  // requires being signed in.
+  const limit = await checkRateLimit(`apply-discount:${session.user.id}`, { limit: 10, windowSeconds: 10 * 60 });
+  if (!limit.allowed) return { ok: false, error: "Too many attempts — please wait a few minutes and try again." };
 
   const code = normalizeCode(rawCode);
   if (!code) return { ok: false, error: "Enter a code." };

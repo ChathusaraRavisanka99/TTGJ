@@ -11,6 +11,7 @@ export default async function AdminCustomerDetailPage({ params }: PageProps<"/ad
     include: {
       quoteRequests: { orderBy: { createdAt: "desc" }, include: { gemstone: true, jewelry: true } },
       sourcingRequest: { orderBy: { createdAt: "desc" } },
+      pointsTransactions: { orderBy: { createdAt: "desc" }, take: 10 },
     },
   });
 
@@ -22,6 +23,21 @@ export default async function AdminCustomerDetailPage({ params }: PageProps<"/ad
       <h1 className="font-serif text-3xl text-charcoal">{customer.name}</h1>
       <p className="text-sm text-charcoal/60">{customer.email}{customer.phone ? ` · ${customer.phone}` : ""}</p>
       <p className="mt-1 text-xs text-charcoal/45">Joined {customer.createdAt.toLocaleDateString()}</p>
+
+      <div className="mt-6 rounded-xl border border-border-subtle bg-surface p-5">
+        <p className="text-xs uppercase tracking-wide text-charcoal/65">Rewards points</p>
+        <p className="mt-1 font-serif text-2xl text-charcoal">{customer.pointsBalance.toLocaleString()}</p>
+        {customer.pointsTransactions.length > 0 && (
+          <div className="mt-3 space-y-1.5 border-t border-border-subtle pt-3">
+            {customer.pointsTransactions.map((tx) => (
+              <div key={tx.id} className="flex justify-between text-sm">
+                <span className="text-charcoal/70">{tx.reason.replaceAll("_", " ")}</span>
+                <span className={tx.amount >= 0 ? "text-emerald-700" : "text-charcoal/70"}>{tx.amount >= 0 ? "+" : ""}{tx.amount}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <div>

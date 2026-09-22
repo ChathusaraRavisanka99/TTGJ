@@ -3,11 +3,14 @@
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
 import { registerSchema } from "@/lib/validation/auth";
 import { safeCallbackPath } from "@/lib/utils";
 import { getMarket, withMarket } from "@/lib/market";
+import { captureReferral, REF_COOKIE } from "@/lib/rewards";
+import { captureBusinessInvite, BIZ_INVITE_COOKIE } from "@/lib/business";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -38,7 +41,7 @@ export async function registerCustomer(formData: FormData): Promise<ActionResult
   const passwordHash = await bcrypt.hash(password, 12);
   const isWholesale = customerType === "WHOLESALE";
 
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       name,
       email,
@@ -57,6 +60,15 @@ export async function registerCustomer(formData: FormData): Promise<ActionResult
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
     },
   });
+
+  // Best-effort — a missing/stale/garbled cookie should never block
+  // account creation. See captureReferral/captureBusinessInvite's own
+  // comments for why each is silent on any invalid value.
+  const cookieStore = await cookies();
+  const refCode = cookieStore.get(REF_COOKIE)?.value;
+  if (refCode) await captureReferral(user.id, refCode);
+  const bizInvite = cookieStore.get(BIZ_INVITE_COOKIE)?.value;
+  if (bizInvite) await captureBusinessInvite(user.id, bizInvite);
 
   return { ok: true };
 }

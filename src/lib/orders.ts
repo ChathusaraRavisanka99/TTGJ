@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { finalizeDiscountRedemption } from "@/lib/discount-codes";
 import { createNotification } from "@/lib/notifications";
+import { settlePointsForPaidOrder, settleReferralForPaidOrder } from "@/lib/rewards";
+import { getLoyaltySettings } from "@/lib/loyalty-settings";
+import { getCommerceSettings } from "@/lib/commerce-settings";
 
 // Order lifecycle steps shared by every way an order gets settled: PayHere's
 // notify webhook (card) and an admin confirming a bank transfer landed
@@ -57,6 +60,46 @@ export async function finalizePaidOrder(orderId: string, payment: { gatewayPayme
     await prisma.user.update({ where: { id: order.userId }, data: { lastBirthdayDiscountAt: new Date() } });
   }
 
+  // Rewards: earn points on the subtotal, claim any points redeemed at
+  // checkout, and pay out a referral bonus if this is the referee's first
+  // qualifying order — see lib/rewards.ts for why each step is best-effort
+  // rather than something that can fail this whole function. Settings are
+  // read once here, before either transaction opens, rather than inside
+  // one — every extra query inside an interactive transaction is extra
+  // time the DB connection sits open, and this app's DB round-trip is slow
+  // enough (a remote pooler) that pulling settings in mid-transaction blew
+  // the default 5s interactive-transaction timeout during testing. Two
+  // small transactions rather than one combined one, for the same reason
+  // — each comfortably clears the raised timeout below even on a slow
+  // connection.
+  const rewardsSettings = { loyalty: await getLoyaltySettings(), commerce: await getCommerceSettings() };
+  const REWARDS_TX_OPTS = { timeout: 15000 };
+  await prisma.$transaction(
+    (tx) => settlePointsForPaidOrder(tx, { id: order.id, userId: order.userId, currency: order.currency, subtotal: order.subtotal, pointsRedeemed: order.pointsRedeemed }, rewardsSettings),
+    REWARDS_TX_OPTS,
+  );
+  const settledReferral = await prisma.$transaction(
+    (tx) => settleReferralForPaidOrder(tx, { id: order.id, userId: order.userId, currency: order.currency, subtotal: order.subtotal }, rewardsSettings),
+    REWARDS_TX_OPTS,
+  );
+
+  if (settledReferral) {
+    await createNotification({
+      userId: settledReferral.referrerId,
+      type: "STATUS_CHANGE",
+      message: `Your referral just placed their first order — you've earned ${settledReferral.referrerBonus} rewards points.`,
+      requestType: "referral",
+      requestId: settledReferral.referralId,
+    });
+    await createNotification({
+      userId: settledReferral.refereeId,
+      type: "STATUS_CHANGE",
+      message: `You've earned ${settledReferral.refereeBonus} bonus rewards points for your first order.`,
+      requestType: "referral",
+      requestId: settledReferral.referralId,
+    });
+  }
+
   // Empty the retail cart now that it's been paid for — a fresh one is
   // implicitly available for the next purchase (getOrCreateRetailCart).
   // Also clears discountCodeId: leaving a just-redeemed (possibly now
@@ -66,7 +109,7 @@ export async function finalizePaidOrder(orderId: string, payment: { gatewayPayme
   const cart = await prisma.retailCart.findUnique({ where: { userId_market: { userId: order.userId, market: order.market } } });
   if (cart) {
     await prisma.retailCartItem.deleteMany({ where: { cartId: cart.id } });
-    await prisma.retailCart.update({ where: { id: cart.id }, data: { discountCodeId: null } });
+    await prisma.retailCart.update({ where: { id: cart.id }, data: { discountCodeId: null, pointsToRedeem: 0 } });
   }
 
   // Always fires — unlike a chat reply or a status an admin sets by hand,

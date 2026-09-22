@@ -108,3 +108,37 @@ export async function removeRetailDiscountCode(): Promise<ActionResult> {
   revalidatePath("/account/retail-cart");
   return { ok: true };
 }
+
+// ---------- Rewards points on the retail cart ----------
+//
+// Same "apply only stages an amount, checkout re-clamps it against the
+// live balance and the order's own cap" split as the discount code above
+// — see resolvePointsRedemption in lib/rewards.ts, which is the only
+// place that actually decides what's redeemable. This just soft-validates
+// (so the customer isn't offered a wildly invalid number) and stores it.
+
+export async function applyRetailPoints(rawPoints: string): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user) return { ok: false, error: "Sign in required." };
+
+  const points = Math.floor(Number(rawPoints));
+  if (!Number.isFinite(points) || points <= 0) return { ok: false, error: "Enter a positive number of points." };
+
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id }, select: { pointsBalance: true } });
+  if (points > user.pointsBalance) return { ok: false, error: "You don't have that many points." };
+
+  const cart = await getOrCreateRetailCart(session.user.id, await getMarket());
+  await prisma.retailCart.update({ where: { id: cart.id }, data: { pointsToRedeem: points } });
+  revalidatePath("/account/retail-cart");
+  return { ok: true };
+}
+
+export async function removeRetailPoints(): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user) return { ok: false, error: "Sign in required." };
+
+  const cart = await getOrCreateRetailCart(session.user.id, await getMarket());
+  await prisma.retailCart.update({ where: { id: cart.id }, data: { pointsToRedeem: 0 } });
+  revalidatePath("/account/retail-cart");
+  return { ok: true };
+}

@@ -76,6 +76,7 @@
       "subtotal": "Subtotal",
       "discount": "Discount",
       "birthday": "Birthday discount",
+      "points": "Rewards points",
       "tax": "VAT",
       "shipping": "Delivery",
       "total": "Total"
@@ -271,6 +272,7 @@
       "subtotal": "Subtotal",
       "discount": "Discount",
       "birthday": "Birthday discount",
+      "points": "Rewards points redeemed",
       "tax": "Tax",
       "shipping": "Shipping",
       "handling": "Handling fee",

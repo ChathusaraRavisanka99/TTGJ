@@ -29,6 +29,7 @@ function requestHref(n: NotificationView): string {
   if (n.requestType === "quote") return `/account/quotes/${n.requestId}`;
   if (n.requestType === "sourcing") return `/account/sourcing/${n.requestId}`;
   if (n.requestType === "order") return `/account/orders/${n.requestId}`;
+  if (n.requestType === "referral") return "/account/rewards";
   return "/account/support";
 }
 

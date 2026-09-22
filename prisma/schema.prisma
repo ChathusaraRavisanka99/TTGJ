@@ -64,6 +64,26 @@ model User {
   dateOfBirth            DateTime?
   lastBirthdayDiscountAt DateTime?
 
+  // Rewards: one stable code per user, minted lazily the first time they
+  // open /account/rewards (not at registration — most users never look).
+  // referredByCode is stamped once, at account creation, from whichever
+  // code (if any) was in the ref_code cookie at the time — see
+  // registerCustomer (actions/auth.ts) and the events.createUser hook in
+  // lib/auth.ts for the Google sign-up path. pointsBalance is a
+  // denormalized cache; the source of truth is the sum of this user's
+  // PointsTransaction rows, and every write to pointsBalance happens in
+  // the same transaction as the PointsTransaction that justifies it.
+  referralCode    String? @unique
+  referredByCode  String?
+  pointsBalance   Int     @default(0)
+
+  // Wholesale team membership — set only for a WHOLESALE account that's
+  // part of a BusinessAccount (the owner who was approved, or a member
+  // they invited). Null for every retail/unaffiliated account.
+  businessAccountId String?
+  businessAccount   BusinessAccount? @relation(fields: [businessAccountId], references: [id])
+  businessRole      String?
+
   accounts        Account[]
   sessions        Session[]
   quoteRequests   QuoteRequest[]
@@ -83,6 +103,13 @@ model User {
   // Codes minted for this specific customer (DiscountCode.scope ==
   // CUSTOMER) — see DiscountCode.assignedUser below.
   assignedDiscountCodes   DiscountCode[]
+
+  pointsTransactions   PointsTransaction[]
+  referralsAsReferrer  Referral[]          @relation("ReferralReferrer")
+  referralAsReferee    Referral?           @relation("ReferralReferee")
+  ownedBusinessAccount BusinessAccount?    @relation("BusinessAccountOwner")
+
+  @@index([businessAccountId])
 }
 
 model Account {
@@ -708,6 +735,126 @@ model Notification {
   @@index([userId, dismissedAt])
 }
 
+// ---------- Rewards: loyalty points, referrals, business accounts ----------
+//
+// One unified points ledger backs both loyalty (earn on purchase, redeem
+// at checkout) and referrals (a referral bonus is just points, same
+// balance, same redemption). User.pointsBalance is a denormalized cache;
+// this table is the source of truth. amount is signed — positive rows
+// earn, negative rows spend/reverse — so the balance is always this
+// table's sum for the user, and every write to it happens in the same
+// transaction as the User.pointsBalance update it justifies.
+enum PointsTransactionReason {
+  EARNED_PURCHASE
+  REDEEMED_CHECKOUT
+  REFERRAL_BONUS_REFERRER
+  REFERRAL_BONUS_REFEREE
+  ADMIN_ADJUSTMENT
+}
+
+model PointsTransaction {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount Int
+  reason PointsTransactionReason
+
+  // Set for EARNED_PURCHASE/REDEEMED_CHECKOUT rows — which order this
+  // transaction came from. Not a relation (an Order can outlive a lookup
+  // need here, and this is purely a display reference, same convention as
+  // DiscountCodeRedemption.orderId).
+  orderId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum ReferralStatus {
+  // Signed up with a referral code; hasn't placed a qualifying order yet.
+  PENDING
+  // Reserved for a future "order placed but below the minimum" distinction;
+  // not written by anything yet — REWARDED is the only transition PENDING
+  // currently makes.
+  QUALIFIED
+  // Placed a qualifying order — both sides have been paid their bonus.
+  REWARDED
+}
+
+// One row per referred signup — created the moment someone registers (or
+// completes Google sign-up) with a valid ref_code cookie set, and moved to
+// REWARDED once their first qualifying order is paid (see
+// finalizePaidOrder in lib/orders.ts). refereeId is unique: a person can
+// only ever be someone's referee once, on their very first account.
+model Referral {
+  id String @id @default(cuid())
+
+  referrerId String
+  referrer   User   @relation("ReferralReferrer", fields: [referrerId], references: [id])
+  refereeId  String @unique
+  referee    User   @relation("ReferralReferee", fields: [refereeId], references: [id])
+
+  // The code as it was at signup — referrer.referralCode could theoretically
+  // change identity if the user row were ever deleted/recreated, so this is
+  // snapshotted rather than re-derived.
+  code   String
+  status ReferralStatus @default(PENDING)
+
+  qualifyingOrderId String?
+  qualifiedAt       DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([referrerId])
+}
+
+// A wholesale team — created the moment an admin approves a wholesale
+// application (see actions/wholesale.ts), with the applicant as OWNER.
+// Members share one team, visible at /account/business, without touching
+// any member's own personal /account/orders or other personal views — see
+// User.businessAccountId/businessRole and Order.businessAccountId.
+model BusinessAccount {
+  id      String @id @default(cuid())
+  name    String
+  ownerId String @unique
+  owner   User   @relation("BusinessAccountOwner", fields: [ownerId], references: [id])
+
+  members User[]
+  orders  Order[]
+
+  createdAt DateTime @default(now())
+}
+
+// Singleton settings row (mirrors CommerceSettings) — the admin-editable
+// knobs for the whole rewards program. LKR orders convert through
+// CommerceSettings.usdToLkrRate, the app's one existing cross-currency
+// reference point, rather than a second rate living here.
+model LoyaltySettings {
+  id String @id @default("singleton")
+
+  // Points earned per whole currency unit spent (order.subtotal), e.g.
+  // 1 = one point per dollar/rupee-equivalent spent.
+  pointsPerCurrencyUnit Float @default(1)
+  // Currency value of a single point when redeemed at checkout, e.g. 0.01
+  // = 100 points redeem for $1 (or its LKR equivalent).
+  pointsRedemptionValue Float @default(0.01)
+  // A customer can't redeem a token handful of points — keeps the "Use my
+  // points" control from being offered for a balance too small to matter.
+  minRedeemPoints Int @default(500)
+  // Caps how much of a single order's total points can cover, so an order
+  // can never be driven all the way to zero.
+  maxRedeemPercentOfOrder Float @default(50)
+
+  // A referral only pays out once the referee's first order reaches PAID
+  // and its subtotal meets this minimum (in the referee's own order
+  // currency) — guards against a throwaway $1 order farming bonuses.
+  referralMinOrderValue        Float @default(50)
+  referralReferrerBonusPoints  Int   @default(500)
+  referralRefereeBonusPoints   Int   @default(250)
+
+  updatedAt DateTime @updatedAt
+}
+
 // ---------- Cart & payment ----------
 //
 // A customer has at most one OPEN cart at a time (enforced in
@@ -1104,6 +1251,14 @@ model RetailCart {
   discountCodeId String?
   discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id])
 
+  // How many rewards points the customer has staged to redeem on this
+  // cart's checkout — same "apply only previews, finalize is what
+  // actually redeems" split as discountCodeId (see lib/checkout.ts,
+  // actions/retail-cart.ts). Clamped against the live balance and the
+  // order's own cap every time the breakdown is built, so a stale value
+  // here never overspends.
+  pointsToRedeem Int @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1170,6 +1325,13 @@ model Order {
   taxAmount              Float @default(0)
   shippingAmount         Float @default(0)
   handlingFeeAmount      Float @default(0)
+  // Rewards points spent on this order — snapshotted at creation the same
+  // way discountAmount is, even though the actual balance deduction (a
+  // PointsTransaction, mirroring finalizeDiscountRedemption's hard
+  // recheck) only happens once the order is finalized PAID. See
+  // lib/checkout.ts / lib/orders.ts.
+  pointsRedeemed         Int   @default(0)
+  pointsDiscountAmount   Float @default(0)
   total                  Float
 
   // Shipping address, snapshotted at checkout — never a live reference.
@@ -1198,12 +1360,21 @@ model Order {
   discountCodeId String?
   discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id])
 
+  // Set from the placing user's businessRole/businessAccountId at
+  // checkout, if any — lets a BusinessAccount owner see every order their
+  // team placed (/account/business) without touching each member's own
+  // personal /account/orders, which only ever shows their own orders
+  // regardless of this field.
+  businessAccountId String?
+  businessAccount   BusinessAccount? @relation(fields: [businessAccountId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
   @@index([discountCodeId])
+  @@index([businessAccountId])
 }
 
 model OrderItem {

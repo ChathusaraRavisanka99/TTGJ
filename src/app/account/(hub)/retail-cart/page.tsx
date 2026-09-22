@@ -10,6 +10,7 @@ import { isBirthdayEligible } from "@/lib/birthday-promo";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
 import { RetailCartItemRow } from "@/components/catalog/RetailCartItemRow";
 import { RetailDiscountCodeControl } from "@/components/catalog/RetailDiscountCodeControl";
+import { RetailPointsControl } from "@/components/catalog/RetailPointsControl";
 import { LinkButton } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
 
@@ -23,7 +24,7 @@ export default async function RetailCartPage() {
   const currency = MARKETS[market].currency;
   const [cart, user, promotions] = await Promise.all([
     getRetailCartWithItems(session.user.id, market),
-    prisma.user.findUniqueOrThrow({ where: { id: session.user.id }, select: { dateOfBirth: true, lastBirthdayDiscountAt: true } }),
+    prisma.user.findUniqueOrThrow({ where: { id: session.user.id }, select: { dateOfBirth: true, lastBirthdayDiscountAt: true, pointsBalance: true } }),
     getActivePromotionMaps(market),
   ]);
 
@@ -74,6 +75,12 @@ export default async function RetailCartPage() {
           <div className="mt-6 rounded-xl border border-border-subtle bg-surface p-5">
             <RetailDiscountCodeControl appliedCode={cart.discountCode?.code ?? null} />
           </div>
+
+          {(user.pointsBalance > 0 || cart.pointsToRedeem > 0) && (
+            <div className="mt-6 rounded-xl border border-border-subtle bg-surface p-5">
+              <RetailPointsControl balance={user.pointsBalance} staged={cart.pointsToRedeem} />
+            </div>
+          )}
 
           <div className="mt-6 flex items-center justify-between border-t border-border-subtle pt-4">
             <p className="text-sm text-charcoal/60">

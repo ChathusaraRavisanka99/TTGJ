@@ -4,8 +4,11 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import authConfig from "@/lib/auth.config";
+import { captureReferral, REF_COOKIE } from "@/lib/rewards";
+import { captureBusinessInvite, BIZ_INVITE_COOKIE } from "@/lib/business";
 
 const providers: Provider[] = [];
 
@@ -75,6 +78,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = dbUser?.role ?? "CUSTOMER";
       }
       return token;
+    },
+  },
+  events: {
+    // The PrismaAdapter creates a Google sign-up's User row directly,
+    // bypassing registerCustomer entirely — this is the equivalent
+    // referral-capture hook for that path (see actions/auth.ts for the
+    // email/password side). Runs inside the OAuth callback route's own
+    // request, so the ref_code cookie /r/[code] set during browsing is
+    // still readable here.
+    async createUser({ user }) {
+      if (!user.id) return;
+      const cookieStore = await cookies();
+      const refCode = cookieStore.get(REF_COOKIE)?.value;
+      if (refCode) await captureReferral(user.id, refCode);
+      const bizInvite = cookieStore.get(BIZ_INVITE_COOKIE)?.value;
+      if (bizInvite) await captureBusinessInvite(user.id, bizInvite);
     },
   },
 });

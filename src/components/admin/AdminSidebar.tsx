@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", exact: true },
+  { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/gems", label: "Gemstones" },
   { href: "/admin/jewelry", label: "Jewelry" },
   { href: "/admin/media", label: "Media" },
@@ -42,6 +43,12 @@ const PAGE_CONTENT = [
   { href: "/admin/alt-collections", label: "Alternative Collections" },
 ];
 
+const REWARDS = [
+  { href: "/admin/loyalty-settings", label: "Loyalty Settings" },
+  { href: "/admin/referrals", label: "Referrals" },
+  { href: "/admin/business-accounts", label: "Business Accounts" },
+];
+
 // Shared by both the always-visible desktop sidebar and the mobile
 // full-screen drawer, so the two link lists can't drift apart.
 function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
@@ -72,6 +79,9 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
 
       <p className="mt-8 px-3 text-xs uppercase tracking-wide text-ivory/40">CMS</p>
       <div className="mt-2 space-y-1">{section(PAGE_CONTENT)}</div>
+
+      <p className="mt-8 px-3 text-xs uppercase tracking-wide text-ivory/40">Rewards</p>
+      <div className="mt-2 space-y-1">{section(REWARDS)}</div>
 
       <Link href="/" onClick={onNavigate} className="mt-8 block px-3 text-xs text-ivory/40 hover:text-ivory/70">
         ← Back to storefront

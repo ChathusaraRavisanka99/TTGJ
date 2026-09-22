@@ -5,8 +5,9 @@ import type { NotificationType } from "@prisma/client";
 /** Everything ChatRequestType covers (a quote, a sourcing request, or the
  * general support thread), plus "order" — a payment/cancellation update,
  * which has no chat thread of its own but still links back to something the
- * customer owns (see lib/orders.ts and app/api/payhere/notify/route.ts). */
-export type NotificationRequestType = ChatRequestType | "order";
+ * customer owns (see lib/orders.ts and app/api/payhere/notify/route.ts) —
+ * and "referral", a rewards bonus being paid out (see lib/rewards.ts). */
+export type NotificationRequestType = ChatRequestType | "order" | "referral";
 
 /** Fires a customer-facing notification — see the Notification model's own
  * doc comment for why this is a discrete row rather than reusing

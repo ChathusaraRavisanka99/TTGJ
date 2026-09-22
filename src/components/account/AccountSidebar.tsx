@@ -3,7 +3,7 @@
 import type { ComponentType } from "react";
 import Link from "@/components/ui/MarketLink";
 import { useAppPathname } from "@/components/providers/MarketProvider";
-import { CreditCard, FileText, LayoutDashboard, LogOut, MessageCircle, Package, PenTool, Search, ShoppingBag } from "lucide-react";
+import { Building2, CreditCard, FileText, Gift, LayoutDashboard, LogOut, MessageCircle, Package, PenTool, Search, ShoppingBag } from "lucide-react";
 import { signOutAction } from "@/actions/auth";
 import { cn } from "@/lib/utils";
 import type { HubCounts } from "@/lib/account-hub";
@@ -41,18 +41,31 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
       { href: "/account/quotes", label: "Quote Requests", icon: FileText, badge: (c) => c.catalogQuotes },
     ],
   },
+  {
+    title: "Rewards",
+    items: [{ href: "/account/rewards", label: "Points & Referrals", icon: Gift }],
+  },
 ];
+
+const BUSINESS_ITEM: NavItem = { href: "/account/business", label: "Business", icon: Building2 };
 
 // /account/support is the "Chat with Support" thread — it lives inside Messages
 // now, so the Messages item stays lit while you're on it.
 const ALIASES: Record<string, string> = { "/account/support": "/account/messages" };
 
-export function AccountSidebar({ user, counts }: { user: { name?: string | null; email?: string | null }; counts: HubCounts }) {
+export function AccountSidebar({ user, counts, showBusiness }: { user: { name?: string | null; email?: string | null }; counts: HubCounts; showBusiness?: boolean }) {
   const pathname = useAppPathname();
   const current = ALIASES[pathname] ?? pathname;
   const initial = (user.name?.trim()?.[0] ?? user.email?.[0] ?? "?").toUpperCase();
 
   const isActive = (item: NavItem) => (item.exact ? current === item.href : current === item.href || current.startsWith(`${item.href}/`));
+
+  // A wholesale team member's extra "Business" item, appended to the same
+  // Rewards group rather than a whole new one-item group — only shown for
+  // an account with businessRole set (see AccountHubLayout).
+  const groups = showBusiness
+    ? GROUPS.map((g) => (g.title === "Rewards" ? { ...g, items: [...g.items, BUSINESS_ITEM] } : g))
+    : GROUPS;
 
   return (
     <aside className="lg:sticky lg:top-28 lg:self-start">
@@ -66,7 +79,7 @@ export function AccountSidebar({ user, counts }: { user: { name?: string | null;
           </div>
         </div>
         <nav className="p-3" aria-label="Account">
-          {GROUPS.map((group) => (
+          {groups.map((group) => (
             <div key={group.title} className="mb-3 last:mb-0">
               <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-charcoal/50">{group.title}</p>
               {group.items.map((item) => {
@@ -111,7 +124,7 @@ export function AccountSidebar({ user, counts }: { user: { name?: string | null;
       {/* Phone / tablet: the same links as a scrolling tab strip above the page. */}
       <nav aria-label="Account" className="-mx-4 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="flex w-max gap-2">
-          {GROUPS.flatMap((g) => g.items).map((item) => {
+          {groups.flatMap((g) => g.items).map((item) => {
             const active = isActive(item);
             const badge = item.badge?.(counts) ?? 0;
             const Icon = item.icon;

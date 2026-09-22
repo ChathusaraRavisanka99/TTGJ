@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { getMarket } from "@/lib/market";
 import { getHubCounts } from "@/lib/account-hub";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
@@ -13,11 +14,18 @@ export default async function AccountHubLayout({ children }: { children: React.R
   if (!session?.user) return <>{children}</>;
 
   const market = await getMarket();
-  const counts = await getHubCounts(session.user.id, market);
+  const [counts, user] = await Promise.all([
+    getHubCounts(session.user.id, market),
+    prisma.user.findUniqueOrThrow({ where: { id: session.user.id }, select: { businessRole: true } }),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8 lg:py-12">
-      <AccountSidebar user={{ name: session.user.name, email: session.user.email }} counts={counts} />
+      <AccountSidebar
+        user={{ name: session.user.name, email: session.user.email }}
+        counts={counts}
+        showBusiness={user.businessRole != null}
+      />
       <div className="mt-6 min-w-0 lg:mt-0">{children}</div>
     </div>
   );

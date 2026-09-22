@@ -53,6 +53,11 @@ export async function initiateRetailCheckout(formData: FormData): Promise<Initia
   }
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
+  // Attributes the order to the placing member's team, if any — surfaces
+  // it at /account/business for the owner alongside every other member's
+  // orders, without touching this member's own personal /account/orders
+  // (which is never filtered by businessAccountId).
+  const businessAccountId = user.businessAccountId ?? undefined;
 
   let breakdown;
   try {
@@ -75,6 +80,9 @@ export async function initiateRetailCheckout(formData: FormData): Promise<Initia
       taxAmount: breakdown.tax,
       shippingAmount: breakdown.shipping,
       handlingFeeAmount: breakdown.handlingFee,
+      pointsRedeemed: breakdown.pointsRedeemed,
+      pointsDiscountAmount: breakdown.pointsDiscount,
+      businessAccountId,
       total: breakdown.total,
       shipName: `${firstName} ${lastName}`.trim(),
       shipPhone: phone,

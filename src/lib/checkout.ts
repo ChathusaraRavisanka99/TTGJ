@@ -3,6 +3,7 @@ import { getCommerceSettings } from "@/lib/commerce-settings";
 import { resolveShippingRate } from "@/lib/shipping";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
 import { isBirthdayEligible } from "@/lib/birthday-promo";
+import { resolvePointsRedemption } from "@/lib/rewards";
 import type { Market } from "@/lib/market-shared";
 import type { PaymentMethod } from "@prisma/client";
 
@@ -44,6 +45,8 @@ export interface CheckoutBreakdown {
   birthdayDiscount: number;
   birthdayEligible: boolean;
   codeDiscount: number;
+  pointsRedeemed: number;
+  pointsDiscount: number;
   tax: number;
   shipping: number;
   shippingZoneLabel: string;
@@ -144,7 +147,18 @@ export async function buildCheckoutBreakdown(input: {
   // A code only counts on /lk if the admin gave it a rupee value.
   const discountCode = cart.discountCode && (!lk || cart.discountCode.amountOffLkr != null) ? cart.discountCode : null;
   const codeDiscount = lk ? (discountCode?.amountOffLkr ?? 0) : (discountCode?.amountOff ?? 0);
-  const afterDiscounts = Math.max(0, subtotal - birthdayDiscount - codeDiscount);
+  const afterCodeDiscounts = Math.max(0, subtotal - birthdayDiscount - codeDiscount);
+
+  // Rewards points staged on the cart, re-clamped against the live
+  // balance and the order's own cap — never trusted as still affordable
+  // just because it was staged earlier (see resolvePointsRedemption).
+  const { points: pointsRedeemed, discount: pointsDiscount } = await resolvePointsRedemption({
+    requestedPoints: cart.pointsToRedeem,
+    availableBalance: user.pointsBalance,
+    orderableAmount: afterCodeDiscounts,
+    currency: lk ? "LKR" : "USD",
+  });
+  const afterDiscounts = Math.max(0, afterCodeDiscounts - pointsDiscount);
 
   // The only remaining currency conversion in this app: EMS's own rate
   // card is denominated in LKR (see lib/shipping.ts), so on the
@@ -173,6 +187,8 @@ export async function buildCheckoutBreakdown(input: {
     birthdayDiscount,
     birthdayEligible,
     codeDiscount,
+    pointsRedeemed,
+    pointsDiscount,
     tax,
     shipping,
     shippingZoneLabel,

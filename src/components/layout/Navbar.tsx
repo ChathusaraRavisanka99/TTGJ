@@ -291,7 +291,7 @@ export function Navbar({
               language) and account actions (orders, messages, sign out)
               don't require opening it first. */}
           {user ? (
-            <AccountMenu user={user} transparent={transparent} />
+            <AccountMenu user={user} transparent={transparent} compact />
           ) : (
             <Link href="/account/login" aria-label={t("signIn")} className={cn("transition-colors duration-300", transparent ? "text-ivory" : "text-charcoal")}>
               <User size={21} />

@@ -20,7 +20,18 @@ export const ACCOUNT_MENU_LINKS = [
   { href: "/account/quotes", label: "Quote Requests" },
 ];
 
-export function AccountMenu({ user, transparent }: { user: { name?: string | null }; transparent: boolean }) {
+export function AccountMenu({
+  user,
+  transparent,
+  compact = false,
+}: {
+  user: { name?: string | null };
+  transparent: boolean;
+  /** Icon only, no name/chevron — for the mobile icon row, which is
+   * already packing cart/bell/store/language/hamburger into one line
+   * with real width constraints the desktop row doesn't have. */
+  compact?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const pathname = useAppPathname();
@@ -39,14 +50,19 @@ export function AccountMenu({ user, transparent }: { user: { name?: string | nul
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-label={compact ? (user.name?.split(" ")[0] ?? "Account") : undefined}
         className={cn(
           "flex items-center gap-2 text-sm transition-colors duration-300",
           transparent ? "text-ivory/85 hover:text-ivory" : "text-charcoal/80 hover:text-charcoal",
         )}
       >
-        <User size={16} />
-        {user.name?.split(" ")[0] ?? "Account"}
-        <ChevronDown size={14} className={cn("transition-transform", open && "rotate-180")} />
+        <User size={compact ? 21 : 16} />
+        {!compact && (
+          <>
+            {user.name?.split(" ")[0] ?? "Account"}
+            <ChevronDown size={14} className={cn("transition-transform", open && "rotate-180")} />
+          </>
+        )}
       </button>
 
       {open && (

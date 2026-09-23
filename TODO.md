@@ -17,13 +17,15 @@ against the shared prod DB before shipping dependent code, then
   `RetailCartItem`, `OrderItem`, `lib/checkout.ts`, `actions/checkout.ts`,
   the admin jewelry form, and `lib/orders.ts`'s finalize/cancel logic.
   Largest single remaining item.
-- **Sold-item catalog visibility** — a sold item was reported still
-  showing on the public catalog. `finalizePaidOrder` does flip
-  `stockStatus` to `SOLD`, so this needs checking whether the public
-  `/gems`, `/jewelry` list/detail queries actually filter or badge on
-  `stockStatus`, or just show it as buyable regardless.
-- **Admin bulk actions** — select multiple catalog items and toggle
-  sold/visible (`isPublished`) in bulk from the admin gems/jewelry lists.
+- ~~**Sold-item catalog visibility**~~ — investigated: a sold item was
+  never actually buyable (the storefront only renders Add to Cart when
+  `stockStatus === "AVAILABLE"`, and it already shows a "Sold" badge), so
+  there was no double-sell risk — just no efficient way to unpublish a
+  batch of them. Solved by the bulk-actions item below instead of a
+  behavior change to what's shown.
+- ~~**Admin bulk actions**~~ — done. Bulk select + Publish/Hide from
+  storefront on both admin gems and jewelry lists
+  (`CatalogBulkSelection.tsx`, `bulkSetCatalogPublished`).
 - **Stale retail cart items** — if an item in a customer's cart gets
   bought by someone else (or removed) while it's still sitting in their
   cart, the row should show as disabled with a "remove" prompt rather than

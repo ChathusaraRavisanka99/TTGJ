@@ -482,3 +482,149 @@ export async function submitOrderShippingDetails(
   });
   return { ok: true };
 }
+
+// ---------- Manual/offline sale registration ----------
+//
+// An admin recording a sale that happened outside the system (in person,
+// or otherwise off-platform) — cash or a bank transfer, with a reference
+// number and receipt for the latter. Created already PAID: unlike
+// checkout or ensureOrderForQuote/ensureOrderForSourcing, there's no
+// later "customer pays" step to wait for, since the money already
+// changed hands before the admin is entering this.
+
+export interface ManualSaleItemInput {
+  gemstoneId?: string;
+  jewelryId?: string;
+  jewelryVariantId?: string;
+  // The price actually agreed for this sale — not necessarily the
+  // catalog's own listed price (in-person sales get negotiated).
+  unitPrice: number;
+}
+
+export type CreateManualSaleResult = { ok: true; orderId: string } | { ok: false; error: string };
+
+export async function createManualSaleOrder(input: {
+  customerUserId: string;
+  market: Market;
+  items: ManualSaleItemInput[];
+  paymentMethod: "CASH" | "WIRE_TRANSFER";
+  paymentReference?: string;
+  receiptUrl?: string;
+}): Promise<CreateManualSaleResult> {
+  if (input.items.length === 0) return { ok: false, error: "Add at least one item." };
+  if (input.paymentMethod === "WIRE_TRANSFER" && (!input.paymentReference || !input.receiptUrl)) {
+    return { ok: false, error: "A bank-transfer sale needs both a payment reference and a receipt file." };
+  }
+  if (input.items.some((i) => !(i.unitPrice >= 0))) {
+    return { ok: false, error: "Check the price on every item." };
+  }
+
+  const customer = await prisma.user.findUnique({ where: { id: input.customerUserId } });
+  if (!customer) return { ok: false, error: "Customer not found." };
+
+  // Resolve each line against the real catalog record server-side — the
+  // label (and whether it exists, belongs to this market, and is still
+  // AVAILABLE) is never trusted from the client, same as
+  // buildCheckoutBreakdown never trusts a cart's own price/name snapshot.
+  const resolved: { item: ManualSaleItemInput; label: string }[] = [];
+  for (const item of input.items) {
+    if (item.gemstoneId) {
+      const gem = await prisma.gemstone.findUnique({ where: { id: item.gemstoneId } });
+      if (!gem || gem.market !== input.market) return { ok: false, error: "One of the selected gemstones could not be found." };
+      if (gem.stockStatus !== "AVAILABLE") return { ok: false, error: `${gem.name} is no longer available.` };
+      resolved.push({ item, label: gem.name });
+    } else if (item.jewelryId) {
+      const piece = await prisma.jewelryPiece.findUnique({ where: { id: item.jewelryId }, include: { variants: true } });
+      if (!piece || piece.market !== input.market) return { ok: false, error: "One of the selected jewelry pieces could not be found." };
+      if (item.jewelryVariantId) {
+        const variant = piece.variants.find((v) => v.id === item.jewelryVariantId);
+        if (!variant) return { ok: false, error: "That variant could not be found." };
+        if (variant.stockStatus !== "AVAILABLE") return { ok: false, error: `${piece.name} — ${variant.label} is no longer available.` };
+        resolved.push({ item, label: `${piece.name} — ${variant.label}` });
+      } else {
+        if (piece.stockStatus !== "AVAILABLE") return { ok: false, error: `${piece.name} is no longer available.` };
+        resolved.push({ item, label: piece.name });
+      }
+    } else {
+      return { ok: false, error: "Every line needs a gemstone or jewelry item." };
+    }
+  }
+
+  const currency = input.market === "lk" ? "LKR" : "USD";
+  const subtotal = resolved.reduce((sum, { item }) => sum + item.unitPrice, 0);
+  const orderNumber = await nextOrderNumber();
+
+  const gemstoneIds = resolved.map(({ item }) => item.gemstoneId).filter((id): id is string => id != null);
+  const plainJewelryIds = resolved.filter(({ item }) => item.jewelryId && !item.jewelryVariantId).map(({ item }) => item.jewelryId!);
+  const variantResolved = resolved.filter(({ item }) => item.jewelryVariantId != null);
+  const variantIds = variantResolved.map(({ item }) => item.jewelryVariantId!);
+
+  let orderId: string;
+  try {
+    const created = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.create({
+        data: {
+          orderNumber,
+          userId: input.customerUserId,
+          market: input.market,
+          currency,
+          subtotal,
+          total: subtotal,
+          shipName: customer.name || customer.email,
+          shipPhone: customer.phone ?? "",
+          shipCountry: input.market === "lk" ? "Sri Lanka" : "",
+          shipCity: "",
+          shipAddressLine1: "Recorded as an in-person/offline sale.",
+          paymentMethod: input.paymentMethod,
+          paymentGateway: "manual",
+          manualSale: true,
+          manualPaymentReference: input.paymentReference || null,
+          manualReceiptUrl: input.receiptUrl || null,
+          status: "PENDING_PAYMENT",
+          items: {
+            create: resolved.map(({ item, label }) => ({
+              gemstoneId: item.gemstoneId,
+              jewelryId: item.jewelryId,
+              jewelryVariantId: item.jewelryVariantId,
+              label,
+              unitPrice: item.unitPrice,
+              quantity: 1,
+              lineTotal: item.unitPrice,
+            })),
+          },
+        },
+      });
+
+      // Same conditional AVAILABLE -> RESERVED hold every other order-
+      // creation path uses (checkout, ensureOrderForQuote) — races with
+      // another sale of the same one-of-a-kind item roll the whole thing
+      // back rather than overselling.
+      if (gemstoneIds.length > 0) {
+        const res = await tx.gemstone.updateMany({ where: { id: { in: gemstoneIds }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+        if (res.count !== gemstoneIds.length) throw new Error("ITEM_UNAVAILABLE");
+      }
+      if (plainJewelryIds.length > 0) {
+        const res = await tx.jewelryPiece.updateMany({ where: { id: { in: plainJewelryIds }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+        if (res.count !== plainJewelryIds.length) throw new Error("ITEM_UNAVAILABLE");
+      }
+      if (variantIds.length > 0) {
+        const res = await tx.jewelryVariant.updateMany({ where: { id: { in: variantIds }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+        if (res.count !== variantIds.length) throw new Error("ITEM_UNAVAILABLE");
+      }
+      return order;
+    });
+    orderId = created.id;
+  } catch (err) {
+    if (err instanceof Error && err.message === "ITEM_UNAVAILABLE") {
+      return { ok: false, error: "One of the selected items was just taken elsewhere — refresh and try again." };
+    }
+    throw err;
+  }
+
+  // Runs the exact same paid-order pipeline every other payment path
+  // does (stock -> SOLD, rewards points earned, customer notification +
+  // confirmation email) — see finalizePaidOrder's own doc comment.
+  await finalizePaidOrder(orderId);
+
+  return { ok: true, orderId };
+}

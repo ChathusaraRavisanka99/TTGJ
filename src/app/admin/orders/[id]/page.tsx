@@ -25,6 +25,7 @@ const METHOD_LABELS: Record<string, string> = {
   PAYHERE_CARD: "Card (PayHere)",
   WIRE_TRANSFER: "Bank transfer",
   COD: "Cash on delivery",
+  CASH: "Cash",
 };
 
 export default async function AdminOrderDetailPage({ params }: PageProps<"/admin/orders/[id]">) {
@@ -57,7 +58,12 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
           <h1 className="font-mono text-2xl text-charcoal">{order.orderNumber}</h1>
           <p className="mt-1 text-sm text-charcoal/60">{order.user.name ?? order.user.email} · {order.user.email}</p>
         </div>
-        <Badge className={STATUS_STYLES[order.status] ?? ""}>{order.status.replaceAll("_", " ")}</Badge>
+        <div className="flex items-center gap-2">
+          {order.manualSale && (
+            <Badge className="border-sapphire-soft/30 bg-sapphire-soft/15 text-sapphire">Manual Sale</Badge>
+          )}
+          <Badge className={STATUS_STYLES[order.status] ?? ""}>{order.status.replaceAll("_", " ")}</Badge>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -128,6 +134,22 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
                 <div className="flex justify-between gap-3">
                   <dt className="text-charcoal/60">Carrier</dt>
                   <dd className="text-charcoal">{order.carrier} · {order.trackingNumber}</dd>
+                </div>
+              )}
+              {order.manualPaymentReference && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-charcoal/60">Payment reference</dt>
+                  <dd className="text-charcoal">{order.manualPaymentReference}</dd>
+                </div>
+              )}
+              {order.manualReceiptUrl && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-charcoal/60">Receipt</dt>
+                  <dd>
+                    <a href={order.manualReceiptUrl} target="_blank" rel="noopener noreferrer" className="text-gold-deep underline hover:text-charcoal">
+                      View file
+                    </a>
+                  </dd>
                 </div>
               )}
             </dl>

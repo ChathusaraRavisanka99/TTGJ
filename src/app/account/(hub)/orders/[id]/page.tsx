@@ -30,6 +30,7 @@ const METHOD_LABELS: Record<string, string> = {
   PAYHERE_CARD: "Card (PayHere)",
   WIRE_TRANSFER: "Bank transfer",
   COD: "Cash on delivery",
+  CASH: "Cash",
 };
 
 // The full record of one order: every item, the complete price breakdown

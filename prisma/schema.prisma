@@ -1425,6 +1425,10 @@ enum PaymentMethod {
   PAYHERE_CARD
   WIRE_TRANSFER
   COD
+  // Recorded by an admin for a sale that happened outside the system (an
+  // in-person/offline sale) — see Order.manualSale. Not offered on the
+  // customer-facing checkout form (payment-methods.ts's own list).
+  CASH
 }
 
 model Order {
@@ -1536,6 +1540,16 @@ model Order {
   // regardless of this field.
   businessAccountId String?
   businessAccount   BusinessAccount? @relation(fields: [businessAccountId], references: [id])
+
+  // An admin-recorded in-person/offline sale (see lib/orders.ts's
+  // createManualSaleOrder) rather than one placed through normal
+  // checkout — created already PAID, no cart/discount code/shipping-form
+  // involved. manualPaymentReference/manualReceiptUrl only apply to a
+  // manual sale paid by bank transfer (paymentMethod WIRE_TRANSFER);
+  // for CASH they're unused.
+  manualSale              Boolean @default(false)
+  manualPaymentReference  String?
+  manualReceiptUrl        String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -8,13 +8,14 @@ import { ShipOrderForm } from "@/components/admin/ShipOrderForm";
 import { MarkDeliveredButton } from "@/components/admin/MarkDeliveredButton";
 import { CartContentForm } from "@/components/admin/CartContentForm";
 import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
+import { Button } from "@/components/ui/Button";
 import { getPageContent, DEFAULT_LK_PAYMENTS_CONTENT, LK_PAYMENTS_KEY } from "@/lib/page-content";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 const STATUSES = ["PENDING_PAYMENT", "PAID", "SHIPPED", "DELIVERED", "PAYMENT_FAILED", "CANCELLED"];
 const PAGE_SIZE = 20;
-const METHOD_LABELS: Record<string, string> = { PAYHERE_CARD: "Card (PayHere)", WIRE_TRANSFER: "Bank transfer", COD: "Cash on delivery" };
+const METHOD_LABELS: Record<string, string> = { PAYHERE_CARD: "Card (PayHere)", WIRE_TRANSFER: "Bank transfer", COD: "Cash on delivery", CASH: "Cash" };
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING_PAYMENT: "bg-amber-50 text-amber-800 border-amber-200",
@@ -53,11 +54,18 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
   return (
     <div>
       <BackLink href="/admin" label="Back to Dashboard" />
-      <h1 className="font-serif text-3xl text-charcoal">Retail Orders</h1>
-      <p className="mt-1 text-sm text-charcoal/60">
-        Direct-purchase orders: card payments settle automatically through PayHere; Sri Lanka store bank transfers stay
-        pending (their items held) until you mark them paid once the money arrives.
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-3xl text-charcoal">Retail Orders</h1>
+          <p className="mt-1 text-sm text-charcoal/60">
+            Direct-purchase orders: card payments settle automatically through PayHere; Sri Lanka store bank transfers
+            stay pending (their items held) until you mark them paid once the money arrives.
+          </p>
+        </div>
+        <Link href="/admin/orders/manual/new" className="shrink-0">
+          <Button type="button" variant="outline" size="sm">Record Manual Sale</Button>
+        </Link>
+      </div>
 
       <div className="mt-6">
         <CartContentForm variant="lk" initialInstructions={lkPayments.wireTransferInstructions} />
@@ -120,6 +128,11 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                   {(o.quoteRequestId || o.sourcingRequestId) && (
                     <span className="ml-2 rounded-full border border-border-subtle px-2 py-0.5 font-sans text-[10px] uppercase tracking-wide text-charcoal/55">
                       {o.quoteRequestId ? "Quote" : "Sourcing"}
+                    </span>
+                  )}
+                  {o.manualSale && (
+                    <span className="ml-2 rounded-full border border-sapphire-soft/30 bg-sapphire-soft/15 px-2 py-0.5 font-sans text-[10px] uppercase tracking-wide text-sapphire">
+                      Manual Sale
                     </span>
                   )}
                   {o.shippingToBeArranged && (

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails, recomputeJewelryAvailability } from "@/lib/orders";
+import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails, recomputeJewelryAvailability, createManualSaleOrder } from "@/lib/orders";
 import { sendEmail } from "@/lib/email";
 import { registerTracking } from "@/lib/track17";
 
@@ -557,5 +557,116 @@ describe("submitOrderShippingDetails", () => {
 
     expect(result).toEqual({ ok: true });
     expect(prismaMock.order.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("createManualSaleOrder", () => {
+  const customerFixture = { id: "user-1", name: "Jane Doe", email: "jane@example.com", phone: "0771234567" };
+
+  beforeEach(() => {
+    mockCommonDependencies();
+    prismaMock.user.findUnique.mockResolvedValue(customerFixture as never);
+    prismaMock.order.count.mockResolvedValue(0); // nextOrderNumber
+    prismaMock.order.create.mockResolvedValue({ id: "order-1", orderNumber: "ORD-2026-0001" } as never);
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, id: "order-1", status: "PENDING_PAYMENT" } as never);
+  });
+
+  it("refuses an empty item list", async () => {
+    const result = await createManualSaleOrder({ customerUserId: "user-1", market: "intl", items: [], paymentMethod: "CASH" });
+    expect(result).toEqual({ ok: false, error: "Add at least one item." });
+    expect(prismaMock.order.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses a bank-transfer sale with no payment reference or receipt", async () => {
+    const result = await createManualSaleOrder({
+      customerUserId: "user-1", market: "intl",
+      items: [{ gemstoneId: "gem-1", unitPrice: 500 }],
+      paymentMethod: "WIRE_TRANSFER",
+    });
+    expect(result.ok).toBe(false);
+    expect(prismaMock.order.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the customer doesn't exist", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    const result = await createManualSaleOrder({ customerUserId: "user-missing", market: "intl", items: [{ gemstoneId: "gem-1", unitPrice: 500 }], paymentMethod: "CASH" });
+    expect(result).toEqual({ ok: false, error: "Customer not found." });
+  });
+
+  it("refuses a gemstone that's no longer AVAILABLE", async () => {
+    prismaMock.gemstone.findUnique.mockResolvedValue({ id: "gem-1", name: "Blue Sapphire", market: "intl", stockStatus: "SOLD" } as never);
+    const result = await createManualSaleOrder({ customerUserId: "user-1", market: "intl", items: [{ gemstoneId: "gem-1", unitPrice: 500 }], paymentMethod: "CASH" });
+    expect(result).toEqual({ ok: false, error: "Blue Sapphire is no longer available." });
+    expect(prismaMock.order.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses a jewelry variant that's no longer AVAILABLE", async () => {
+    prismaMock.jewelryPiece.findUnique.mockResolvedValue({
+      id: "jew-1", name: "Signet Ring", market: "intl",
+      variants: [{ id: "variant-1", label: "Size 7", stockStatus: "SOLD" }],
+    } as never);
+    const result = await createManualSaleOrder({
+      customerUserId: "user-1", market: "intl",
+      items: [{ jewelryId: "jew-1", jewelryVariantId: "variant-1", unitPrice: 700 }],
+      paymentMethod: "CASH",
+    });
+    expect(result).toEqual({ ok: false, error: "Signet Ring — Size 7 is no longer available." });
+  });
+
+  it("records a cash sale: reserves the item, resolves its real name server-side, and runs the paid-order pipeline", async () => {
+    prismaMock.gemstone.findUnique.mockResolvedValue({ id: "gem-1", name: "Blue Sapphire", market: "intl", stockStatus: "AVAILABLE" } as never);
+    prismaMock.gemstone.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await createManualSaleOrder({
+      customerUserId: "user-1", market: "intl",
+      items: [{ gemstoneId: "gem-1", unitPrice: 999 }], // deliberately not the catalog's own price — a negotiated one
+      paymentMethod: "CASH",
+    });
+
+    expect(result).toEqual({ ok: true, orderId: "order-1" });
+    expect(prismaMock.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: "user-1",
+          market: "intl",
+          currency: "USD",
+          subtotal: 999,
+          total: 999,
+          paymentMethod: "CASH",
+          manualSale: true,
+          status: "PENDING_PAYMENT",
+          items: { create: [expect.objectContaining({ gemstoneId: "gem-1", label: "Blue Sapphire", unitPrice: 999, quantity: 1, lineTotal: 999 })] },
+        }),
+      }),
+    );
+    expect(prismaMock.gemstone.updateMany).toHaveBeenCalledWith({ where: { id: { in: ["gem-1"] }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+    // finalizePaidOrder's own pipeline actually ran (order flipped PAID, item sold)
+    expect(prismaMock.order.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "order-1" }, data: expect.objectContaining({ status: "PAID" }) }));
+  });
+
+  it("records the payment reference and receipt URL for a bank-transfer sale", async () => {
+    prismaMock.gemstone.findUnique.mockResolvedValue({ id: "gem-1", name: "Blue Sapphire", market: "intl", stockStatus: "AVAILABLE" } as never);
+    prismaMock.gemstone.updateMany.mockResolvedValue({ count: 1 });
+
+    await createManualSaleOrder({
+      customerUserId: "user-1", market: "intl",
+      items: [{ gemstoneId: "gem-1", unitPrice: 500 }],
+      paymentMethod: "WIRE_TRANSFER",
+      paymentReference: "BANK-REF-123",
+      receiptUrl: "https://storage.example/receipt.pdf",
+    });
+
+    expect(prismaMock.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ manualPaymentReference: "BANK-REF-123", manualReceiptUrl: "https://storage.example/receipt.pdf" }) }),
+    );
+  });
+
+  it("rolls back and returns a friendly error when the item was taken by someone else in the meantime", async () => {
+    prismaMock.gemstone.findUnique.mockResolvedValue({ id: "gem-1", name: "Blue Sapphire", market: "intl", stockStatus: "AVAILABLE" } as never);
+    prismaMock.gemstone.updateMany.mockResolvedValue({ count: 0 }); // lost the race
+
+    const result = await createManualSaleOrder({ customerUserId: "user-1", market: "intl", items: [{ gemstoneId: "gem-1", unitPrice: 500 }], paymentMethod: "CASH" });
+
+    expect(result).toEqual({ ok: false, error: "One of the selected items was just taken elsewhere — refresh and try again." });
   });
 });

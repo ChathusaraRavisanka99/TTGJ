@@ -66,10 +66,32 @@ against the shared prod DB before shipping dependent code, then
 
 ## Orders & admin workflow
 
-- **Manual/offline sale registration** — admin creates an invoice for a
-  sale that happened outside the system, marks payment as cash or bank
-  transfer; for bank transfer, attach a receipt file and a payment
-  reference number. Overlaps with the "register manual orders" ask.
+- ~~**Manual/offline sale registration**~~ — done. New `/admin/orders/manual/new`
+  (`ManualSaleForm.tsx`): admin looks up an existing customer by email,
+  searches AVAILABLE gems/jewelry (variant-aware) to add as line items
+  with an editable, negotiated price, and records payment as Cash or Bank
+  Transfer — the latter requiring both a payment reference and a receipt
+  file (reuses `saveCertificateFile` for the upload). New `PaymentMethod.CASH`
+  enum value and `Order.manualSale`/`manualPaymentReference`/
+  `manualReceiptUrl` fields. `lib/orders.ts`'s `createManualSaleOrder`
+  resolves each line against the real catalog record server-side (never
+  trusts a client-supplied label/availability), reserves items with the
+  same conditional AVAILABLE→RESERVED race guard checkout uses, then runs
+  the order through the exact same `finalizePaidOrder` pipeline every
+  other payment path does — so a manual sale earns rewards points, sends
+  the customer a notification + confirmation email, and sells the item,
+  for free. Shows a "Manual Sale" badge on the admin orders list/detail
+  page. 19 new tests; live-verified end-to-end via Playwright for both
+  payment paths (cash sale with a negotiated price below catalog list,
+  and a bank-transfer sale with an uploaded receipt) against the real DB
+  — confirmed the item sold, points were earned, and the reference/
+  receipt show on the order page. Found and fixed a minor gap along the
+  way: the smoke test's own uploaded test receipts were leftover blobs in
+  Supabase Storage after the order rows were deleted (deleting an Order
+  doesn't delete its `manualReceiptUrl` file) — cleaned up manually for
+  this test run; not fixed in the app itself since a real receipt should
+  outlive its order for record-keeping, this is only a test-cleanup
+  footgun, not a product bug.
 - **Admin-assisted order creation from sourcing** — once a sourcing
   request's customer agrees, admin builds an order by adding items
   (including registering a brand-new catalog item on the fly, via a

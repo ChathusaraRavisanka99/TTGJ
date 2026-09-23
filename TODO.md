@@ -26,12 +26,12 @@ against the shared prod DB before shipping dependent code, then
 - ~~**Admin bulk actions**~~ — done. Bulk select + Publish/Hide from
   storefront on both admin gems and jewelry lists
   (`CatalogBulkSelection.tsx`, `bulkSetCatalogPublished`).
-- **Stale retail cart items** — if an item in a customer's cart gets
-  bought by someone else (or removed) while it's still sitting in their
-  cart, the row should show as disabled with a "remove" prompt rather than
-  silently failing at checkout (checkout already re-validates availability
-  server-side via `buildCheckoutBreakdown` — this is about surfacing it in
-  the cart UI itself, before that point).
+- ~~**Stale retail cart items**~~ — already built (found while working
+  the list, not new work): `/account/retail-cart` re-checks live
+  `stockStatus` on every page load and passes `unavailable` to
+  `RetailCartItemRow`, which dims the row and swaps the price for an
+  "Unavailable" label; Remove stays clickable either way. Checkout's own
+  `buildCheckoutBreakdown` re-validates the same thing server-side.
 - **Shipping cost tiers** — admin-editable weight-based shipping cost
   bands (e.g. a "100g" tier), plus a per-item "quote shipping instead"
   fallback option.

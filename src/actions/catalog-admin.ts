@@ -350,3 +350,29 @@ export async function unlinkGemstoneFromJewelry(linkId: string, jewelryId: strin
   revalidatePath(`/admin/jewelry/${jewelryId}`);
   return { ok: true };
 }
+
+export type CatalogKind = "gemstone" | "jewelry";
+
+/**
+ * Bulk-publish or bulk-hide a batch of catalog items at once — e.g.
+ * clearing a run of newly-sold items off the storefront without opening
+ * each one's edit form. Never touches stockStatus/isFeatured; those keep
+ * their own dedicated per-item controls (StockBadge, ToggleFeaturedButton
+ * respectively), this is purely about storefront visibility.
+ */
+export async function bulkSetCatalogPublished(kind: CatalogKind, ids: string[], isPublished: boolean): Promise<ActionResult> {
+  await requireAdmin();
+  if (ids.length === 0) return { ok: false, error: "Nothing selected." };
+
+  if (kind === "gemstone") {
+    await prisma.gemstone.updateMany({ where: { id: { in: ids } }, data: { isPublished } });
+    revalidatePath("/admin/gems");
+  } else {
+    await prisma.jewelryPiece.updateMany({ where: { id: { in: ids } }, data: { isPublished } });
+    revalidatePath("/admin/jewelry");
+  }
+  revalidatePath("/");
+  revalidatePath("/lk");
+  revalidateTag("home-featured", { expire: 0 });
+  return { ok: true };
+}

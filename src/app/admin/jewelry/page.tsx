@@ -8,6 +8,7 @@ import { ToggleFeaturedButton } from "@/components/admin/ToggleFeaturedButton";
 import { BackLink } from "@/components/admin/BackLink";
 import { StoreFilterTabs, parseStoreFilter } from "@/components/admin/StoreFilterTabs";
 import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
+import { CatalogBulkSelectionProvider, CatalogRowCheckbox, CatalogBulkToolbar } from "@/components/admin/CatalogBulkSelection";
 import { formatPrice } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -61,57 +62,66 @@ export default async function AdminJewelryPage({ searchParams }: PageProps<"/adm
 
       <StoreFilterTabs basePath="/admin/jewelry" current={store} q={q} />
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
-              <th className="w-10 px-4 py-3">
-                <span className="sr-only">Featured</span>
-              </th>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Store</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Metal</th>
-              <th className="px-4 py-3">Retail price</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Published</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pieces.map((piece) => (
-              <tr key={piece.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
-                <td className="px-4 py-3">
-                  <ToggleFeaturedButton
-                    featured={piece.isFeatured}
-                    store={piece.market === "lk" ? "Sri Lanka home page" : "homepage"}
-                    onToggle={toggleJewelryFeatured.bind(null, piece.id)}
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <Link href={`/admin/jewelry/${piece.id}`} className="text-charcoal hover:text-gold">{piece.name}</Link>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge className={piece.market === "lk" ? "border-gold/40 bg-gold/15 text-charcoal" : "border-border-subtle bg-charcoal/5 text-charcoal/70"}>
-                    {piece.market === "lk" ? "Sri Lanka" : "International"}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 text-charcoal/70">{piece.pieceType}</td>
-                <td className="px-4 py-3 text-charcoal/70">{piece.metalType}</td>
-                <td className="px-4 py-3 text-charcoal/70">
-                  {piece.market === "lk"
-                    ? piece.lkrRetailPrice != null ? formatPrice(piece.lkrRetailPrice, "LKR") : "—"
-                    : piece.retailPrice != null ? formatPrice(piece.retailPrice) : "—"}
-                </td>
-                <td className="px-4 py-3"><StockBadge status={piece.stockStatus} /></td>
-                <td className="px-4 py-3 text-charcoal/70">{piece.isPublished ? "Yes" : "No"}</td>
+      <CatalogBulkSelectionProvider>
+        <CatalogBulkToolbar kind="jewelry" />
+        <div className="mt-4 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
+                <th className="w-10 px-4 py-3">
+                  <span className="sr-only">Select</span>
+                </th>
+                <th className="w-10 px-4 py-3">
+                  <span className="sr-only">Featured</span>
+                </th>
+                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Store</th>
+                <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">Metal</th>
+                <th className="px-4 py-3">Retail price</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Published</th>
               </tr>
-            ))}
-            {pieces.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-charcoal/50">No jewelry pieces yet.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {pieces.map((piece) => (
+                <tr key={piece.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
+                  <td className="px-4 py-3">
+                    <CatalogRowCheckbox id={piece.id} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <ToggleFeaturedButton
+                      featured={piece.isFeatured}
+                      store={piece.market === "lk" ? "Sri Lanka home page" : "homepage"}
+                      onToggle={toggleJewelryFeatured.bind(null, piece.id)}
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link href={`/admin/jewelry/${piece.id}`} className="text-charcoal hover:text-gold">{piece.name}</Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge className={piece.market === "lk" ? "border-gold/40 bg-gold/15 text-charcoal" : "border-border-subtle bg-charcoal/5 text-charcoal/70"}>
+                      {piece.market === "lk" ? "Sri Lanka" : "International"}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-charcoal/70">{piece.pieceType}</td>
+                  <td className="px-4 py-3 text-charcoal/70">{piece.metalType}</td>
+                  <td className="px-4 py-3 text-charcoal/70">
+                    {piece.market === "lk"
+                      ? piece.lkrRetailPrice != null ? formatPrice(piece.lkrRetailPrice, "LKR") : "—"
+                      : piece.retailPrice != null ? formatPrice(piece.retailPrice) : "—"}
+                  </td>
+                  <td className="px-4 py-3"><StockBadge status={piece.stockStatus} /></td>
+                  <td className="px-4 py-3 text-charcoal/70">{piece.isPublished ? "Yes" : "No"}</td>
+                </tr>
+              ))}
+              {pieces.length === 0 && (
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-charcoal/50">No jewelry pieces yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </CatalogBulkSelectionProvider>
 
       <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />
     </div>

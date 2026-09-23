@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { deleteGemstone, deleteJewelry } from "@/actions/catalog-admin";
+import { deleteGemstone, deleteJewelry, bulkSetCatalogPublished } from "@/actions/catalog-admin";
 
 vi.mock("@/lib/rbac", () => ({ requireAdmin: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN" }) }));
 
@@ -67,5 +67,34 @@ describe("deleteJewelry", () => {
 
     expect(result).toEqual({ ok: true });
     expect(prismaMock.jewelryPiece.delete).toHaveBeenCalledWith({ where: { id: "jew-1" } });
+  });
+});
+
+describe("bulkSetCatalogPublished", () => {
+  it("refuses an empty selection without touching the database", async () => {
+    const result = await bulkSetCatalogPublished("gemstone", [], false);
+
+    expect(result).toEqual({ ok: false, error: "Nothing selected." });
+    expect(prismaMock.gemstone.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("hides a batch of gemstones from the storefront", async () => {
+    prismaMock.gemstone.updateMany.mockResolvedValue({ count: 2 });
+
+    const result = await bulkSetCatalogPublished("gemstone", ["gem-1", "gem-2"], false);
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.gemstone.updateMany).toHaveBeenCalledWith({ where: { id: { in: ["gem-1", "gem-2"] } }, data: { isPublished: false } });
+    expect(prismaMock.jewelryPiece.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("publishes a batch of jewelry pieces", async () => {
+    prismaMock.jewelryPiece.updateMany.mockResolvedValue({ count: 3 });
+
+    const result = await bulkSetCatalogPublished("jewelry", ["jew-1", "jew-2", "jew-3"], true);
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.jewelryPiece.updateMany).toHaveBeenCalledWith({ where: { id: { in: ["jew-1", "jew-2", "jew-3"] } }, data: { isPublished: true } });
+    expect(prismaMock.gemstone.updateMany).not.toHaveBeenCalled();
   });
 });

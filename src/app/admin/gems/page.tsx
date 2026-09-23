@@ -8,6 +8,7 @@ import { ToggleFeaturedButton } from "@/components/admin/ToggleFeaturedButton";
 import { BackLink } from "@/components/admin/BackLink";
 import { StoreFilterTabs, parseStoreFilter } from "@/components/admin/StoreFilterTabs";
 import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
+import { CatalogBulkSelectionProvider, CatalogRowCheckbox, CatalogBulkToolbar } from "@/components/admin/CatalogBulkSelection";
 import { formatPrice } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -62,59 +63,68 @@ export default async function AdminGemsPage({ searchParams }: PageProps<"/admin/
 
       <StoreFilterTabs basePath="/admin/gems" current={store} q={q} />
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
-              <th className="w-10 px-4 py-3">
-                <span className="sr-only">Featured</span>
-              </th>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Store</th>
-              <th className="px-4 py-3">Mineral</th>
-              <th className="px-4 py-3">Cut</th>
-              <th className="px-4 py-3">Carat</th>
-              <th className="px-4 py-3">Retail price</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Published</th>
-            </tr>
-          </thead>
-          <tbody>
-            {gems.map((gem) => (
-              <tr key={gem.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
-                <td className="px-4 py-3">
-                  <ToggleFeaturedButton
-                    featured={gem.isFeatured}
-                    store={gem.market === "lk" ? "Sri Lanka home page" : "homepage"}
-                    onToggle={toggleGemstoneFeatured.bind(null, gem.id)}
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <Link href={`/admin/gems/${gem.id}`} className="text-charcoal hover:text-gold">{gem.name}</Link>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge className={gem.market === "lk" ? "border-gold/40 bg-gold/15 text-charcoal" : "border-border-subtle bg-charcoal/5 text-charcoal/70"}>
-                    {gem.market === "lk" ? "Sri Lanka" : "International"}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 text-charcoal/70">{gem.mineral.name}</td>
-                <td className="px-4 py-3 text-charcoal/70">{gem.cut.name}</td>
-                <td className="px-4 py-3 text-charcoal/70">{gem.caratWeight} ct</td>
-                <td className="px-4 py-3 text-charcoal/70">
-                  {gem.market === "lk"
-                    ? gem.lkrRetailPrice != null ? formatPrice(gem.lkrRetailPrice, "LKR") : "—"
-                    : gem.retailPrice != null ? formatPrice(gem.retailPrice) : "—"}
-                </td>
-                <td className="px-4 py-3"><StockBadge status={gem.stockStatus} /></td>
-                <td className="px-4 py-3 text-charcoal/70">{gem.isPublished ? "Yes" : "No"}</td>
+      <CatalogBulkSelectionProvider>
+        <CatalogBulkToolbar kind="gemstone" />
+        <div className="mt-4 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
+                <th className="w-10 px-4 py-3">
+                  <span className="sr-only">Select</span>
+                </th>
+                <th className="w-10 px-4 py-3">
+                  <span className="sr-only">Featured</span>
+                </th>
+                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Store</th>
+                <th className="px-4 py-3">Mineral</th>
+                <th className="px-4 py-3">Cut</th>
+                <th className="px-4 py-3">Carat</th>
+                <th className="px-4 py-3">Retail price</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Published</th>
               </tr>
-            ))}
-            {gems.length === 0 && (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-charcoal/50">No gemstones yet.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {gems.map((gem) => (
+                <tr key={gem.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
+                  <td className="px-4 py-3">
+                    <CatalogRowCheckbox id={gem.id} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <ToggleFeaturedButton
+                      featured={gem.isFeatured}
+                      store={gem.market === "lk" ? "Sri Lanka home page" : "homepage"}
+                      onToggle={toggleGemstoneFeatured.bind(null, gem.id)}
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link href={`/admin/gems/${gem.id}`} className="text-charcoal hover:text-gold">{gem.name}</Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge className={gem.market === "lk" ? "border-gold/40 bg-gold/15 text-charcoal" : "border-border-subtle bg-charcoal/5 text-charcoal/70"}>
+                      {gem.market === "lk" ? "Sri Lanka" : "International"}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-charcoal/70">{gem.mineral.name}</td>
+                  <td className="px-4 py-3 text-charcoal/70">{gem.cut.name}</td>
+                  <td className="px-4 py-3 text-charcoal/70">{gem.caratWeight} ct</td>
+                  <td className="px-4 py-3 text-charcoal/70">
+                    {gem.market === "lk"
+                      ? gem.lkrRetailPrice != null ? formatPrice(gem.lkrRetailPrice, "LKR") : "—"
+                      : gem.retailPrice != null ? formatPrice(gem.retailPrice) : "—"}
+                  </td>
+                  <td className="px-4 py-3"><StockBadge status={gem.stockStatus} /></td>
+                  <td className="px-4 py-3 text-charcoal/70">{gem.isPublished ? "Yes" : "No"}</td>
+                </tr>
+              ))}
+              {gems.length === 0 && (
+                <tr><td colSpan={10} className="px-4 py-8 text-center text-charcoal/50">No gemstones yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </CatalogBulkSelectionProvider>
 
       <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />
     </div>

@@ -459,6 +459,137 @@ export async function ensureOrderForSourcing(sourcingId: string, adminUserId: st
   return { ok: true, orderId: order.id };
 }
 
+export interface SourcingOrderItemInput {
+  gemstoneId?: string;
+  jewelryId?: string;
+  jewelryVariantId?: string;
+  // Admin-agreed price for this line — independent of whatever
+  // retailPrice/lkrRetailPrice the catalog item itself carries (a private,
+  // on-the-fly item created for this sale usually has neither set).
+  unitPrice: number;
+}
+
+/**
+ * The item-aware alternative to ensureOrderForSourcing, for when the admin
+ * has specific catalog items (existing or newly created just for this
+ * sale — see actions/sourcing-order.ts's quick-create actions) to attach
+ * rather than a single free-text line. Marks the request ACCEPTED as part
+ * of the same call, same as updateSourcingRequest's own ACCEPTED
+ * transition does via ensureOrderForSourcing — this is simply the other
+ * way to reach that same end state.
+ */
+export async function createOrderFromSourcing(
+  sourcingRequestId: string,
+  adminUserId: string,
+  items: SourcingOrderItemInput[],
+): Promise<EnsureOrderResult> {
+  const existing = await prisma.order.findUnique({ where: { sourcingRequestId }, select: { id: true } });
+  if (existing) return { ok: true, orderId: existing.id };
+  if (items.length === 0) return { ok: false, error: "Add at least one item." };
+  if (items.some((i) => !(i.unitPrice >= 0))) return { ok: false, error: "Check the price on every item." };
+
+  const request = await prisma.sourcingRequest.findUnique({ where: { id: sourcingRequestId } });
+  if (!request) return { ok: false, error: "Sourcing request not found." };
+
+  // Resolve each line against the real catalog record server-side — same
+  // as createManualSaleOrder. Deliberately doesn't require isPublished:
+  // a private, on-the-fly item created for this sale is unpublished by
+  // design (see the quick-create actions), and an existing published
+  // item can be attached just as well.
+  const resolved: { item: SourcingOrderItemInput; label: string }[] = [];
+  for (const item of items) {
+    if (item.gemstoneId) {
+      const gem = await prisma.gemstone.findUnique({ where: { id: item.gemstoneId } });
+      if (!gem || gem.market !== "intl") return { ok: false, error: "One of the selected gemstones could not be found." };
+      if (gem.stockStatus !== "AVAILABLE") return { ok: false, error: `${gem.name} is no longer available.` };
+      resolved.push({ item, label: gem.name });
+    } else if (item.jewelryId) {
+      const piece = await prisma.jewelryPiece.findUnique({ where: { id: item.jewelryId }, include: { variants: true } });
+      if (!piece || piece.market !== "intl") return { ok: false, error: "One of the selected jewelry pieces could not be found." };
+      if (item.jewelryVariantId) {
+        const variant = piece.variants.find((v) => v.id === item.jewelryVariantId);
+        if (!variant) return { ok: false, error: "That variant could not be found." };
+        if (variant.stockStatus !== "AVAILABLE") return { ok: false, error: `${piece.name} — ${variant.label} is no longer available.` };
+        resolved.push({ item, label: `${piece.name} — ${variant.label}` });
+      } else {
+        if (piece.stockStatus !== "AVAILABLE") return { ok: false, error: `${piece.name} is no longer available.` };
+        resolved.push({ item, label: piece.name });
+      }
+    } else {
+      return { ok: false, error: "Every line needs a gemstone or jewelry item." };
+    }
+  }
+
+  const subtotal = resolved.reduce((sum, { item }) => sum + item.unitPrice, 0);
+  const orderNumber = await nextOrderNumber();
+
+  const gemstoneIds = resolved.map(({ item }) => item.gemstoneId).filter((id): id is string => id != null);
+  const plainJewelryIds = resolved.filter(({ item }) => item.jewelryId && !item.jewelryVariantId).map(({ item }) => item.jewelryId!);
+  const variantResolved = resolved.filter(({ item }) => item.jewelryVariantId != null);
+  const variantIds = variantResolved.map(({ item }) => item.jewelryVariantId!);
+
+  let orderId: string;
+  let createdOrderNumber: string;
+  try {
+    const created = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.create({
+        data: {
+          orderNumber,
+          userId: request.userId,
+          currency: "USD",
+          market: "intl",
+          subtotal,
+          total: subtotal,
+          shipName: "",
+          shipPhone: "",
+          shipCountry: "",
+          shipCity: "",
+          shipAddressLine1: "",
+          needsShippingDetails: true,
+          paymentMethod: "WIRE_TRANSFER",
+          sourcingRequestId: request.id,
+          items: {
+            create: resolved.map(({ item, label }) => ({
+              gemstoneId: item.gemstoneId,
+              jewelryId: item.jewelryId,
+              jewelryVariantId: item.jewelryVariantId,
+              label,
+              unitPrice: item.unitPrice,
+              quantity: 1,
+              lineTotal: item.unitPrice,
+            })),
+          },
+        },
+      });
+
+      if (gemstoneIds.length > 0) {
+        const res = await tx.gemstone.updateMany({ where: { id: { in: gemstoneIds }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+        if (res.count !== gemstoneIds.length) throw new Error("ITEM_UNAVAILABLE");
+      }
+      if (plainJewelryIds.length > 0) {
+        const res = await tx.jewelryPiece.updateMany({ where: { id: { in: plainJewelryIds }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+        if (res.count !== plainJewelryIds.length) throw new Error("ITEM_UNAVAILABLE");
+      }
+      if (variantIds.length > 0) {
+        const res = await tx.jewelryVariant.updateMany({ where: { id: { in: variantIds }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+        if (res.count !== variantIds.length) throw new Error("ITEM_UNAVAILABLE");
+      }
+      return order;
+    });
+    orderId = created.id;
+    createdOrderNumber = created.orderNumber;
+  } catch (err) {
+    if (err instanceof Error && err.message === "ITEM_UNAVAILABLE") {
+      return { ok: false, error: "One of the selected items was just taken elsewhere — refresh and try again." };
+    }
+    throw err;
+  }
+
+  await prisma.sourcingRequest.update({ where: { id: sourcingRequestId }, data: { status: "ACCEPTED" } });
+  await notifyAndMessageForNewOrder({ orderId, orderNumber: createdOrderNumber, customerId: request.userId, requestType: "sourcing", requestId: sourcingRequestId, adminUserId });
+  return { ok: true, orderId };
+}
+
 /**
  * Called by the customer to fill in the shipping address an accepted
  * quote/sourcing order was created without (see ensureOrderForQuote/

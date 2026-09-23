@@ -8,7 +8,11 @@ export const shipOrderSchema = z.object({
 
 export type ShipOrderInput = z.infer<typeof shipOrderSchema>;
 
-const manualSaleItemSchema = z
+// Shared by every admin form that builds an order line-by-line from
+// catalog items (manual sales, sourcing orders): which item, and the
+// price actually agreed for it — not necessarily the catalog's own
+// listed price.
+const orderLineItemSchema = z
   .object({
     gemstoneId: z.string().optional(),
     jewelryId: z.string().optional(),
@@ -17,21 +21,30 @@ const manualSaleItemSchema = z
   })
   .refine((i) => !!i.gemstoneId || !!i.jewelryId, { message: "Every line needs a gemstone or jewelry item." });
 
-// `items` arrives as a JSON-encoded string (the form builds a dynamic list
-// client-side — see ManualSaleForm) rather than individual FormData fields.
+// A JSON-encoded array of orderLineItemSchema rows — the form builds a
+// dynamic list client-side (ManualSaleForm, SourcingOrderBuilder) rather
+// than individual FormData fields.
+const orderItemsJson = z.preprocess((v) => {
+  if (typeof v !== "string") return v;
+  try {
+    return JSON.parse(v);
+  } catch {
+    return v;
+  }
+}, z.array(orderLineItemSchema).min(1, "Add at least one item"));
+
 export const manualSaleSchema = z.object({
   customerUserId: z.string().min(1, "Select a customer"),
   market: z.enum(["intl", "lk"]),
-  items: z.preprocess((v) => {
-    if (typeof v !== "string") return v;
-    try {
-      return JSON.parse(v);
-    } catch {
-      return v;
-    }
-  }, z.array(manualSaleItemSchema).min(1, "Add at least one item")),
+  items: orderItemsJson,
   paymentMethod: z.enum(["CASH", "WIRE_TRANSFER"]),
   paymentReference: z.string().max(200).optional().or(z.literal("")),
 });
 
 export type ManualSaleInput = z.infer<typeof manualSaleSchema>;
+
+export const sourcingOrderSchema = z.object({
+  items: orderItemsJson,
+});
+
+export type SourcingOrderInput = z.infer<typeof sourcingOrderSchema>;

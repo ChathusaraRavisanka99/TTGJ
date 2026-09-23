@@ -12,7 +12,7 @@ import { formatPrice } from "@/lib/utils";
 export default async function AdminSourcingDetailPage({ params }: PageProps<"/admin/sourcing/[id]">) {
   const { id } = await params;
   const [request, session] = await Promise.all([
-    prisma.sourcingRequest.findUnique({ where: { id }, include: { user: true } }),
+    prisma.sourcingRequest.findUnique({ where: { id }, include: { user: true, order: true } }),
     auth(),
   ]);
 
@@ -94,6 +94,26 @@ export default async function AdminSourcingDetailPage({ params }: PageProps<"/ad
             currentQuotedPrice={request.quotedPrice}
             currentQuoteValidUntil={request.quoteValidUntil?.toISOString() ?? null}
           />
+
+          {request.order ? (
+            <div className="rounded-xl border border-border-subtle bg-surface p-5">
+              <p className="text-xs uppercase tracking-wide text-charcoal/45">Order</p>
+              <Link href={`/admin/orders/${request.order.id}`} className="mt-1 inline-block text-sm text-gold-deep underline">
+                View order {request.order.orderNumber}
+              </Link>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-border-subtle bg-surface p-5">
+              <p className="text-xs uppercase tracking-wide text-charcoal/45">Order</p>
+              <p className="mt-1 text-sm text-charcoal/60">
+                Sourced the item(s)? Build an order from real catalog items (existing or brand-new) instead of the
+                single quoted price above.
+              </p>
+              <Link href={`/admin/sourcing/${request.id}/build-order`} className="mt-2 inline-block text-sm text-gold-deep underline">
+                Build Order From Catalog Items
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

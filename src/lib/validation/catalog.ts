@@ -115,6 +115,39 @@ export const jewelryVariantSchema = z.object({
 
 export type JewelryVariantInput = z.infer<typeof jewelryVariantSchema>;
 
+// A minimal catalog record for a one-off item an admin creates on the fly
+// while building a sourcing order (actions/sourcing-order.ts) — private
+// (isPublished: false) and priced only through that order's own
+// OrderItem.unitPrice, not through the usual retailPrice/lkrRetailPrice
+// fields. Skips everything the full gemstone/jewelry forms collect beyond
+// what the schema actually requires (Gemstone still needs a real
+// mineral/cut/clarity/treatment/origin/caratWeight — those columns are
+// NOT NULL and describe what the stone actually is, so they can't be
+// waived just because this is a quick add).
+export const quickCreateGemstoneSchema = z.object({
+  name: z.string().min(2).max(150),
+  description: z.string().max(2000).optional().or(z.literal("")),
+  mineralId: z.string().min(1, "Select a mineral"),
+  cutId: z.string().min(1, "Select a cut"),
+  caratWeight: z.coerce.number().min(0.01).max(500),
+  clarityGradeId: z.string().min(1, "Select a clarity grade"),
+  treatmentId: z.string().min(1, "Select a treatment"),
+  originId: z.string().min(1, "Select an origin"),
+});
+
+export type QuickCreateGemstoneInput = z.infer<typeof quickCreateGemstoneSchema>;
+
+// Jewelry has far fewer required columns (pieceType/metalType are enums
+// with sensible defaults), so this one really is just name + description.
+export const quickCreateJewelrySchema = z.object({
+  name: z.string().min(2).max(150),
+  description: z.string().max(2000).optional().or(z.literal("")),
+  pieceType: z.enum(["RING", "NECKLACE", "EARRINGS", "BRACELET", "PENDANT", "BROOCH", "OTHER"]).default("OTHER"),
+  metalType: z.enum(["GOLD", "WHITE_GOLD", "ROSE_GOLD", "PLATINUM", "SILVER"]).default("GOLD"),
+});
+
+export type QuickCreateJewelryInput = z.infer<typeof quickCreateJewelrySchema>;
+
 export const mineralSchema = z.object({
   name: z.string().min(2).max(100),
   description: z.string().max(500).optional().or(z.literal("")),

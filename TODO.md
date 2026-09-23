@@ -92,14 +92,34 @@ against the shared prod DB before shipping dependent code, then
   this test run; not fixed in the app itself since a real receipt should
   outlive its order for record-keeping, this is only a test-cleanup
   footgun, not a product bug.
-- **Admin-assisted order creation from sourcing** — once a sourcing
-  request's customer agrees, admin builds an order by adding items
-  (including registering a brand-new catalog item on the fly, via a
-  popup) and sends it to that customer as unpaid. Items added this way
-  default to `isPublished: false` (hidden from normal browsing, but
-  reachable/addable-to-cart via direct link) with an explicit "private
-  sourcing item" notice and hidden price if someone stumbles onto the
-  link — price only shows inside the order itself.
+- ~~**Admin-assisted order creation from sourcing**~~ — done. Confirmed
+  three scoping questions with you before building: the customer only
+  ever reaches a private item through their own `/account/orders/[id]`
+  page (never a raw product-page URL, so no new "private but
+  direct-link-reachable" visibility mode was needed — `isPublished: false`
+  already 404s a direct visit, unchanged); the on-the-fly item's "quick
+  form" is genuinely minimal for jewelry (name + description + piece/metal
+  type) but for a gemstone still needs its real taxonomy (mineral, cut,
+  clarity, treatment, origin, carat) since those columns are NOT NULL and
+  describe what the stone actually is — skips only the optional fields the
+  full form has (dimensions, symmetry/polish, certification, shipping);
+  and one order can hold multiple items. New `/admin/sourcing/[id]/build-order`
+  (`SourcingOrderBuilder.tsx`, reuses `searchAvailableCatalogItems` from
+  the manual-sale feature): admin searches existing catalog items and/or
+  quick-creates new private ones, each with its own agreed price, then
+  sends it — `lib/orders.ts`'s `createOrderFromSourcing` resolves every
+  line server-side, reserves items with the same conditional race guard
+  every other order-creation path uses, marks the request ACCEPTED, and
+  reuses the existing `notifyAndMessageForNewOrder` notification + chat
+  message. Sits alongside (doesn't replace) the existing single-price
+  `ensureOrderForSourcing` path, still used when there's no specific
+  catalog item to attach. A gemstone's `colorHue` is auto-derived from the
+  chosen mineral's own hue range, so the admin never has to fiddle with a
+  color picker for a quick add. 14 new tests; live-verified end-to-end via
+  Playwright (added one existing published item and one brand-new private
+  gemstone to the same order, confirmed both reserved, the request
+  ACCEPTED, the customer notified, the private item unreachable at its own
+  product-page URL but visible by name on the customer's own order page).
 - ~~**Replace `window.confirm()` with a proper dialog**~~ — done. All 21
   call sites across 17 components converted to a shared, Promise-based
   `useConfirm()` (`ConfirmProvider.tsx`, mounted once in the root layout),

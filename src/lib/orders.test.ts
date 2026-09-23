@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails, recomputeJewelryAvailability, createManualSaleOrder } from "@/lib/orders";
+import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails, recomputeJewelryAvailability, createManualSaleOrder, createOrderFromSourcing } from "@/lib/orders";
 import { sendEmail } from "@/lib/email";
 import { registerTracking } from "@/lib/track17";
 
@@ -522,6 +522,95 @@ describe("ensureOrderForSourcing", () => {
     expect(prismaMock.order.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ sourcingRequestId: "sourcing-1", needsShippingDetails: true }) }),
     );
+  });
+});
+
+describe("createOrderFromSourcing", () => {
+  const sourcingFixture = { id: "sourcing-1", userId: "user-1", mineralDescription: "2ct rough spinel" };
+
+  beforeEach(() => {
+    prismaMock.order.findUnique.mockResolvedValue(null);
+    prismaMock.sourcingRequest.findUnique.mockResolvedValue(sourcingFixture as never);
+    prismaMock.order.count.mockResolvedValue(0); // nextOrderNumber
+    prismaMock.order.create.mockResolvedValue({ id: "order-1", orderNumber: "ORD-2026-0001" } as never);
+    prismaMock.sourcingRequest.update.mockResolvedValue({} as never);
+    prismaMock.chatThread.findFirst.mockResolvedValue(null);
+    prismaMock.chatThread.create.mockResolvedValue({ id: "thread-1" } as never);
+    prismaMock.chatMessage.create.mockResolvedValue({} as never);
+    prismaMock.notification.create.mockResolvedValue({} as never);
+  });
+
+  it("is idempotent — an already-built order is returned without creating a second one", async () => {
+    prismaMock.order.findUnique.mockResolvedValue({ id: "order-existing" } as never);
+
+    const result = await createOrderFromSourcing("sourcing-1", "admin-1", [{ gemstoneId: "gem-1", unitPrice: 1000 }]);
+
+    expect(result).toEqual({ ok: true, orderId: "order-existing" });
+    expect(prismaMock.order.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses an empty item list", async () => {
+    const result = await createOrderFromSourcing("sourcing-1", "admin-1", []);
+    expect(result).toEqual({ ok: false, error: "Add at least one item." });
+  });
+
+  it("refuses an item that's no longer AVAILABLE", async () => {
+    prismaMock.gemstone.findUnique.mockResolvedValue({ id: "gem-1", name: "Rough Spinel", market: "intl", stockStatus: "SOLD" } as never);
+    const result = await createOrderFromSourcing("sourcing-1", "admin-1", [{ gemstoneId: "gem-1", unitPrice: 1000 }]);
+    expect(result).toEqual({ ok: false, error: "Rough Spinel is no longer available." });
+    expect(prismaMock.order.create).not.toHaveBeenCalled();
+  });
+
+  it("resolves each line's real name server-side, reserves the items, marks the request ACCEPTED, and notifies the customer", async () => {
+    prismaMock.gemstone.findUnique.mockResolvedValue({ id: "gem-1", name: "Rough Spinel", market: "intl", stockStatus: "AVAILABLE" } as never);
+    prismaMock.gemstone.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await createOrderFromSourcing("sourcing-1", "admin-1", [{ gemstoneId: "gem-1", unitPrice: 1200 }]);
+
+    expect(result).toEqual({ ok: true, orderId: "order-1" });
+    expect(prismaMock.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: "user-1",
+          sourcingRequestId: "sourcing-1",
+          needsShippingDetails: true,
+          subtotal: 1200,
+          total: 1200,
+          items: { create: [expect.objectContaining({ gemstoneId: "gem-1", label: "Rough Spinel", unitPrice: 1200 })] },
+        }),
+      }),
+    );
+    expect(prismaMock.gemstone.updateMany).toHaveBeenCalledWith({ where: { id: { in: ["gem-1"] }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+    expect(prismaMock.sourcingRequest.update).toHaveBeenCalledWith({ where: { id: "sourcing-1" }, data: { status: "ACCEPTED" } });
+    expect(prismaMock.notification.create).toHaveBeenCalledOnce();
+    expect(prismaMock.chatMessage.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ threadId: "thread-1", senderId: "admin-1", senderRole: "ADMIN" }) }),
+    );
+  });
+
+  it("supports multiple items on the same order", async () => {
+    prismaMock.gemstone.findUnique.mockResolvedValue({ id: "gem-1", name: "Rough Spinel", market: "intl", stockStatus: "AVAILABLE" } as never);
+    prismaMock.jewelryPiece.findUnique.mockResolvedValue({ id: "jew-1", name: "Custom Setting", market: "intl", stockStatus: "AVAILABLE", variants: [] } as never);
+    prismaMock.gemstone.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.jewelryPiece.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await createOrderFromSourcing("sourcing-1", "admin-1", [
+      { gemstoneId: "gem-1", unitPrice: 1200 },
+      { jewelryId: "jew-1", unitPrice: 300 },
+    ]);
+
+    expect(result).toEqual({ ok: true, orderId: "order-1" });
+    expect(prismaMock.order.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ subtotal: 1500, total: 1500 }) }));
+  });
+
+  it("rolls back and returns a friendly error when an item was taken by someone else in the meantime", async () => {
+    prismaMock.gemstone.findUnique.mockResolvedValue({ id: "gem-1", name: "Rough Spinel", market: "intl", stockStatus: "AVAILABLE" } as never);
+    prismaMock.gemstone.updateMany.mockResolvedValue({ count: 0 });
+
+    const result = await createOrderFromSourcing("sourcing-1", "admin-1", [{ gemstoneId: "gem-1", unitPrice: 1200 }]);
+
+    expect(result).toEqual({ ok: false, error: "One of the selected items was just taken elsewhere — refresh and try again." });
+    expect(prismaMock.sourcingRequest.update).not.toHaveBeenCalled();
   });
 });
 

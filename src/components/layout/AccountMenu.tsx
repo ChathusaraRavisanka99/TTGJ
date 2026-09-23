@@ -18,6 +18,7 @@ export const ACCOUNT_MENU_LINKS = [
   { href: "/account/sourcing", label: "Sourcing Requests" },
   { href: "/account/custom-designs", label: "Custom Designs" },
   { href: "/account/quotes", label: "Quote Requests" },
+  { href: "/account/change-password", label: "Change Password" },
 ];
 
 export function AccountMenu({

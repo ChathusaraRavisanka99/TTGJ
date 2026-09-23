@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { QuoteStatusBadge } from "@/components/ui/Badge";
+import { QuoteStatusBadge, Badge } from "@/components/ui/Badge";
 import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminCustomerDetailPage({ params }: PageProps<"/admin/customers/[id]">) {
@@ -20,9 +20,20 @@ export default async function AdminCustomerDetailPage({ params }: PageProps<"/ad
   return (
     <div className="max-w-6xl">
       <BackLink href="/admin/customers" label="Back to Customers" />
-      <h1 className="font-serif text-3xl text-charcoal">{customer.name}</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="font-serif text-3xl text-charcoal">{customer.name}</h1>
+        <Badge className={customer.customerType === "WHOLESALE" ? "border-gold/40 bg-gold/15 text-charcoal" : "border-border-subtle bg-charcoal/5 text-charcoal/70"}>
+          {customer.customerType === "WHOLESALE" ? "Wholesale" : "Retail"}
+        </Badge>
+      </div>
       <p className="text-sm text-charcoal/60">{customer.email}{customer.phone ? ` · ${customer.phone}` : ""}</p>
       <p className="mt-1 text-xs text-charcoal/45">Joined {customer.createdAt.toLocaleDateString()}</p>
+      {customer.customerType === "WHOLESALE" && (
+        <p className="mt-1 text-xs text-charcoal/60">
+          {customer.businessName ?? "—"}{customer.businessRegNo ? ` · Reg. ${customer.businessRegNo}` : ""}
+          {customer.wholesaleStatus && ` · ${customer.wholesaleStatus.charAt(0)}${customer.wholesaleStatus.slice(1).toLowerCase()}`}
+        </p>
+      )}
 
       <div className="mt-6 rounded-xl border border-border-subtle bg-surface p-5">
         <p className="text-xs uppercase tracking-wide text-charcoal/65">Rewards points</p>

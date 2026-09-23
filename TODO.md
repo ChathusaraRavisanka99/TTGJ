@@ -57,11 +57,15 @@ against the shared prod DB before shipping dependent code, then
   `await` added. Found and fixed a few adjacent bugs along the way
   (`JewelryForm`/`GemstoneForm`'s delete handlers didn't check the
   result before navigating away, silently hiding a real failure).
-- **Retail vs. wholesale customer distinction** — surface `customerType`
-  (already exists: `WHOLESALE`/wholesale-application flow is partially
-  built) more clearly in the admin customer views. Plus: admin can
-  register a wholesale user directly with a predefined password, and that
-  user gets a notification + direct link prompting a password change.
+- ~~**Retail vs. wholesale customer distinction**~~ — done. Retail/
+  Wholesale badge + filter on the admin customers list, and business
+  name/reg no/status on the detail page. Admin can register a wholesale
+  account directly with a predefined password
+  (`CreateWholesaleAccountForm`, `createWholesaleAccount` — created
+  already APPROVED, with its own `BusinessAccount`); the new customer
+  gets a notification and email, and a new `mustChangePassword` flag
+  shows a notice on a new `/account/change-password` page (also reachable
+  from the account menu for anyone, not just a forced case).
 
 ## Auctions
 

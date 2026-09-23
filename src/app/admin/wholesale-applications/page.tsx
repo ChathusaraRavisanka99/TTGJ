@@ -4,6 +4,7 @@ import { WholesaleStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
 import { WholesaleApplicationActions } from "@/components/admin/WholesaleApplicationActions";
+import { CreateWholesaleAccountForm } from "@/components/admin/CreateWholesaleAccountForm";
 import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +36,10 @@ export default async function AdminWholesaleApplicationsPage({ searchParams }: P
   return (
     <div>
       <BackLink href="/admin" label="Back to Dashboard" />
-      <h1 className="font-serif text-3xl text-charcoal">Wholesale Applications</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-serif text-3xl text-charcoal">Wholesale Applications</h1>
+        <CreateWholesaleAccountForm />
+      </div>
       <p className="mt-1 text-sm text-charcoal/60">
         Approval doesn&apos;t gate anything else in the app today — an applicant can already browse, request quotes,
         and buy retail while pending. This is purely the review record.

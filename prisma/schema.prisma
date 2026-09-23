@@ -55,6 +55,14 @@ model User {
   wholesaleStatus WholesaleStatus?
   businessName    String?
   businessRegNo   String?
+  // Set when an admin creates a wholesale account directly with a
+  // predefined password (see createWholesaleAccount in actions/wholesale.ts)
+  // — never set for a self-registered account, which chose its own
+  // password. Cleared the moment they actually change it (changePassword
+  // in actions/account.ts). A nudge (notification + a reachable "Change
+  // Password" page), not an access gate — this doesn't block anything else
+  // in the app while true.
+  mustChangePassword Boolean @default(false)
 
   // Both optional — collected at registration or later in account
   // settings. Used only by the birthday promotion (lib/checkout.ts):

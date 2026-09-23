@@ -38,3 +38,21 @@ export const resetPasswordSchema = z.object({
   token: z.string().min(1, "Missing reset token"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
+
+// Same minimum-length rule as registerSchema's password field.
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Enter your current password"),
+  newPassword: z.string().min(8, "New password must be at least 8 characters"),
+});
+
+// An admin creating a wholesale account directly, with a predefined
+// password the customer is expected to change (see mustChangePassword on
+// User) — business name/reg no are required the same way a self-registered
+// wholesale signup requires them.
+export const createWholesaleAccountSchema = z.object({
+  name: z.string().min(2, "Please enter a full name").max(100),
+  email: z.string().email("Enter a valid email address"),
+  temporaryPassword: z.string().min(8, "Password must be at least 8 characters"),
+  businessName: z.string().min(1, "Business name is required").max(150),
+  businessRegNo: z.string().min(1, "Business registration number is required").max(100),
+});

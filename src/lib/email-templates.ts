@@ -52,6 +52,22 @@ export function passwordResetEmail(input: { resetUrl: string; expiresInMinutes: 
   return { subject, html, text };
 }
 
+export function wholesaleAccountCreatedEmail(input: { email: string; temporaryPassword: string; changePasswordUrl: string }): EmailContent {
+  const subject = "Your Ratnavue wholesale account is ready";
+  const html = emailLayout(`
+    <h1 style="margin:0 0 16px;font-size:22px;font-weight:normal;color:#2b2b28;">Your wholesale account is ready</h1>
+    <p style="margin:0 0 20px;">An account has been created for you on Ratnavue's wholesale program. Sign in with the temporary password below, then change it right away.</p>
+    <p style="margin:0 0 8px;"><strong>Email:</strong> ${input.email}</p>
+    <p style="margin:0 0 24px;"><strong>Temporary password:</strong> ${input.temporaryPassword}</p>
+    <p style="margin:0 0 24px;">
+      <a href="${input.changePasswordUrl}" style="display:inline-block;background-color:#2b2b28;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:4px;font-family:Arial,sans-serif;font-size:14px;">Change Password</a>
+    </p>
+    <p style="margin:0;font-size:13px;color:#6b6b66;">For your security, please change this password the first time you sign in.</p>
+  `);
+  const text = `Your Ratnavue wholesale account is ready\n\nEmail: ${input.email}\nTemporary password: ${input.temporaryPassword}\n\nSign in and change your password right away: ${input.changePasswordUrl}`;
+  return { subject, html, text };
+}
+
 export function orderConfirmationEmail(input: {
   orderNumber: string;
   currency: "USD" | "LKR";

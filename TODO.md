@@ -8,15 +8,32 @@ against the shared prod DB before shipping dependent code, then
 
 ## Catalog & inventory
 
-- **Jewelry style/stock variants** — some jewelry pieces should offer
-  multiple style/size variants, each with its own stock count; gems stay
-  one-of-a-kind (qty 1, existing `stockStatus` enum) since that's already
-  correct. Needs a `JewelryVariant` model, a variant picker on the product
-  page, cart/checkout carrying the selected variant, and per-variant stock
-  decrement at payment instead of the whole piece's `stockStatus`. Touches
-  `RetailCartItem`, `OrderItem`, `lib/checkout.ts`, `actions/checkout.ts`,
-  the admin jewelry form, and `lib/orders.ts`'s finalize/cancel logic.
-  Largest single remaining item.
+- ~~**Jewelry style/stock variants**~~ — done. Opt-in per piece (a piece
+  with none behaves exactly as before): new `JewelryVariant` model —
+  free-text label (e.g. "Size 7"), its own `stockStatus`, and an optional
+  price/cost override that falls back to the piece's own when unset.
+  Confirmed this shape with you before building (label style, optional
+  override, opt-in) via three quick questions. Admin manages variants from
+  a piece's own edit page (`VariantManager.tsx`, mirrors
+  `GemstoneLinkManager`); the product page shows a picker
+  (`JewelryVariantPicker.tsx`) once any exist, requiring one be chosen
+  before Add to Cart. `RetailCartItem`/`OrderItem` both carry the chosen
+  variant; `lib/checkout.ts`'s money math and `lib/orders.ts`'s
+  finalize/cancel logic sell/release the specific variant, not the whole
+  piece. The piece's own `stockStatus` is kept as a derived "is anything
+  under this piece still buyable" summary (`recomputeJewelryAvailability`
+  in `lib/orders.ts`, called after every variant stock change) purely so
+  every existing catalog/listing query that filters on it keeps working
+  unchanged without learning about variants itself. 25 new tests; live-
+  verified end-to-end via Playwright (admin creates two variants with a
+  price override, customer picks one and checks out, only that variant
+  reserves/sells while the other and the piece's own summary stay
+  correct). Found and fixed an adjacent bug in the new variant schema
+  along the way (blank cost/price field coercing to 0 instead of staying
+  unset — the exact bug `optionalMoney` already exists to prevent
+  elsewhere; same latent bug appears to affect the pre-existing
+  gemstone/jewelry `costPrice`/`price`/`retailPrice` fields too, not
+  fixed here — flagged, not in scope for this item).
 - ~~**Sold-item catalog visibility**~~ — investigated: a sold item was
   never actually buyable (the storefront only renders Add to Cart when
   `stockStatus === "AVAILABLE"`, and it already shows a "Sold" badge), so

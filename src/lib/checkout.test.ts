@@ -35,6 +35,21 @@ function gemCartItem(overrides: Record<string, unknown> = {}) {
     unitPrice: 100,
     gemstone: { id: "gem-1", name: "Blue Sapphire", stockStatus: "AVAILABLE", retailPrice: 100, lkrRetailPrice: 30000, costPrice: 60 },
     jewelry: null,
+    jewelryVariant: null,
+    ...overrides,
+  };
+}
+
+function jewelryCartItem(overrides: Record<string, unknown> = {}) {
+  return {
+    gemstoneId: null,
+    jewelryId: "jewelry-1",
+    jewelryVariantId: null,
+    quantity: 1,
+    unitPrice: 500,
+    gemstone: null,
+    jewelry: { id: "jewelry-1", name: "Signet Ring", stockStatus: "AVAILABLE", retailPrice: 500, lkrRetailPrice: 150000, costPrice: 300 },
+    jewelryVariant: null,
     ...overrides,
   };
 }
@@ -230,6 +245,65 @@ describe("buildCheckoutBreakdown", () => {
 
       expect(result.shipping).toBeCloseTo(3000 / 300);
       expect(result.shippingToBeArranged).toBe(false);
+    });
+  });
+
+  describe("jewelry variants", () => {
+    it("throws when the specific chosen variant is unavailable, even if the piece's own stockStatus says otherwise", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [jewelryCartItem({ jewelryVariantId: "variant-1", jewelryVariant: { id: "variant-1", label: "Size 7", retailPrice: null, lkrRetailPrice: null, costPrice: null, stockStatus: "SOLD" } })],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+      await expect(buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States" })).rejects.toThrow(/no longer available/i);
+    });
+
+    it("uses the variant's own price override over the piece's base price, and labels the line with it", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [jewelryCartItem({ jewelryVariantId: "variant-1", jewelryVariant: { id: "variant-1", label: "18K, Size 9", retailPrice: 650, lkrRetailPrice: null, costPrice: null, stockStatus: "AVAILABLE" } })],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States" });
+
+      expect(result.subtotal).toBe(650);
+      expect(result.items[0].label).toBe("Signet Ring — 18K, Size 9");
+    });
+
+    it("falls back to the piece's base price when the chosen variant has no override", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [jewelryCartItem({ jewelryVariantId: "variant-1", jewelryVariant: { id: "variant-1", label: "Size 7", retailPrice: null, lkrRetailPrice: null, costPrice: null, stockStatus: "AVAILABLE" } })],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States" });
+
+      expect(result.subtotal).toBe(500);
+    });
+
+    it("uses the variant's own cost override for the birthday-discount profit calc", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [jewelryCartItem({ jewelryVariantId: "variant-1", jewelryVariant: { id: "variant-1", label: "Size 7", retailPrice: null, lkrRetailPrice: null, costPrice: 450, stockStatus: "AVAILABLE" } })],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+      prismaMock.user.findUniqueOrThrow.mockResolvedValue({ ...userFixture, dateOfBirth: new Date(new Date().getFullYear() - 30, new Date().getMonth(), 15) } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States" });
+
+      // base price 500, variant costPrice override 450 -> profit 50, 10% = 5
+      // (piece's own costPrice of 300 would have given a much bigger discount)
+      expect(result.birthdayDiscount).toBeCloseTo(5);
+    });
+
+    it("throws on /lk when the chosen variant and the piece both have no rupee price", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [jewelryCartItem({
+          jewelryVariantId: "variant-1",
+          jewelry: { id: "jewelry-1", name: "Signet Ring", stockStatus: "AVAILABLE", retailPrice: 500, lkrRetailPrice: null, costPrice: 300 },
+          jewelryVariant: { id: "variant-1", label: "Size 7", retailPrice: null, lkrRetailPrice: null, costPrice: null, stockStatus: "AVAILABLE" },
+        })],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+      await expect(buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "Sri Lanka", market: "lk" })).rejects.toThrow(/can't be bought online in rupees/i);
     });
   });
 });

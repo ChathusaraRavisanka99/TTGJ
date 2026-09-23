@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { deleteGemstone, deleteJewelry, bulkSetCatalogPublished } from "@/actions/catalog-admin";
+import { deleteGemstone, deleteJewelry, bulkSetCatalogPublished, createJewelryVariant, updateJewelryVariant, deleteJewelryVariant } from "@/actions/catalog-admin";
+
+function formData(fields: Record<string, string>): FormData {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(fields)) fd.set(k, v);
+  return fd;
+}
 
 vi.mock("@/lib/rbac", () => ({ requireAdmin: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN" }) }));
 
@@ -96,5 +102,105 @@ describe("bulkSetCatalogPublished", () => {
     expect(result).toEqual({ ok: true });
     expect(prismaMock.jewelryPiece.updateMany).toHaveBeenCalledWith({ where: { id: { in: ["jew-1", "jew-2", "jew-3"] } }, data: { isPublished: true } });
     expect(prismaMock.gemstone.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("createJewelryVariant", () => {
+  it("rejects a blank label before touching the database", async () => {
+    prismaMock.jewelryPiece.findUnique.mockResolvedValue({ market: "intl" } as never);
+
+    const result = await createJewelryVariant("jew-1", formData({ label: "" }));
+
+    expect(result.ok).toBe(false);
+    expect(prismaMock.jewelryVariant.create).not.toHaveBeenCalled();
+  });
+
+  it("creates an intl variant with the USD price field, at the next sortOrder, and recomputes the piece", async () => {
+    prismaMock.jewelryPiece.findUnique.mockResolvedValue({ market: "intl" } as never);
+    prismaMock.jewelryVariant.count.mockResolvedValueOnce(2); // existing variants -> sortOrder
+    prismaMock.jewelryVariant.create.mockResolvedValue({ id: "variant-1" } as never);
+    prismaMock.jewelryVariant.count.mockResolvedValueOnce(3); // recompute's own count
+    prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
+
+    const result = await createJewelryVariant("jew-1", formData({ label: "Size 7", retailPrice: "650", lkrRetailPrice: "999999" }));
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.jewelryVariant.create).toHaveBeenCalledWith({
+      data: { jewelryId: "jew-1", label: "Size 7", retailPrice: 650, lkrRetailPrice: undefined, costPrice: undefined, stockStatus: "AVAILABLE", sortOrder: 2 },
+    });
+  });
+
+  it("creates an /lk variant with the LKR price field, ignoring any USD field submitted", async () => {
+    prismaMock.jewelryPiece.findUnique.mockResolvedValue({ market: "lk" } as never);
+    prismaMock.jewelryVariant.count.mockResolvedValueOnce(0);
+    prismaMock.jewelryVariant.create.mockResolvedValue({ id: "variant-1" } as never);
+    prismaMock.jewelryVariant.count.mockResolvedValueOnce(1);
+    prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
+
+    await createJewelryVariant("jew-1", formData({ label: "Size 7", retailPrice: "650", lkrRetailPrice: "199000" }));
+
+    expect(prismaMock.jewelryVariant.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ retailPrice: undefined, lkrRetailPrice: 199000 }) }),
+    );
+  });
+
+  it("returns an error when the piece doesn't exist", async () => {
+    prismaMock.jewelryPiece.findUnique.mockResolvedValue(null);
+
+    const result = await createJewelryVariant("jew-missing", formData({ label: "Size 7" }));
+
+    expect(result).toEqual({ ok: false, error: "Jewelry piece not found." });
+  });
+});
+
+describe("updateJewelryVariant", () => {
+  it("clears a previously-set price override when the field is submitted blank", async () => {
+    prismaMock.jewelryPiece.findUnique.mockResolvedValue({ market: "intl" } as never);
+    prismaMock.jewelryVariant.update.mockResolvedValue({} as never);
+    prismaMock.jewelryVariant.count.mockResolvedValue(1);
+    prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
+
+    const result = await updateJewelryVariant("variant-1", "jew-1", formData({ label: "Size 7", stockStatus: "AVAILABLE" }));
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.jewelryVariant.update).toHaveBeenCalledWith({
+      where: { id: "variant-1" },
+      data: { label: "Size 7", retailPrice: null, lkrRetailPrice: null, costPrice: null, stockStatus: "AVAILABLE" },
+    });
+  });
+
+  it("recomputes the parent piece's availability after a stock-status edit", async () => {
+    prismaMock.jewelryPiece.findUnique.mockResolvedValue({ market: "intl" } as never);
+    prismaMock.jewelryVariant.update.mockResolvedValue({} as never);
+    prismaMock.jewelryVariant.count.mockResolvedValue(0);
+    prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
+
+    await updateJewelryVariant("variant-1", "jew-1", formData({ label: "Size 7", stockStatus: "SOLD" }));
+
+    expect(prismaMock.jewelryPiece.update).toHaveBeenCalledWith({ where: { id: "jew-1" }, data: { stockStatus: "SOLD" } });
+  });
+});
+
+describe("deleteJewelryVariant", () => {
+  it("refuses to delete a variant with order history", async () => {
+    prismaMock.jewelryVariant.findUnique.mockResolvedValue({ id: "variant-1", _count: { orderItems: 1 } } as never);
+
+    const result = await deleteJewelryVariant("variant-1", "jew-1");
+
+    expect(result.ok).toBe(false);
+    expect(prismaMock.jewelryVariant.delete).not.toHaveBeenCalled();
+  });
+
+  it("deletes a variant with no order history and recomputes the parent piece", async () => {
+    prismaMock.jewelryVariant.findUnique.mockResolvedValue({ id: "variant-1", _count: { orderItems: 0 } } as never);
+    prismaMock.jewelryVariant.delete.mockResolvedValue({} as never);
+    prismaMock.jewelryVariant.count.mockResolvedValue(0);
+    prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
+
+    const result = await deleteJewelryVariant("variant-1", "jew-1");
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.jewelryVariant.delete).toHaveBeenCalledWith({ where: { id: "variant-1" } });
+    expect(prismaMock.jewelryPiece.update).toHaveBeenCalledWith({ where: { id: "jew-1" }, data: { stockStatus: "SOLD" } });
   });
 });

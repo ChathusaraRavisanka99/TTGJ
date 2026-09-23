@@ -214,7 +214,10 @@
     "moreFrom": "එකතුවෙන් තවත්",
     "youMayLove": "ඔබට ප්‍රිය විය හැකි තවත්",
     "requestQuote": "මිල ගණන් ඉල්ලන්න",
-    "viewOptions": "විකල්ප බලන්න"
+    "viewOptions": "විකල්ප බලන්න",
+    "chooseOption": "කරත්තයට එකතු කිරීමට ඉහත විකල්පයක් තෝරන්න.",
+    "variantSold": "විකුණා අවසන්",
+    "variantReserved": "වෙන්කර ඇත"
   },
   "cart": {
     "kicker": "ඔබේ කරත්තය",

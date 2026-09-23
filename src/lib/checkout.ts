@@ -16,6 +16,7 @@ export function isSriLanka(country: string): boolean {
 export interface CheckoutLineItem {
   gemstoneId: string | null;
   jewelryId: string | null;
+  jewelryVariantId: string | null;
   label: string;
   unitPrice: number;
   quantity: number;
@@ -81,7 +82,7 @@ export async function buildCheckoutBreakdown(input: {
     prisma.retailCart.findUnique({
       where: { userId_market: { userId: input.userId, market } },
       include: {
-        items: { include: { gemstone: { include: { shippingWeightTier: true } }, jewelry: { include: { shippingWeightTier: true } } } },
+        items: { include: { gemstone: { include: { shippingWeightTier: true } }, jewelry: { include: { shippingWeightTier: true } }, jewelryVariant: true } },
         discountCode: true,
       },
     }),
@@ -99,8 +100,11 @@ export async function buildCheckoutBreakdown(input: {
   // (rather than returning a partial breakdown) so this is the single
   // gate every path to creating an Order goes through — see
   // initiateRetailCheckout, which surfaces this message as-is.
+  // A varianted line's real availability/price is its own variant's — the
+  // parent piece's own fields are only a derived summary once it has any
+  // (see lib/orders.ts's recompute of JewelryPiece.stockStatus).
   const unavailable = cart.items
-    .filter((item) => (item.gemstone ?? item.jewelry)?.stockStatus !== "AVAILABLE")
+    .filter((item) => (item.jewelryVariant?.stockStatus ?? (item.gemstone ?? item.jewelry)?.stockStatus) !== "AVAILABLE")
     .map((item) => item.gemstone?.name ?? item.jewelry?.name ?? "An item");
   if (unavailable.length > 0) {
     const subject = unavailable.join(", ");
@@ -112,7 +116,7 @@ export async function buildCheckoutBreakdown(input: {
   // in the first place, but an admin can clear a price after it was added.
   if (lk) {
     const unpriced = cart.items
-      .filter((item) => (item.gemstone ?? item.jewelry)?.lkrRetailPrice == null)
+      .filter((item) => (item.jewelryVariant?.lkrRetailPrice ?? (item.gemstone ?? item.jewelry)?.lkrRetailPrice) == null)
       .map((item) => item.gemstone?.name ?? item.jewelry?.name ?? "An item");
     if (unpriced.length > 0) {
       throw new Error(`${unpriced.join(", ")} can't be bought online in rupees right now — please remove ${unpriced.length === 1 ? "it" : "them"} from your cart or request a quote.`);
@@ -129,8 +133,12 @@ export async function buildCheckoutBreakdown(input: {
   let birthdayDiscount = 0;
   const items: CheckoutLineItem[] = cart.items.map((item) => {
     const product = item.gemstone ?? item.jewelry;
-    const unitPrice = lk ? product!.lkrRetailPrice! : (product?.retailPrice ?? item.unitPrice);
-    const label = item.gemstone?.name ?? item.jewelry?.name ?? "Item";
+    const variant = item.jewelryVariant;
+    const unitPrice = lk
+      ? (variant?.lkrRetailPrice ?? product!.lkrRetailPrice!)
+      : (variant?.retailPrice ?? product?.retailPrice ?? item.unitPrice);
+    const name = item.gemstone?.name ?? item.jewelry?.name ?? "Item";
+    const label = variant ? `${name} — ${variant.label}` : name;
     const lineTotal = unitPrice * item.quantity;
     subtotal += lineTotal;
 
@@ -142,13 +150,13 @@ export async function buildCheckoutBreakdown(input: {
     // costPrice is recorded in the listing's own currency (rupees for a Sri
     // Lanka listing, dollars for an international one), so it lines up with
     // the price without any conversion.
-    const costPrice = product?.costPrice ?? null;
+    const costPrice = variant?.costPrice ?? product?.costPrice ?? null;
     if (birthdayEligible && !isPromotional && costPrice != null) {
       const profit = Math.max(0, unitPrice - costPrice);
       birthdayDiscount += profit * (settings.birthdayDiscountPercent / 100) * item.quantity;
     }
 
-    return { gemstoneId: item.gemstoneId, jewelryId: item.jewelryId, label, unitPrice, quantity: item.quantity, lineTotal };
+    return { gemstoneId: item.gemstoneId, jewelryId: item.jewelryId, jewelryVariantId: item.jewelryVariantId, label, unitPrice, quantity: item.quantity, lineTotal };
   });
 
   // A code only counts on /lk if the admin gave it a rupee value.

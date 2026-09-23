@@ -30,10 +30,14 @@ export default async function RetailCartPage() {
 
   const subtotal = retailCartSubtotal(cart.items.map((item) => ({ unitPrice: retailCartUnitPrice(item, market), quantity: item.quantity })));
   const birthdayEligible = isBirthdayEligible(user);
-  const hasUnavailableItem = cart.items.some((item) => (item.gemstone?.stockStatus ?? item.jewelry?.stockStatus) !== "AVAILABLE");
+  // A varianted line's real availability is its own variant's stock — the
+  // parent piece's stockStatus is only a derived "any variant left"
+  // summary once it has any (see lib/orders.ts's recompute).
+  const itemStockStatus = (item: (typeof cart.items)[number]) => item.jewelryVariant?.stockStatus ?? item.gemstone?.stockStatus ?? item.jewelry?.stockStatus;
+  const hasUnavailableItem = cart.items.some((item) => itemStockStatus(item) !== "AVAILABLE");
   const hasNonPromoItemWithCost = cart.items.some((item) => {
     const isPromotional = item.gemstoneId ? promotions.gemstonePrices.has(item.gemstoneId) : item.jewelryId ? promotions.jewelryPrices.has(item.jewelryId) : false;
-    const costPrice = item.gemstone?.costPrice ?? item.jewelry?.costPrice ?? null;
+    const costPrice = item.jewelryVariant?.costPrice ?? item.gemstone?.costPrice ?? item.jewelry?.costPrice ?? null;
     return !isPromotional && costPrice != null;
   });
 
@@ -66,7 +70,7 @@ export default async function RetailCartPage() {
                   label: retailCartItemLabel(item),
                   href: item.gemstone ? `/gems/${item.gemstone.slug}` : `/jewelry/${item.jewelry!.slug}`,
                   imageUrl: (item.gemstone?.media[0]?.url) ?? (item.jewelry?.media[0]?.url),
-                  unavailable: (item.gemstone?.stockStatus ?? item.jewelry?.stockStatus) !== "AVAILABLE",
+                  unavailable: itemStockStatus(item) !== "AVAILABLE",
                 }}
               />
             ))}

@@ -101,6 +101,20 @@ export const jewelrySchema = z.object({
 
 export type JewelryInput = z.infer<typeof jewelrySchema>;
 
+// A style/size variant's optional overrides — same "blank means inherit
+// the parent piece's own value" convention as the piece's own price
+// fields; only the field for the piece's own market is ever used (the
+// action decides which, same as createJewelry/updateJewelry).
+export const jewelryVariantSchema = z.object({
+  label: z.string().min(1, "Enter a label, e.g. \"Size 7\"").max(100),
+  retailPrice: optionalMoney,
+  costPrice: optionalMoney,
+  lkrRetailPrice: optionalMoney,
+  stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
+});
+
+export type JewelryVariantInput = z.infer<typeof jewelryVariantSchema>;
+
 export const mineralSchema = z.object({
   name: z.string().min(2).max(100),
   description: z.string().max(500).optional().or(z.literal("")),

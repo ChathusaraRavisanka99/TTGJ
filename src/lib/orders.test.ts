@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails } from "@/lib/orders";
+import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails, recomputeJewelryAvailability } from "@/lib/orders";
 import { sendEmail } from "@/lib/email";
 import { registerTracking } from "@/lib/track17";
 
@@ -19,7 +19,7 @@ const baseOrder = {
   birthdayDiscountAmount: 0,
   pointsRedeemed: 0,
   status: "PENDING_PAYMENT",
-  items: [] as { gemstoneId: string | null; jewelryId: string | null; label?: string; quantity?: number; lineTotal?: number }[],
+  items: [] as { gemstoneId: string | null; jewelryId: string | null; jewelryVariantId?: string | null; label?: string; quantity?: number; lineTotal?: number }[],
   user: { email: "customer@example.com" },
 };
 
@@ -86,6 +86,36 @@ describe("finalizePaidOrder", () => {
 
     expect(prismaMock.gemstone.updateMany).not.toHaveBeenCalled();
     expect(prismaMock.jewelryPiece.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("sells only the chosen variant, not the whole piece, and recomputes the piece's own summary status", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({
+      ...baseOrder,
+      items: [{ gemstoneId: null, jewelryId: "jew-1", jewelryVariantId: "variant-1" }],
+    } as never);
+    prismaMock.jewelryVariant.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.jewelryVariant.count.mockResolvedValue(0); // no other variant still available
+    prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
+
+    await finalizePaidOrder("order-1");
+
+    expect(prismaMock.jewelryPiece.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.jewelryVariant.updateMany).toHaveBeenCalledWith({ where: { id: { in: ["variant-1"] } }, data: { stockStatus: "SOLD" } });
+    expect(prismaMock.jewelryPiece.update).toHaveBeenCalledWith({ where: { id: "jew-1" }, data: { stockStatus: "SOLD" } });
+  });
+
+  it("keeps a varianted piece AVAILABLE after a sale if another one of its variants still is", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({
+      ...baseOrder,
+      items: [{ gemstoneId: null, jewelryId: "jew-1", jewelryVariantId: "variant-1" }],
+    } as never);
+    prismaMock.jewelryVariant.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.jewelryVariant.count.mockResolvedValue(1); // e.g. a different size is still AVAILABLE
+    prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
+
+    await finalizePaidOrder("order-1");
+
+    expect(prismaMock.jewelryPiece.update).toHaveBeenCalledWith({ where: { id: "jew-1" }, data: { stockStatus: "AVAILABLE" } });
   });
 
   it("finalizes a discount code redemption when one was applied at checkout", async () => {
@@ -226,6 +256,27 @@ describe("cancelPendingOrder", () => {
     });
   });
 
+  it("releases only a RESERVED variant back to AVAILABLE, not the whole piece, and recomputes the piece", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({
+      ...baseOrder, status: "PENDING_PAYMENT", items: [{ gemstoneId: null, jewelryId: "jew-1", jewelryVariantId: "variant-1" }],
+    } as never);
+    prismaMock.order.update.mockResolvedValue({} as never);
+    prismaMock.jewelryVariant.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.jewelryVariant.count.mockResolvedValue(1);
+    prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
+    prismaMock.notification.create.mockResolvedValue({} as never);
+
+    const result = await cancelPendingOrder("order-1");
+
+    expect(result).toEqual({ cancelled: true });
+    expect(prismaMock.jewelryPiece.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.jewelryVariant.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["variant-1"] }, stockStatus: "RESERVED" },
+      data: { stockStatus: "AVAILABLE" },
+    });
+    expect(prismaMock.jewelryPiece.update).toHaveBeenCalledWith({ where: { id: "jew-1" }, data: { stockStatus: "AVAILABLE" } });
+  });
+
   it("notifies the customer by default (an admin cancelling on their behalf)", async () => {
     prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PENDING_PAYMENT", items: [] } as never);
     prismaMock.order.update.mockResolvedValue({} as never);
@@ -243,6 +294,35 @@ describe("cancelPendingOrder", () => {
     await cancelPendingOrder("order-1", { notifyCustomer: false });
 
     expect(prismaMock.notification.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("recomputeJewelryAvailability", () => {
+  it("sets a piece AVAILABLE when at least one of its variants still is", async () => {
+    prismaMock.jewelryVariant.count.mockResolvedValue(2);
+    prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
+
+    await recomputeJewelryAvailability(prismaMock, ["jew-1"]);
+
+    expect(prismaMock.jewelryPiece.update).toHaveBeenCalledWith({ where: { id: "jew-1" }, data: { stockStatus: "AVAILABLE" } });
+  });
+
+  it("sets a piece SOLD once none of its variants are AVAILABLE (RESERVED doesn't count as buyable)", async () => {
+    prismaMock.jewelryVariant.count.mockResolvedValue(0);
+    prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
+
+    await recomputeJewelryAvailability(prismaMock, ["jew-1"]);
+
+    expect(prismaMock.jewelryPiece.update).toHaveBeenCalledWith({ where: { id: "jew-1" }, data: { stockStatus: "SOLD" } });
+  });
+
+  it("de-duplicates repeated jewelryIds (e.g. two variant lines of the same piece) into a single recompute", async () => {
+    prismaMock.jewelryVariant.count.mockResolvedValue(1);
+    prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
+
+    await recomputeJewelryAvailability(prismaMock, ["jew-1", "jew-1"]);
+
+    expect(prismaMock.jewelryPiece.update).toHaveBeenCalledTimes(1);
   });
 });
 

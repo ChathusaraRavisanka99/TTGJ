@@ -26,6 +26,7 @@ export async function getOrCreateRetailCart(userId: string, market: Market = "in
 export const retailCartItemInclude = {
   gemstone: { include: { media: { orderBy: { sortOrder: "asc" as const } } } },
   jewelry: { include: { media: { orderBy: { sortOrder: "asc" as const } } } },
+  jewelryVariant: true,
 } as const;
 
 export async function getRetailCartWithItems(userId: string, market: Market = "intl") {
@@ -36,8 +37,9 @@ export async function getRetailCartWithItems(userId: string, market: Market = "i
   });
 }
 
-export function retailCartItemLabel(item: { gemstone: { name: string } | null; jewelry: { name: string } | null }): string {
-  return item.gemstone?.name ?? item.jewelry?.name ?? "Item";
+export function retailCartItemLabel(item: { gemstone: { name: string } | null; jewelry: { name: string } | null; jewelryVariant?: { label: string } | null }): string {
+  const name = item.gemstone?.name ?? item.jewelry?.name ?? "Item";
+  return item.jewelryVariant ? `${name} — ${item.jewelryVariant.label}` : name;
 }
 
 interface PricedProduct {
@@ -46,14 +48,16 @@ interface PricedProduct {
 }
 
 /** The line's current per-unit price for a market — the live retail price
- * (rupee column on /lk), falling back to the price snapshotted when it was
+ * (rupee column on /lk), preferring the selected variant's own override
+ * when it has one, falling back to the price snapshotted when it was
  * added. Checkout re-reads live prices itself (buildCheckoutBreakdown). */
 export function retailCartUnitPrice(
-  item: { unitPrice: number; gemstone: PricedProduct | null; jewelry: PricedProduct | null },
+  item: { unitPrice: number; gemstone: PricedProduct | null; jewelry: PricedProduct | null; jewelryVariant?: PricedProduct | null },
   market: Market,
 ): number {
   const product = item.gemstone ?? item.jewelry;
-  const live = market === "lk" ? product?.lkrRetailPrice : product?.retailPrice;
+  const variantLive = item.jewelryVariant ? (market === "lk" ? item.jewelryVariant.lkrRetailPrice : item.jewelryVariant.retailPrice) : null;
+  const live = variantLive ?? (market === "lk" ? product?.lkrRetailPrice : product?.retailPrice);
   return live ?? item.unitPrice;
 }
 

@@ -215,7 +215,10 @@
     "moreFrom": "More From the Collection",
     "youMayLove": "You May Also Love",
     "requestQuote": "Request a Quote",
-    "viewOptions": "View Options"
+    "viewOptions": "View Options",
+    "chooseOption": "Choose an option above to add it to your cart.",
+    "variantSold": "Sold",
+    "variantReserved": "Reserved"
   },
   "cart": {
     "kicker": "Your Cart",

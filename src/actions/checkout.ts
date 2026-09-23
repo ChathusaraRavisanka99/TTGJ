@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { buildCheckoutBreakdown } from "@/lib/checkout";
 import { buildPayhereCheckoutFields, payhereCheckoutUrl, type PayhereCheckoutFields } from "@/lib/payhere";
-import { nextOrderNumber, cancelPendingOrder as cancelOrder } from "@/lib/orders";
+import { nextOrderNumber, cancelPendingOrder as cancelOrder, recomputeJewelryAvailability } from "@/lib/orders";
 import { getMarket } from "@/lib/market";
 import { LK_PREFIX } from "@/lib/market-shared";
 import { defaultPaymentMethod, isPaymentMethodLive } from "@/lib/payment-methods";
@@ -102,6 +102,7 @@ export async function initiateRetailCheckout(formData: FormData): Promise<Initia
         create: breakdown.items.map((item) => ({
           gemstoneId: item.gemstoneId,
           jewelryId: item.jewelryId,
+          jewelryVariantId: item.jewelryVariantId,
           label: item.label,
           unitPrice: item.unitPrice,
           quantity: item.quantity,
@@ -116,14 +117,23 @@ export async function initiateRetailCheckout(formData: FormData): Promise<Initia
     // meantime. The order and the hold are one transaction, and the hold is
     // a conditional update (AVAILABLE -> RESERVED): if anything was taken
     // between the availability check above and now, none of it commits.
+    // A jewelry item with a variant reserves that variant, not the whole
+    // piece (see recomputeJewelryAvailability — other variants of the same
+    // piece stay purchasable).
     const gemstoneIds = breakdown.items.map((i) => i.gemstoneId).filter((id): id is string => id != null);
-    const jewelryIds = breakdown.items.map((i) => i.jewelryId).filter((id): id is string => id != null);
+    const variantItems = breakdown.items.filter((i) => i.jewelryVariantId != null);
+    const plainJewelryIds = breakdown.items.filter((i) => i.jewelryId != null && i.jewelryVariantId == null).map((i) => i.jewelryId!);
     try {
       const wireOrder = await prisma.$transaction(async (tx) => {
         const created = await tx.order.create({ data: orderData });
         const gems = await tx.gemstone.updateMany({ where: { id: { in: gemstoneIds }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
-        const jewels = await tx.jewelryPiece.updateMany({ where: { id: { in: jewelryIds }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
-        if (gems.count !== gemstoneIds.length || jewels.count !== jewelryIds.length) throw new Error("ITEM_UNAVAILABLE");
+        const jewels = await tx.jewelryPiece.updateMany({ where: { id: { in: plainJewelryIds }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+        const variantIds = variantItems.map((i) => i.jewelryVariantId!);
+        const variants = variantIds.length > 0
+          ? await tx.jewelryVariant.updateMany({ where: { id: { in: variantIds }, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } })
+          : { count: 0 };
+        if (gems.count !== gemstoneIds.length || jewels.count !== plainJewelryIds.length || variants.count !== variantIds.length) throw new Error("ITEM_UNAVAILABLE");
+        if (variantIds.length > 0) await recomputeJewelryAvailability(tx, variantItems.map((i) => i.jewelryId!));
         return created;
       });
       return { ok: true, method: "WIRE_TRANSFER", orderRecordId: wireOrder.id };

@@ -1,3 +1,4 @@
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { finalizeDiscountRedemption } from "@/lib/discount-codes";
 import { createNotification } from "@/lib/notifications";
@@ -14,6 +15,28 @@ import { getOrCreateChatThread } from "@/lib/chat";
 // Order lifecycle steps shared by every way an order gets settled: PayHere's
 // notify webhook (card) and an admin confirming a bank transfer landed
 // (wire). Kept in one place so the two can't drift on what "paid" means.
+
+type Tx = Prisma.TransactionClient | PrismaClient;
+
+/**
+ * A jewelry piece with variants has no real stock of its own — each
+ * variant does (see JewelryVariant) — but the piece's own `stockStatus`
+ * column is kept as a derived "is anything under this piece still
+ * buyable" summary (AVAILABLE if any variant still is, else SOLD; a
+ * RESERVED-only variant doesn't count as buyable) purely so every
+ * existing catalog/related-items/listing query that filters on
+ * `stockStatus` keeps working unchanged for a varianted piece, without
+ * having to learn about variants itself. Called after any variant's
+ * stockStatus changes (reserve, release, sell) for pieces that have
+ * variants; never called for a piece with none, whose own stockStatus
+ * stays exactly as direct as before this feature existed.
+ */
+export async function recomputeJewelryAvailability(tx: Tx, jewelryIds: string[]): Promise<void> {
+  for (const jewelryId of [...new Set(jewelryIds)]) {
+    const available = await tx.jewelryVariant.count({ where: { jewelryId, stockStatus: "AVAILABLE" } });
+    await tx.jewelryPiece.update({ where: { id: jewelryId }, data: { stockStatus: available > 0 ? "AVAILABLE" : "SOLD" } });
+  }
+}
 
 // Sequential per calendar year (ORD-2026-0007, ...) — same convention as
 // nextInvoiceNumber/nextCartInvoiceNumber in lib/invoicing.ts.
@@ -45,12 +68,21 @@ export async function finalizePaidOrder(orderId: string, payment: { gatewayPayme
   });
 
   const gemstoneIds = order.items.map((i) => i.gemstoneId).filter((id): id is string => id != null);
-  const jewelryIds = order.items.map((i) => i.jewelryId).filter((id): id is string => id != null);
+  // Split jewelry items by whether they're for a specific variant — a
+  // variant purchase sells only that variant (recomputeJewelryAvailability
+  // then derives the parent piece's own summary from what's left), a
+  // plain piece's own stockStatus is the real thing being sold.
+  const variantJewelryItems = order.items.filter((i) => i.jewelryVariantId != null);
+  const plainJewelryIds = order.items.filter((i) => i.jewelryId != null && i.jewelryVariantId == null).map((i) => i.jewelryId!);
   if (gemstoneIds.length > 0) {
     await prisma.gemstone.updateMany({ where: { id: { in: gemstoneIds } }, data: { stockStatus: "SOLD" } });
   }
-  if (jewelryIds.length > 0) {
-    await prisma.jewelryPiece.updateMany({ where: { id: { in: jewelryIds } }, data: { stockStatus: "SOLD" } });
+  if (plainJewelryIds.length > 0) {
+    await prisma.jewelryPiece.updateMany({ where: { id: { in: plainJewelryIds } }, data: { stockStatus: "SOLD" } });
+  }
+  if (variantJewelryItems.length > 0) {
+    await prisma.jewelryVariant.updateMany({ where: { id: { in: variantJewelryItems.map((i) => i.jewelryVariantId!) } }, data: { stockStatus: "SOLD" } });
+    await recomputeJewelryAvailability(prisma, variantJewelryItems.map((i) => i.jewelryId!));
   }
 
   if (order.discountCodeId) {
@@ -167,12 +199,17 @@ export async function cancelPendingOrder(orderId: string, options: { notifyCusto
   await prisma.order.update({ where: { id: order.id }, data: { status: "CANCELLED" } });
 
   const gemstoneIds = order.items.map((i) => i.gemstoneId).filter((id): id is string => id != null);
-  const jewelryIds = order.items.map((i) => i.jewelryId).filter((id): id is string => id != null);
+  const variantJewelryItems = order.items.filter((i) => i.jewelryVariantId != null);
+  const plainJewelryIds = order.items.filter((i) => i.jewelryId != null && i.jewelryVariantId == null).map((i) => i.jewelryId!);
   if (gemstoneIds.length > 0) {
     await prisma.gemstone.updateMany({ where: { id: { in: gemstoneIds }, stockStatus: "RESERVED" }, data: { stockStatus: "AVAILABLE" } });
   }
-  if (jewelryIds.length > 0) {
-    await prisma.jewelryPiece.updateMany({ where: { id: { in: jewelryIds }, stockStatus: "RESERVED" }, data: { stockStatus: "AVAILABLE" } });
+  if (plainJewelryIds.length > 0) {
+    await prisma.jewelryPiece.updateMany({ where: { id: { in: plainJewelryIds }, stockStatus: "RESERVED" }, data: { stockStatus: "AVAILABLE" } });
+  }
+  if (variantJewelryItems.length > 0) {
+    await prisma.jewelryVariant.updateMany({ where: { id: { in: variantJewelryItems.map((i) => i.jewelryVariantId!) }, stockStatus: "RESERVED" }, data: { stockStatus: "AVAILABLE" } });
+    await recomputeJewelryAvailability(prisma, variantJewelryItems.map((i) => i.jewelryId!));
   }
 
   if (options.notifyCustomer ?? true) {

@@ -10,6 +10,7 @@ import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { ProductPrice } from "@/components/catalog/ProductPrice";
 import { AddToCartButton } from "@/components/catalog/AddToCartButton";
+import { JewelryVariantPicker } from "@/components/catalog/JewelryVariantPicker";
 import { JewelryCard } from "@/components/catalog/JewelryCard";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/layout/Reveal";
@@ -87,8 +88,10 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
           {piece.description && <p className="mt-4 leading-relaxed text-charcoal/70">{piece.description}</p>}
 
           {/* Same honest "won't be restocked" reasoning as the gem detail
-              page — JewelryPiece rows have no quantity field either. */}
-          {piece.stockStatus === "AVAILABLE" && (
+              page — JewelryPiece rows have no quantity field either. Not
+              shown for a piece with variants: several of those can be
+              available at once, so "the only one" wouldn't be true. */}
+          {piece.stockStatus === "AVAILABLE" && piece.variants.length === 0 && (
             <p className="mt-4 flex items-center gap-1.5 text-xs font-medium text-gold-deep">
               <Sparkles size={13} /> {t("onlyOneJewelry")}
             </p>
@@ -125,7 +128,11 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
             {piece.retailPrice != null && (
               <div className="mt-8">
                 {session?.user ? (
-                  <AddToCartButton jewelryId={piece.id} />
+                  piece.variants.length > 0 ? (
+                    <JewelryVariantPicker jewelryId={piece.id} variants={piece.variants} basePrice={piece.retailPrice} />
+                  ) : (
+                    <AddToCartButton jewelryId={piece.id} />
+                  )
                 ) : (
                   <div>
                     <p className="text-sm text-charcoal/75">{t("signInToAddPrompt", { name: piece.name })}</p>

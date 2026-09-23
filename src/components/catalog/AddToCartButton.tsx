@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 // Adding an item stays on the product page (so a customer can add
 // several items before checking out) rather than redirecting to the
 // cart.
-export function AddToCartButton({ gemstoneId, jewelryId }: { gemstoneId?: string; jewelryId?: string }) {
+export function AddToCartButton({ gemstoneId, jewelryId, jewelryVariantId }: { gemstoneId?: string; jewelryId?: string; jewelryVariantId?: string }) {
   const t = useTranslations("product");
   const [error, setError] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
@@ -19,7 +19,7 @@ export function AddToCartButton({ gemstoneId, jewelryId }: { gemstoneId?: string
   function handleClick() {
     setError(null);
     startTransition(async () => {
-      const result = await addToRetailCart({ gemstoneId, jewelryId });
+      const result = await addToRetailCart({ gemstoneId, jewelryId, jewelryVariantId });
       if (!result.ok) {
         setError(result.error);
         return;

@@ -459,6 +459,14 @@ model JewelryPiece {
   media     MediaAsset[]
   gemstones JewelryGemstoneLink[]
 
+  // Opt-in — a piece with none behaves exactly as before (one buy button,
+  // stockStatus on the piece itself). Once a piece has variants, its own
+  // stockStatus is kept in sync as a derived summary (AVAILABLE if any
+  // variant still is, else SOLD — see the recompute in lib/orders.ts) so
+  // every existing catalog/related-items query that filters on it keeps
+  // working unchanged; the real per-variant state lives on JewelryVariant.
+  variants JewelryVariant[]
+
   quoteRequests        QuoteRequest[]
   auctions             Auction[]
   promotionItems       PromotionItem[]
@@ -477,6 +485,39 @@ model JewelryPiece {
   @@index([shippingWeightTierId])
   // Same reasoning as Gemstone's — see that model's comment.
   @@index([market, isPublished])
+}
+
+// A style/size variant of a jewelry piece (e.g. "Size 7", "18-inch chain",
+// "Rose Gold") — each with its own stock, so a customer buying one size
+// doesn't sell out the others. Label is free text rather than structured
+// axes: this catalog is small and pieces vary too much (rings vs.
+// necklaces vs. bracelets) for one fixed set of axes to fit all of them.
+model JewelryVariant {
+  id        String       @id @default(cuid())
+  jewelryId String
+  jewelry   JewelryPiece @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
+
+  label String
+
+  // Optional overrides — left blank, a variant inherits the parent piece's
+  // own price/cost (the common case: same piece, different size). Only the
+  // fields for the piece's own market are ever set, same convention as
+  // Gemstone/JewelryPiece's own price columns.
+  retailPrice    Float?
+  lkrRetailPrice Float?
+  costPrice      Float?
+
+  stockStatus StockStatus @default(AVAILABLE)
+  sortOrder   Int         @default(0)
+
+  retailCartItems RetailCartItem[]
+  orderItems      OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([jewelryId])
+  @@index([stockStatus])
 }
 
 model JewelryGemstoneLink {
@@ -1341,6 +1382,11 @@ model RetailCartItem {
   gemstone   Gemstone?     @relation(fields: [gemstoneId], references: [id], onDelete: Cascade)
   jewelryId  String?
   jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
+  // Set only when jewelryId is and the piece has variants — which specific
+  // one this line is for (see JewelryVariant). A piece with no variants
+  // never sets this, same as before variants existed.
+  jewelryVariantId String?
+  jewelryVariant   JewelryVariant? @relation(fields: [jewelryVariantId], references: [id], onDelete: Cascade)
 
   quantity  Int   @default(1)
   // Price at the moment this line was added — display only. Checkout
@@ -1351,7 +1397,13 @@ model RetailCartItem {
   createdAt DateTime @default(now())
 
   @@unique([cartId, gemstoneId])
-  @@unique([cartId, jewelryId])
+  // Not [cartId, jewelryId] alone: two different variants of the same piece
+  // must be addable to the same cart side by side. A non-varianted piece's
+  // line always has jewelryVariantId = null, and Postgres treats distinct
+  // NULLs as non-conflicting here — addToRetailCart's own findFirst-before-
+  // create is what actually prevents a duplicate line in that case, not
+  // this constraint (see actions/retail-cart.ts).
+  @@unique([cartId, jewelryId, jewelryVariantId])
   @@index([cartId])
 }
 
@@ -1510,6 +1562,12 @@ model OrderItem {
   gemstone   Gemstone?     @relation(fields: [gemstoneId], references: [id])
   jewelryId  String?
   jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id])
+  // Same as RetailCartItem's — which variant was actually bought, when the
+  // piece has any. SetNull (not Cascade) so a variant an admin later
+  // deletes doesn't erase this order's own history — label/unitPrice here
+  // are already a snapshot independent of the variant row.
+  jewelryVariantId String?
+  jewelryVariant   JewelryVariant? @relation(fields: [jewelryVariantId], references: [id], onDelete: SetNull)
 
   label     String
   unitPrice Float

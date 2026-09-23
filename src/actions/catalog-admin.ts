@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { slugify } from "@/lib/utils";
 import { saveCertificateFile, deleteUploadedFile } from "@/lib/media";
-import { gemstoneSchema, jewelrySchema } from "@/lib/validation/catalog";
+import { gemstoneSchema, jewelrySchema, jewelryVariantSchema } from "@/lib/validation/catalog";
+import { recomputeJewelryAvailability } from "@/lib/orders";
 import type { ActionResult } from "./auth";
 
 function formToObject(formData: FormData) {
@@ -357,6 +358,87 @@ export async function unlinkGemstoneFromJewelry(linkId: string, jewelryId: strin
   await requireAdmin();
   await prisma.jewelryGemstoneLink.delete({ where: { id: linkId } });
   revalidatePath(`/admin/jewelry/${jewelryId}`);
+  return { ok: true };
+}
+
+// ---------- Jewelry style/size variants ----------
+//
+// Opt-in per piece (see the schema comment on JewelryPiece.variants) —
+// only reachable from an already-saved piece's own edit page, same as
+// MediaManager/GemstoneLinkManager above.
+
+export async function createJewelryVariant(jewelryId: string, formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const piece = await prisma.jewelryPiece.findUnique({ where: { id: jewelryId }, select: { market: true } });
+  if (!piece) return { ok: false, error: "Jewelry piece not found." };
+
+  const parsed = jewelryVariantSchema.safeParse(formToObject(formData));
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid variant data." };
+
+  const data = parsed.data;
+  const lk = piece.market === "lk";
+  const sortOrder = await prisma.jewelryVariant.count({ where: { jewelryId } });
+  await prisma.jewelryVariant.create({
+    data: {
+      jewelryId,
+      label: data.label,
+      retailPrice: lk ? undefined : data.retailPrice,
+      lkrRetailPrice: lk ? data.lkrRetailPrice : undefined,
+      costPrice: data.costPrice,
+      stockStatus: data.stockStatus,
+      sortOrder,
+    },
+  });
+  await recomputeJewelryAvailability(prisma, [jewelryId]);
+
+  revalidatePath(`/admin/jewelry/${jewelryId}`);
+  revalidatePath("/admin/jewelry");
+  return { ok: true };
+}
+
+export async function updateJewelryVariant(variantId: string, jewelryId: string, formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const piece = await prisma.jewelryPiece.findUnique({ where: { id: jewelryId }, select: { market: true } });
+  if (!piece) return { ok: false, error: "Jewelry piece not found." };
+
+  const parsed = jewelryVariantSchema.safeParse(formToObject(formData));
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid variant data." };
+
+  const data = parsed.data;
+  const lk = piece.market === "lk";
+  await prisma.jewelryVariant.update({
+    where: { id: variantId },
+    data: {
+      label: data.label,
+      // Same "empty selection actually clears it" reasoning as
+      // updateGemstone's certLabId — a blank override here has to fall
+      // back to the piece's own price, not silently keep a stale one.
+      retailPrice: lk ? null : (data.retailPrice ?? null),
+      lkrRetailPrice: lk ? (data.lkrRetailPrice ?? null) : null,
+      costPrice: data.costPrice ?? null,
+      stockStatus: data.stockStatus,
+    },
+  });
+  await recomputeJewelryAvailability(prisma, [jewelryId]);
+
+  revalidatePath(`/admin/jewelry/${jewelryId}`);
+  revalidatePath("/admin/jewelry");
+  return { ok: true };
+}
+
+export async function deleteJewelryVariant(variantId: string, jewelryId: string): Promise<ActionResult> {
+  await requireAdmin();
+  const variant = await prisma.jewelryVariant.findUnique({ where: { id: variantId }, include: { _count: { select: { orderItems: true } } } });
+  if (!variant) return { ok: false, error: "Variant not found." };
+  if (variant._count.orderItems > 0) {
+    return { ok: false, error: "This variant has order history and can't be deleted — mark it Sold instead." };
+  }
+
+  await prisma.jewelryVariant.delete({ where: { id: variantId } });
+  await recomputeJewelryAvailability(prisma, [jewelryId]);
+
+  revalidatePath(`/admin/jewelry/${jewelryId}`);
+  revalidatePath("/admin/jewelry");
   return { ok: true };
 }
 

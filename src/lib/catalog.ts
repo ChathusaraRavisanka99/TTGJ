@@ -287,6 +287,7 @@ export async function getJewelryBySlug(slug: string, market: Market = "intl") {
     include: {
       media: { orderBy: { sortOrder: "asc" } },
       gemstones: { include: { gemstone: true } },
+      variants: { orderBy: { sortOrder: "asc" } },
     },
   });
   return piece && piece.market === market ? priceForMarket(piece, market) : null;

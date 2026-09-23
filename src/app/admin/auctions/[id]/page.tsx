@@ -16,6 +16,7 @@ export default async function AdminAuctionDetailPage({ params }: PageProps<"/adm
       gemstone: { include: { media: true } },
       jewelry: { include: { media: true } },
       bids: { include: { user: true }, orderBy: { amount: "desc" } },
+      order: { select: { id: true, orderNumber: true } },
     },
   });
   if (!auction) notFound();
@@ -59,7 +60,7 @@ export default async function AdminAuctionDetailPage({ params }: PageProps<"/adm
             </p>
           </div>
 
-          <AuctionAdminControls auctionId={auction.id} state={state} hasBids={auction.bids.length > 0} />
+          <AuctionAdminControls auctionId={auction.id} state={state} hasBids={auction.bids.length > 0} order={auction.order} />
         </div>
       </div>
 
@@ -82,7 +83,7 @@ export default async function AdminAuctionDetailPage({ params }: PageProps<"/adm
         </div>
       </div>
 
-      {auction.status !== "WON" && (
+      {auction.status !== "WON" && auction.status !== "EXPIRED" && (
         <div className="mt-8 border-t border-border-subtle pt-8">
           <p className="font-serif text-xl text-charcoal">Edit</p>
           <div className="mt-4">

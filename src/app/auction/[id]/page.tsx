@@ -9,6 +9,7 @@ import { getMarket } from "@/lib/market";
 import { getAuctionDisplayState, auctionItemLabel, highestBid, minimumNextBid, PUBLIC_AUCTION_STATE_LABELS } from "@/lib/auctions";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { BidForm } from "@/components/auction/BidForm";
+import { AuctionCountdown } from "@/components/auction/AuctionCountdown";
 import { Reveal } from "@/components/layout/Reveal";
 import { formatPrice } from "@/lib/utils";
 
@@ -96,9 +97,15 @@ export default async function AuctionDetailPage({ params }: PageProps<"/auction/
           <div className="mt-6">
             {state === "OPEN" ? (
               <BidForm auctionId={auction.id} minimumBid={minimumNextBid(auction, auction.bids)} isSignedIn={!!session?.user} />
+            ) : state === "SCHEDULED" ? (
+              <div>
+                <p className="text-xs uppercase tracking-wide text-charcoal/65">Bidding opens in</p>
+                <div className="mt-1">
+                  <AuctionCountdown targetDate={auction.startsAt.toISOString()} />
+                </div>
+              </div>
             ) : (
               <p className="text-sm text-charcoal/60">
-                {state === "SCHEDULED" && "Bidding hasn't opened yet — check back at the start time above."}
                 {(state === "RESERVE_NOT_MET" || state === "AWAITING_CONFIRMATION") && "Bidding has closed on this item."}
                 {state === "WON" && "This item has been sold."}
               </p>

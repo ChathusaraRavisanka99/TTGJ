@@ -17,7 +17,10 @@ export const cartItemMediaInclude = {
     },
   },
   // An auction-won item never has a quoteRequest — its product lives on
-  // the Auction itself (see ensureCartItemForAuction below).
+  // the Auction itself. Auction wins now create a real Order instead of a
+  // CartItem (see ensureOrderForAuctionWin in lib/orders.ts); this stays
+  // only to keep rendering whatever CartItem rows an auction win created
+  // before that migration.
   auction: {
     include: {
       gemstone: { include: { media: { orderBy: { sortOrder: "asc" as const } } } },
@@ -165,33 +168,3 @@ export async function ensureCartItemForSourcing(sourcingId: string): Promise<voi
   });
 }
 
-/**
- * Called when an admin confirms the current highest bidder on an auction
- * as the winner (see confirmAuctionWinner in actions/auctions.ts) —
- * mirrors ensureCartItemForQuote/ensureCartItemForSourcing exactly, just
- * fed by the winning bid instead of a quoted price. Idempotent, and a
- * no-op if the auction has no bids at all (nothing to confirm).
- */
-export async function ensureCartItemForAuction(auctionId: string): Promise<void> {
-  const existing = await prisma.cartItem.findUnique({ where: { auctionId } });
-  if (existing) return;
-
-  const auction = await prisma.auction.findUnique({
-    where: { id: auctionId },
-    include: { gemstone: true, jewelry: true, bids: { orderBy: { amount: "desc" }, take: 1 } },
-  });
-  if (!auction || auction.bids.length === 0) return;
-
-  const winningBid = auction.bids[0];
-  const label = auction.gemstone?.name ?? auction.jewelry?.name ?? "Auction item";
-
-  const cart = await getOrCreateOpenCart(winningBid.userId);
-  await prisma.cartItem.create({
-    data: {
-      cartId: cart.id,
-      auctionId: auction.id,
-      label: `Auction win: ${label}`,
-      amount: winningBid.amount,
-    },
-  });
-}

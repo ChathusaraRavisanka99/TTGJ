@@ -1195,6 +1195,11 @@ enum AuctionStatus {
   ACTIVE
   CANCELLED
   WON
+  // The winner didn't pay within the 24-hour window after confirmation —
+  // set by the api/cron/auction-payment-deadline route, which also
+  // cancels the unpaid order and releases the item back to AVAILABLE.
+  // Distinct from CANCELLED (an admin's own decision, any time).
+  EXPIRED
 }
 
 model Auction {
@@ -1220,9 +1225,14 @@ model Auction {
   endsAt   DateTime
 
   status AuctionStatus @default(DRAFT)
+  // Stamped when an admin confirms the winner (see confirmAuctionWinner)
+  // — the 24-hour payment window is computed from this, not stored
+  // separately, so it's always exactly "confirmed + 24h."
+  wonAt    DateTime?
 
   bids     AuctionBid[]
   cartItem CartItem?
+  order    Order?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1504,14 +1514,21 @@ model Order {
 
   // Set the moment an admin accepts a quote/sourcing request — see
   // ensureOrderForQuote/ensureOrderForSourcing in lib/orders.ts, which
-  // replaced the old accept-time CartItem for these two request types
-  // (Cart/CartItem stays in use for auction wins only, see
-  // ensureCartItemForAuction). Exactly one of these two is ever set; never
-  // both, and never either for an order placed through normal checkout.
+  // replaced the old accept-time CartItem for these two request types.
+  // Exactly one of these three is ever set; never more than one, and none
+  // for an order placed through normal checkout.
   quoteRequestId    String?          @unique
   quoteRequest      QuoteRequest?    @relation(fields: [quoteRequestId], references: [id])
   sourcingRequestId String?          @unique
   sourcingRequest   SourcingRequest? @relation(fields: [sourcingRequestId], references: [id])
+  // Set when this order was created from a confirmed auction win (see
+  // ensureOrderForAuctionWin in lib/orders.ts) — same idea, fed by the
+  // winning bid instead of a quoted price. A 24-hour payment window starts
+  // at Auction.wonAt; the cron job at api/cron/auction-payment-deadline
+  // cancels this order (and releases the item) if it's still
+  // PENDING_PAYMENT once that window passes.
+  auctionId String? @unique
+  auction   Auction? @relation(fields: [auctionId], references: [id])
   // True from creation until the customer fills in shipCountry/shipCity/etc
   // themselves (see actions/orders.ts's submitOrderShippingDetails) — a
   // quote/sourcing request never collects a shipping address the way

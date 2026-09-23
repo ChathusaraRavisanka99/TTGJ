@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails, recomputeJewelryAvailability, createManualSaleOrder, createOrderFromSourcing } from "@/lib/orders";
+import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails, recomputeJewelryAvailability, createManualSaleOrder, createOrderFromSourcing, ensureOrderForAuctionWin, expireUnpaidAuctionWins } from "@/lib/orders";
 import { sendEmail } from "@/lib/email";
 import { registerTracking } from "@/lib/track17";
 
@@ -611,6 +611,106 @@ describe("createOrderFromSourcing", () => {
 
     expect(result).toEqual({ ok: false, error: "One of the selected items was just taken elsewhere — refresh and try again." });
     expect(prismaMock.sourcingRequest.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("ensureOrderForAuctionWin", () => {
+  beforeEach(() => {
+    prismaMock.order.findUnique.mockResolvedValue(null);
+    prismaMock.order.count.mockResolvedValue(0); // nextOrderNumber
+    prismaMock.order.create.mockResolvedValue({ id: "order-1", orderNumber: "ORD-2026-0001" } as never);
+    prismaMock.notification.create.mockResolvedValue({} as never);
+  });
+
+  it("is idempotent — an already-created order is returned without creating a second one", async () => {
+    prismaMock.order.findUnique.mockResolvedValue({ id: "order-existing" } as never);
+    const result = await ensureOrderForAuctionWin("auction-1");
+    expect(result).toEqual({ ok: true, orderId: "order-existing" });
+    expect(prismaMock.order.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses an auction with no bids", async () => {
+    prismaMock.auction.findUnique.mockResolvedValue({ id: "auction-1", gemstoneId: "gem-1", jewelryId: null, bids: [] } as never);
+    const result = await ensureOrderForAuctionWin("auction-1");
+    expect(result).toEqual({ ok: false, error: "This auction has no bids to confirm." });
+  });
+
+  it("creates an unpaid order at the winning bid amount, reserves the item, and notifies the winner", async () => {
+    prismaMock.auction.findUnique.mockResolvedValue({
+      id: "auction-1", gemstoneId: "gem-1", jewelryId: null,
+      gemstone: { name: "Ceylon Blue Sapphire" }, jewelry: null,
+      bids: [{ userId: "user-1", amount: 1500 }],
+    } as never);
+    prismaMock.gemstone.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await ensureOrderForAuctionWin("auction-1");
+
+    expect(result).toEqual({ ok: true, orderId: "order-1" });
+    expect(prismaMock.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: "user-1",
+          auctionId: "auction-1",
+          subtotal: 1500,
+          total: 1500,
+          needsShippingDetails: true,
+          paymentMethod: "WIRE_TRANSFER",
+          items: { create: expect.objectContaining({ gemstoneId: "gem-1", label: "Auction win: Ceylon Blue Sapphire", unitPrice: 1500 }) },
+        }),
+      }),
+    );
+    expect(prismaMock.gemstone.updateMany).toHaveBeenCalledWith({ where: { id: "gem-1", stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+    expect(prismaMock.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ userId: "user-1", requestType: "order", requestId: "order-1" }) }),
+    );
+  });
+
+  it("rolls back and returns a friendly error when the item was taken elsewhere since bidding closed", async () => {
+    prismaMock.auction.findUnique.mockResolvedValue({
+      id: "auction-1", gemstoneId: "gem-1", jewelryId: null,
+      gemstone: { name: "Ceylon Blue Sapphire" }, jewelry: null,
+      bids: [{ userId: "user-1", amount: 1500 }],
+    } as never);
+    prismaMock.gemstone.updateMany.mockResolvedValue({ count: 0 });
+
+    const result = await ensureOrderForAuctionWin("auction-1");
+
+    expect(result).toEqual({ ok: false, error: "That item is no longer available to sell — it may have already been sold or reserved elsewhere." });
+  });
+});
+
+describe("expireUnpaidAuctionWins", () => {
+  it("releases and expires only a WON auction whose order is still unpaid past the 24h deadline", async () => {
+    prismaMock.auction.findMany.mockResolvedValue([
+      { id: "auction-1", order: { id: "order-1", status: "PENDING_PAYMENT" } },
+    ] as never);
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, id: "order-1", status: "PENDING_PAYMENT", items: [] } as never);
+    prismaMock.order.update.mockResolvedValue({} as never);
+    prismaMock.notification.create.mockResolvedValue({} as never);
+    prismaMock.auction.update.mockResolvedValue({} as never);
+
+    const result = await expireUnpaidAuctionWins();
+
+    expect(result).toEqual({ expired: 1 });
+    expect(prismaMock.order.update).toHaveBeenCalledWith({ where: { id: "order-1" }, data: { status: "CANCELLED" } });
+    expect(prismaMock.auction.update).toHaveBeenCalledWith({ where: { id: "auction-1" }, data: { status: "EXPIRED" } });
+  });
+
+  it("queries only WON auctions past the deadline with a still-unpaid order", async () => {
+    prismaMock.auction.findMany.mockResolvedValue([]);
+
+    await expireUnpaidAuctionWins();
+
+    expect(prismaMock.auction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { status: "WON", wonAt: { lte: expect.any(Date) }, order: { status: "PENDING_PAYMENT" } } }),
+    );
+  });
+
+  it("does nothing when there are no candidates", async () => {
+    prismaMock.auction.findMany.mockResolvedValue([]);
+    const result = await expireUnpaidAuctionWins();
+    expect(result).toEqual({ expired: 0 });
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
   });
 });
 

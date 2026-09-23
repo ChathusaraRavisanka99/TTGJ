@@ -13,10 +13,11 @@ export type AuctionDisplayState =
   | "RESERVE_NOT_MET"
   | "AWAITING_CONFIRMATION"
   | "WON"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "EXPIRED";
 
 interface AuctionForState {
-  status: "DRAFT" | "ACTIVE" | "CANCELLED" | "WON";
+  status: "DRAFT" | "ACTIVE" | "CANCELLED" | "WON" | "EXPIRED";
   startsAt: Date;
   endsAt: Date;
   reservePrice: number;
@@ -36,6 +37,7 @@ export function highestBid(bids: { amount: number }[]): number | null {
  */
 export function getAuctionDisplayState(auction: AuctionForState, now: Date = new Date()): AuctionDisplayState {
   if (auction.status === "CANCELLED") return "CANCELLED";
+  if (auction.status === "EXPIRED") return "EXPIRED";
   if (auction.status === "WON") return "WON";
   if (auction.status === "DRAFT") return "DRAFT";
 
@@ -56,6 +58,9 @@ export const AUCTION_STATE_LABELS: Record<AuctionDisplayState, string> = {
   AWAITING_CONFIRMATION: "Closed — Awaiting Confirmation",
   WON: "Won",
   CANCELLED: "Cancelled",
+  // The confirmed winner didn't pay within the 24-hour window — see
+  // expireUnpaidAuctionWins in lib/orders.ts.
+  EXPIRED: "Expired — Unpaid",
 };
 
 // Customer-facing wording is deliberately vaguer than the admin's — a
@@ -71,6 +76,9 @@ export const PUBLIC_AUCTION_STATE_LABELS: Record<AuctionDisplayState, string> = 
   AWAITING_CONFIRMATION: "Closed",
   WON: "Sold",
   CANCELLED: "Cancelled",
+  // Not something a bidder needs to parse as different from "closed" —
+  // it never sold, same as reserve-not-met from their point of view.
+  EXPIRED: "Closed",
 };
 
 /** The minimum a new bid has to be to be accepted right now. */

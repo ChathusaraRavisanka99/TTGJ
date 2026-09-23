@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { requireAdmin } from "@/lib/rbac";
-import { ensureCartItemForAuction } from "@/lib/cart";
+import { ensureOrderForAuctionWin } from "@/lib/orders";
 import { getAuctionDisplayState, minimumNextBid } from "@/lib/auctions";
 import { getPageVisibility, marketVisibilityKey } from "@/lib/page-visibility";
 import { getMarket } from "@/lib/market";
@@ -128,9 +128,10 @@ export async function cancelAuction(id: string): Promise<ActionResult> {
  * Bidding is provisional by design (see the schema comment on Auction) —
  * the highest bidder when an auction closes past its reserve doesn't
  * automatically win anything until an admin reviews the bid history here
- * and confirms. Confirming drops a CartItem into the winner's open cart
- * (see ensureCartItemForAuction), from which the existing cart/wire-
- * transfer/invoice flow takes over unchanged.
+ * and confirms. Confirming creates an unpaid Order for the winner (see
+ * ensureOrderForAuctionWin) with a 24-hour payment window starting now
+ * (wonAt) — the api/cron/auction-payment-deadline job releases the item
+ * back to stock if that window passes unpaid.
  */
 export async function confirmAuctionWinner(id: string): Promise<ActionResult> {
   await requireAdmin();
@@ -142,13 +143,19 @@ export async function confirmAuctionWinner(id: string): Promise<ActionResult> {
     return { ok: false, error: "This auction isn't closed with a reserve-meeting bid to confirm." };
   }
 
-  await prisma.auction.update({ where: { id }, data: { status: "WON" } });
-  await ensureCartItemForAuction(id);
+  await prisma.auction.update({ where: { id }, data: { status: "WON", wonAt: new Date() } });
+  const orderResult = await ensureOrderForAuctionWin(id);
+  if (!orderResult.ok) {
+    // The item couldn't actually be reserved (sold/reserved elsewhere
+    // since bidding closed) — don't leave the auction sitting WON with no
+    // order behind it.
+    await prisma.auction.update({ where: { id }, data: { status: auction.status, wonAt: null } });
+    return orderResult;
+  }
 
   revalidatePath("/admin/auctions");
   revalidatePath(`/admin/auctions/${id}`);
-  revalidatePath("/admin/carts");
-  revalidatePath("/account/cart");
+  revalidatePath("/admin/orders");
   revalidatePath("/auction");
   return { ok: true };
 }

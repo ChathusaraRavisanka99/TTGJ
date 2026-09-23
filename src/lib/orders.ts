@@ -591,6 +591,120 @@ export async function createOrderFromSourcing(
 }
 
 /**
+ * Called when an admin confirms an auction's current highest bidder as
+ * the winner (see confirmAuctionWinner in actions/auctions.ts) — same
+ * idea as ensureOrderForQuote, fed by the winning bid instead of a quoted
+ * price. Idempotent, and refuses if the auction has no bids at all
+ * (nothing to confirm). No chat thread of its own (auctions aren't a
+ * ChatThread request type — see the schema comment on ChatThread), so
+ * this only notifies rather than also posting a message the way
+ * notifyAndMessageForNewOrder does for quotes/sourcing; the order's own
+ * chat thread (admin order detail page) is where any follow-up happens.
+ */
+export async function ensureOrderForAuctionWin(auctionId: string): Promise<EnsureOrderResult> {
+  const existing = await prisma.order.findUnique({ where: { auctionId }, select: { id: true } });
+  if (existing) return { ok: true, orderId: existing.id };
+
+  const auction = await prisma.auction.findUnique({
+    where: { id: auctionId },
+    include: { gemstone: true, jewelry: true, bids: { orderBy: { amount: "desc" }, take: 1 } },
+  });
+  if (!auction) return { ok: false, error: "Auction not found." };
+  const winningBid = auction.bids[0];
+  if (!winningBid) return { ok: false, error: "This auction has no bids to confirm." };
+
+  const orderNumber = await nextOrderNumber();
+  const label = auction.gemstone?.name ?? auction.jewelry?.name ?? "Auction item";
+  const winAmount = winningBid.amount;
+
+  let orderId: string;
+  try {
+    const order = await prisma.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          orderNumber,
+          userId: winningBid.userId,
+          currency: "USD",
+          market: "intl",
+          subtotal: winAmount,
+          total: winAmount,
+          shipName: "",
+          shipPhone: "",
+          shipCountry: "",
+          shipCity: "",
+          shipAddressLine1: "",
+          needsShippingDetails: true,
+          paymentMethod: "WIRE_TRANSFER",
+          auctionId: auction.id,
+          items: {
+            create: {
+              gemstoneId: auction.gemstoneId ?? undefined,
+              jewelryId: auction.jewelryId ?? undefined,
+              label: `Auction win: ${label}`,
+              unitPrice: winAmount,
+              quantity: 1,
+              lineTotal: winAmount,
+            },
+          },
+        },
+      });
+      if (auction.gemstoneId) {
+        const res = await tx.gemstone.updateMany({ where: { id: auction.gemstoneId, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+        if (res.count !== 1) throw new Error("ITEM_UNAVAILABLE");
+      }
+      if (auction.jewelryId) {
+        const res = await tx.jewelryPiece.updateMany({ where: { id: auction.jewelryId, stockStatus: "AVAILABLE" }, data: { stockStatus: "RESERVED" } });
+        if (res.count !== 1) throw new Error("ITEM_UNAVAILABLE");
+      }
+      return created;
+    });
+    orderId = order.id;
+  } catch (err) {
+    if (err instanceof Error && err.message === "ITEM_UNAVAILABLE") {
+      return { ok: false, error: "That item is no longer available to sell — it may have already been sold or reserved elsewhere." };
+    }
+    throw err;
+  }
+
+  await createNotification({
+    userId: winningBid.userId,
+    type: "STATUS_CHANGE",
+    message: `You won the auction for ${label}! Order ${orderNumber} is ready — pay by wire transfer within 24 hours to secure it.`,
+    requestType: "order",
+    requestId: orderId,
+  });
+
+  return { ok: true, orderId };
+}
+
+/**
+ * Called by the scheduled cron job (api/cron/auction-payment-deadline) —
+ * a WON auction whose winner hasn't paid within 24 hours of confirmation
+ * loses its hold: the order is cancelled (releasing the item back to
+ * AVAILABLE, same as any other cancelled wire-transfer order) and the
+ * auction is marked EXPIRED rather than staying WON with a dead order
+ * forever. Only touches auctions actually past the deadline with a
+ * still-unpaid order — safe to call as often as the cron likes.
+ */
+export async function expireUnpaidAuctionWins(): Promise<{ expired: number }> {
+  const deadline = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const candidates = await prisma.auction.findMany({
+    where: { status: "WON", wonAt: { lte: deadline }, order: { status: "PENDING_PAYMENT" } },
+    include: { order: true },
+  });
+
+  let expired = 0;
+  for (const auction of candidates) {
+    if (!auction.order) continue;
+    const { cancelled } = await cancelPendingOrder(auction.order.id);
+    if (!cancelled) continue;
+    await prisma.auction.update({ where: { id: auction.id }, data: { status: "EXPIRED" } });
+    expired += 1;
+  }
+  return { expired };
+}
+
+/**
  * Called by the customer to fill in the shipping address an accepted
  * quote/sourcing order was created without (see ensureOrderForQuote/
  * ensureOrderForSourcing) — the one time an Order's shipping fields are

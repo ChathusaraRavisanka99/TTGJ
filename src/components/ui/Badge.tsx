@@ -54,6 +54,7 @@ const AUCTION_STATE_STYLES: Record<AuctionDisplayState, string> = {
   AWAITING_CONFIRMATION: "bg-amber-50 text-amber-800 border-amber-200",
   WON: "bg-gold-soft/25 text-charcoal border-gold/40",
   CANCELLED: "bg-red-50 text-red-700 border-red-200",
+  EXPIRED: "bg-red-50 text-red-700 border-red-200",
 };
 
 export function AuctionStateBadge({ state }: { state: AuctionDisplayState }) {

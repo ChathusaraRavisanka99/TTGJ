@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { confirmAuctionWinner, cancelAuction, deleteAuction } from "@/actions/auctions";
 import type { AuctionDisplayState } from "@/lib/auctions";
 import { Button } from "@/components/ui/Button";
@@ -11,10 +12,12 @@ export function AuctionAdminControls({
   auctionId,
   state,
   hasBids,
+  order,
 }: {
   auctionId: string;
   state: AuctionDisplayState;
   hasBids: boolean;
+  order?: { id: string; orderNumber: string } | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -39,12 +42,20 @@ export function AuctionAdminControls({
 
       {state === "AWAITING_CONFIRMATION" && (
         <p className="mt-2 text-sm text-charcoal/70">
-          Bidding closed with the top bid at or above reserve. Confirm the highest bidder to add this to their cart —
-          nothing is charged automatically, they still pay by wire transfer like every other cart item.
+          Bidding closed with the top bid at or above reserve. Confirm the highest bidder to create their order —
+          nothing is charged automatically; they pay by wire transfer within 24 hours or the item releases back to stock.
         </p>
       )}
       {state === "RESERVE_NOT_MET" && (
         <p className="mt-2 text-sm text-charcoal/70">Bidding closed without meeting the reserve — there&apos;s no winner to confirm.</p>
+      )}
+      {state === "EXPIRED" && (
+        <p className="mt-2 text-sm text-charcoal/70">The winner didn&apos;t pay within the 24-hour window — their order was cancelled and the item released back to stock.</p>
+      )}
+      {order && (
+        <Link href={`/admin/orders/${order.id}`} className="mt-2 inline-block text-sm text-gold-deep underline">
+          View order {order.orderNumber}
+        </Link>
       )}
 
       <div className="mt-4 flex flex-col gap-2">
@@ -53,7 +64,7 @@ export function AuctionAdminControls({
             {pending ? "Confirming..." : "Confirm Winner"}
           </Button>
         )}
-        {state !== "WON" && state !== "CANCELLED" && (
+        {state !== "WON" && state !== "CANCELLED" && state !== "EXPIRED" && (
           <Button type="button" variant="outline" size="sm" disabled={pending} onClick={() => run(() => cancelAuction(auctionId))}>
             {pending ? "Saving..." : "Cancel Auction"}
           </Button>

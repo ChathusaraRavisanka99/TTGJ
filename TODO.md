@@ -139,20 +139,34 @@ against the shared prod DB before shipping dependent code, then
 
 ## Auctions
 
-- **Full CRUD on an auction item** — click through to view/edit/remove,
-  not just create.
-- **Win → unpaid order** — confirming an auction winner should create an
-  unpaid order (same pattern as `ensureOrderForQuote`/
-  `ensureOrderForSourcing` in `lib/orders.ts`) and notify the winner. New:
-  a 24-hour payment deadline after which the item auto-releases back to
-  stock — nothing like a deadline/expiry mechanism exists for any order
-  today, so this needs a scheduled check (cron/route handler) as well as
-  the order-creation logic. Currently, auction wins still go through the
-  old `ensureCartItemForAuction`/`Cart` path (deliberately left alone when
-  quotes/sourcing were migrated off it — see `lib/cart.ts`).
-- **Countdown for a scheduled auction** — when an auction's start time is
-  in the future, show an animated countdown on the auction page rather
-  than nothing/a static state.
+- ~~**Full CRUD on an auction item**~~ — investigated: already fully
+  built. The admin list links every row to `/admin/auctions/[id]`, which
+  has view (specs, bid history), edit (`AuctionForm`, price/dates/status —
+  the item itself is intentionally immutable after creation, cancel and
+  recreate instead), delete (draft-with-no-bids only), cancel, and confirm
+  winner (`AuctionAdminControls`). Nothing left to build here — this entry
+  was stale.
+- ~~**Win → unpaid order**~~ — done. Confirming a winner now creates a
+  real unpaid `Order` (`ensureOrderForAuctionWin` in `lib/orders.ts`, same
+  pattern as `ensureOrderForQuote`/`ensureOrderForSourcing`) instead of
+  the old `ensureCartItemForAuction`/`Cart` path, which is now fully dead
+  and removed. `Auction.wonAt` stamps the moment of confirmation; a new
+  hourly Vercel Cron job (`vercel.json` → `/api/cron/auction-payment-deadline`,
+  bearer-token authenticated via `CRON_SECRET`) calls
+  `expireUnpaidAuctionWins`, which cancels the still-unpaid order (releasing
+  the item back to `AVAILABLE`, same as any cancelled wire-transfer order)
+  and marks the auction `EXPIRED` (a new status, distinct from admin-driven
+  `CANCELLED`) once 24 hours pass. 19 new tests; live-verified end-to-end
+  — confirmed a winner through the real admin UI, verified the order/
+  reservation/notification, then simulated the deadline passing and
+  confirmed the cron logic correctly cancelled the order and released the
+  item back to stock.
+- ~~**Countdown for a scheduled auction**~~ — done. `AuctionCountdown.tsx`
+  on the public auction detail page — ticks every second (days/hours/
+  minutes/seconds, animated digit transitions via `motion/react`) once an
+  auction's `startsAt` is in the future, and refreshes the page itself once
+  it hits zero so bidding opens without a manual reload. Live-verified via
+  Playwright against a real scheduled auction.
 
 ## Rewards / points
 

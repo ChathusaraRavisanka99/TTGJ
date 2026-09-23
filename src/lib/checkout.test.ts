@@ -163,4 +163,73 @@ describe("buildCheckoutBreakdown", () => {
     expect(result.pointsRedeemed).toBe(5000);
     expect(result.pointsDiscount).toBeCloseTo(50);
   });
+
+  describe("shipping weight tiers and quoteShipping", () => {
+    it("replaces the destination zone rate with a single item's weight-tier rate", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [gemCartItem({ gemstone: { id: "gem-1", name: "Blue Sapphire", stockStatus: "AVAILABLE", retailPrice: 100, lkrRetailPrice: 30000, costPrice: 60, shippingWeightTier: { ratePerOrderLKR: 800 }, quoteShipping: false } })],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl", paymentMethod: "WIRE_TRANSFER" });
+
+      // tier rate (800 LKR) replaces the 3000 LKR zone rate entirely, converted at usdToLkrRate
+      expect(result.shipping).toBeCloseTo(800 / 300);
+      expect(result.shippingToBeArranged).toBe(false);
+    });
+
+    it("sums weight-tier rates across multiple tiered items and quantities, ignoring the zone rate", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [
+          gemCartItem({ gemstoneId: "gem-1", quantity: 2, gemstone: { id: "gem-1", name: "Sapphire", stockStatus: "AVAILABLE", retailPrice: 100, lkrRetailPrice: 30000, costPrice: 60, shippingWeightTier: { ratePerOrderLKR: 500 }, quoteShipping: false } }),
+          gemCartItem({ gemstoneId: "gem-2", quantity: 1, gemstone: { id: "gem-2", name: "Ruby", stockStatus: "AVAILABLE", retailPrice: 200, lkrRetailPrice: 60000, costPrice: 120, shippingWeightTier: { ratePerOrderLKR: 900 }, quoteShipping: false } }),
+        ],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "Sri Lanka", market: "lk", paymentMethod: "WIRE_TRANSFER" });
+
+      // (500 * 2) + (900 * 1) = 1900, LKR as-is on /lk
+      expect(result.shipping).toBe(1900);
+    });
+
+    it("blends a tiered item's rate with the zone rate for an untiered item in the same cart", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [
+          gemCartItem({ gemstoneId: "gem-1", gemstone: { id: "gem-1", name: "Sapphire", stockStatus: "AVAILABLE", retailPrice: 100, lkrRetailPrice: 30000, costPrice: 60, shippingWeightTier: { ratePerOrderLKR: 500 }, quoteShipping: false } }),
+          gemCartItem({ gemstoneId: "gem-2", gemstone: { id: "gem-2", name: "Ruby", stockStatus: "AVAILABLE", retailPrice: 200, lkrRetailPrice: 60000, costPrice: 120, shippingWeightTier: null, quoteShipping: false } }),
+        ],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "Sri Lanka", market: "lk", paymentMethod: "WIRE_TRANSFER" });
+
+      // tiered item's 500 + the untiered item's share of the flat 3000 zone rate (charged once, not per item)
+      expect(result.shipping).toBe(500 + 3000);
+    });
+
+    it("charges $0 shipping for a quoteShipping item and flags the order as needing shipping arranged", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [gemCartItem({ gemstone: { id: "gem-1", name: "Blue Sapphire", stockStatus: "AVAILABLE", retailPrice: 100, lkrRetailPrice: 30000, costPrice: 60, shippingWeightTier: null, quoteShipping: true } })],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl", paymentMethod: "WIRE_TRANSFER" });
+
+      expect(result.shipping).toBe(0);
+      expect(result.shippingToBeArranged).toBe(true);
+    });
+
+    it("uses the normal zone rate and leaves shippingToBeArranged false when nothing overrides it", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [gemCartItem({ gemstone: { id: "gem-1", name: "Blue Sapphire", stockStatus: "AVAILABLE", retailPrice: 100, lkrRetailPrice: 30000, costPrice: 60, shippingWeightTier: null, quoteShipping: false } })],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl", paymentMethod: "WIRE_TRANSFER" });
+
+      expect(result.shipping).toBeCloseTo(3000 / 300);
+      expect(result.shippingToBeArranged).toBe(false);
+    });
+  });
 });

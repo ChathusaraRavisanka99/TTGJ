@@ -124,3 +124,14 @@ export async function submitOrderShippingDetailsAction(orderId: string, formData
   revalidateOrders();
   return { ok: true };
 }
+
+// Once an admin has actually worked out shipping with the customer
+// (via the order's own chat thread, typically) for an order that has one
+// or more quoteShipping items — clears the flag so it stops showing as
+// needing attention. Doesn't touch anything else about the order.
+export async function clearShippingToBeArranged(orderId: string): Promise<ActionResult> {
+  await requireAdmin();
+  await prisma.order.update({ where: { id: orderId }, data: { shippingToBeArranged: false } });
+  revalidateOrders();
+  return { ok: true };
+}

@@ -71,6 +71,8 @@ export async function createGemstone(formData: FormData): Promise<ActionResult> 
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
+      shippingWeightTierId: data.shippingWeightTierId || undefined,
+      quoteShipping: data.quoteShipping,
     },
   });
 
@@ -129,6 +131,9 @@ export async function updateGemstone(id: string, formData: FormData): Promise<Ac
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
+      // Same "empty selection actually clears it" reasoning as certLabId above.
+      shippingWeightTierId: data.shippingWeightTierId || null,
+      quoteShipping: data.quoteShipping,
     },
   });
 
@@ -252,6 +257,8 @@ export async function createJewelry(formData: FormData): Promise<ActionResult> {
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
+      shippingWeightTierId: data.shippingWeightTierId || undefined,
+      quoteShipping: data.quoteShipping,
     },
   });
 
@@ -289,6 +296,8 @@ export async function updateJewelry(id: string, formData: FormData): Promise<Act
       stockStatus: data.stockStatus,
       isPublished: data.isPublished,
       isFeatured: data.isFeatured,
+      shippingWeightTierId: data.shippingWeightTierId || null,
+      quoteShipping: data.quoteShipping,
     },
   });
 

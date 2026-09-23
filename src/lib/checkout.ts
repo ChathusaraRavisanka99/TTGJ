@@ -50,6 +50,10 @@ export interface CheckoutBreakdown {
   tax: number;
   shipping: number;
   shippingZoneLabel: string;
+  /** At least one cart item is marked quoteShipping — shipping was
+   * charged as $0 for it (see the per-item loop below), so the resulting
+   * Order needs Order.shippingToBeArranged set. */
+  shippingToBeArranged: boolean;
   handlingFee: number;
   total: number;
 }
@@ -76,7 +80,10 @@ export async function buildCheckoutBreakdown(input: {
   const [cart, settings, user, promotions] = await Promise.all([
     prisma.retailCart.findUnique({
       where: { userId_market: { userId: input.userId, market } },
-      include: { items: { include: { gemstone: true, jewelry: true } }, discountCode: true },
+      include: {
+        items: { include: { gemstone: { include: { shippingWeightTier: true } }, jewelry: { include: { shippingWeightTier: true } } } },
+        discountCode: true,
+      },
     }),
     getCommerceSettings(),
     prisma.user.findUniqueOrThrow({ where: { id: input.userId } }),
@@ -160,13 +167,35 @@ export async function buildCheckoutBreakdown(input: {
   });
   const afterDiscounts = Math.max(0, afterCodeDiscounts - pointsDiscount);
 
+  // Per item: quoteShipping contributes nothing (flagged separately
+  // below instead — see Order.shippingToBeArranged), an assigned weight
+  // tier contributes its own flat rate instead of the destination rate,
+  // and anything with neither falls under the single destination-based
+  // zone rate below (charged once for the whole order, not per item,
+  // same as before either of these existed).
+  let tieredShippingRateLKR = 0;
+  let hasUntieredItem = false;
+  let shippingToBeArranged = false;
+  for (const item of cart.items) {
+    const product = item.gemstone ?? item.jewelry;
+    if (product?.quoteShipping) {
+      shippingToBeArranged = true;
+    } else if (product?.shippingWeightTier) {
+      tieredShippingRateLKR += product.shippingWeightTier.ratePerOrderLKR * item.quantity;
+    } else {
+      hasUntieredItem = true;
+    }
+  }
+
   // The only remaining currency conversion in this app: EMS's own rate
-  // card is denominated in LKR (see lib/shipping.ts), so on the
-  // international site that figure alone gets converted into USD here to
-  // fold into an otherwise all-USD total — CommerceSettings.usdToLkrRate
-  // exists for this (and the /lk birthday-discount cost above), not for
-  // pricing the order itself. On /lk it's already in the right currency.
-  const { zoneLabel: shippingZoneLabel, rateLKR: shippingRateLKR } = await resolveShippingRate(input.shippingCountry);
+  // card (and the weight tiers above, same convention) is denominated in
+  // LKR (see lib/shipping.ts), so on the international site that figure
+  // alone gets converted into USD here to fold into an otherwise all-USD
+  // total — CommerceSettings.usdToLkrRate exists for this (and the /lk
+  // birthday-discount cost above), not for pricing the order itself. On
+  // /lk it's already in the right currency.
+  const { zoneLabel: shippingZoneLabel, rateLKR: zoneRateLKR } = await resolveShippingRate(input.shippingCountry);
+  const shippingRateLKR = tieredShippingRateLKR + (hasUntieredItem ? zoneRateLKR : 0);
   const shipping = lk ? shippingRateLKR : shippingRateLKR / settings.usdToLkrRate;
 
   const tax = domestic || settings.applyVatToInternational ? afterDiscounts * (settings.vatPercent / 100) : 0;
@@ -192,6 +221,7 @@ export async function buildCheckoutBreakdown(input: {
     tax,
     shipping,
     shippingZoneLabel,
+    shippingToBeArranged,
     handlingFee,
     total,
   };

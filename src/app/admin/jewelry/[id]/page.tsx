@@ -3,16 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { JewelryForm } from "@/components/admin/JewelryForm";
 import { MediaManager } from "@/components/admin/MediaManager";
 import { GemstoneLinkManager } from "@/components/admin/GemstoneLinkManager";
+import { getActiveShippingWeightTiers } from "@/lib/shipping";
 import { BackLink } from "@/components/admin/BackLink";
 
 export default async function EditJewelryPage({ params }: PageProps<"/admin/jewelry/[id]">) {
   const { id } = await params;
-  const [piece, gemstones] = await Promise.all([
+  const [piece, gemstones, shippingWeightTiers] = await Promise.all([
     prisma.jewelryPiece.findUnique({
       where: { id },
       include: { media: { orderBy: { sortOrder: "asc" } }, gemstones: { include: { gemstone: true } } },
     }),
     prisma.gemstone.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    getActiveShippingWeightTiers(),
   ]);
 
   if (!piece) notFound();
@@ -23,7 +25,7 @@ export default async function EditJewelryPage({ params }: PageProps<"/admin/jewe
       <h1 className="font-serif text-3xl text-charcoal">{piece.name}</h1>
 
       <div className="mt-6">
-        <JewelryForm initial={piece} />
+        <JewelryForm initial={piece} shippingWeightTiers={shippingWeightTiers} />
       </div>
 
       <div className="mt-10 max-w-2xl border-t border-border-subtle pt-8">

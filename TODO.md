@@ -32,9 +32,20 @@ against the shared prod DB before shipping dependent code, then
   `RetailCartItemRow`, which dims the row and swaps the price for an
   "Unavailable" label; Remove stays clickable either way. Checkout's own
   `buildCheckoutBreakdown` re-validates the same thing server-side.
-- **Shipping cost tiers** — admin-editable weight-based shipping cost
-  bands (e.g. a "100g" tier), plus a per-item "quote shipping instead"
-  fallback option.
+- ~~**Shipping cost tiers**~~ — done. Admin-editable weight-based
+  `ShippingWeightTier`s (`/admin/shipping-zones`, mirrors the existing
+  zone CRUD) — assigning one to a gem/jewelry piece replaces the
+  destination `ShippingZone` rate for that item (summed across tiered
+  items in a cart; an untiered item in the same cart still falls under
+  the one flat zone rate). A per-item "Quote Shipping" checkbox is the
+  alternative: contributes $0 at checkout and sets a new
+  `Order.shippingToBeArranged` flag, surfaced as a "Shipping TBD" badge
+  on the admin orders list/detail page with a "Mark shipping arranged"
+  button (admin follows up via the order's own chat thread, then clears
+  it). Core money math is in `lib/checkout.ts`'s per-item loop, fully
+  unit-tested; live-verified end-to-end via Playwright against the real
+  DB (tier rate replacing the zone rate, quote-shipping's $0 + flag,
+  the admin badge, and the clear button).
 
 ## Orders & admin workflow
 

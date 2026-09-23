@@ -1,9 +1,13 @@
 import { getMasterData } from "@/lib/catalog";
+import { getActiveShippingWeightTiers } from "@/lib/shipping";
 import { GemstoneForm } from "@/components/admin/GemstoneForm";
 import { BackLink } from "@/components/admin/BackLink";
 
 export default async function NewGemstonePage({ searchParams }: PageProps<"/admin/gems/new">) {
-  const { minerals, cuts, clarityGrades, treatments, origins, certificationLabs } = await getMasterData();
+  const [{ minerals, cuts, clarityGrades, treatments, origins, certificationLabs }, shippingWeightTiers] = await Promise.all([
+    getMasterData(),
+    getActiveShippingWeightTiers(),
+  ]);
   const defaultMarket = (await searchParams).market === "lk" ? "lk" : "intl";
 
   return (
@@ -18,6 +22,7 @@ export default async function NewGemstonePage({ searchParams }: PageProps<"/admi
           treatments={treatments}
           origins={origins}
           certificationLabs={certificationLabs}
+          shippingWeightTiers={shippingWeightTiers}
           defaultMarket={defaultMarket}
         />
       </div>

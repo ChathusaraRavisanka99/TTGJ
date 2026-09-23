@@ -357,6 +357,20 @@ model Gemstone {
   // HomeContent.showFeaturedGems without touching any item's flag.
   isFeatured Boolean @default(false)
 
+  // At most one of these is ever set (not a DB constraint — same
+  // convention as this schema's other exclusive-field groups, validated
+  // in the admin catalog actions). Neither set: checkout charges this
+  // item under the normal destination-based ShippingZone rate, same as
+  // before either existed. shippingWeightTierId set: that tier's flat
+  // rate replaces the zone rate for this item. quoteShipping: the item
+  // still has its own price and can be bought directly, but shipping is
+  // $0 at checkout and the resulting Order is flagged
+  // shippingToBeArranged so an admin follows up (see lib/checkout.ts,
+  // Order.shippingToBeArranged).
+  shippingWeightTierId String?
+  shippingWeightTier   ShippingWeightTier? @relation(fields: [shippingWeightTierId], references: [id], onDelete: SetNull)
+  quoteShipping         Boolean             @default(false)
+
   media MediaAsset[]
 
   quoteRequests        QuoteRequest[]
@@ -376,6 +390,7 @@ model Gemstone {
   @@index([stockStatus])
   @@index([isFeatured])
   @@index([isFeaturedLk])
+  @@index([shippingWeightTierId])
   // Every public catalog query filters exactly this pair (getGemstones,
   // getRelatedGemstones — see lib/catalog.ts) — the single most common
   // storefront query, so it gets a composite index rather than just the
@@ -436,6 +451,11 @@ model JewelryPiece {
   // Featured Jewelry section.
   isFeatured Boolean @default(false)
 
+  // See the matching fields on Gemstone above for the full rationale.
+  shippingWeightTierId String?
+  shippingWeightTier   ShippingWeightTier? @relation(fields: [shippingWeightTierId], references: [id], onDelete: SetNull)
+  quoteShipping         Boolean             @default(false)
+
   media     MediaAsset[]
   gemstones JewelryGemstoneLink[]
 
@@ -454,6 +474,7 @@ model JewelryPiece {
   @@index([stockStatus])
   @@index([isFeatured])
   @@index([isFeaturedLk])
+  @@index([shippingWeightTierId])
   // Same reasoning as Gemstone's — see that model's comment.
   @@index([market, isPublished])
 }
@@ -1443,6 +1464,14 @@ model Order {
   // until cleared.
   needsShippingDetails Boolean @default(false)
 
+  // True when this order contains at least one item marked quoteShipping
+  // (Gemstone/JewelryPiece) — shipping was charged as $0 at checkout
+  // rather than a real figure, so an admin needs to follow up with the
+  // customer (the order's own chat thread, see below) to arrange and
+  // communicate the actual cost. Never cleared automatically; an admin
+  // clears it once that's been sorted out (see actions/orders.ts).
+  shippingToBeArranged Boolean @default(false)
+
   // One thread per order, created lazily on the first message — see
   // getOrCreateChatThread("order", ...) in lib/chat.ts and the admin order
   // detail page.
@@ -1506,6 +1535,29 @@ model ShippingZone {
   ratePerOrderLKR Float
   sortOrder       Int     @default(0)
   active          Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A flat shipping cost for a specific item, keyed by weight band rather
+// than destination (e.g. "Up to 100g") — for an item whose shipping cost
+// is dominated by its own size/fragility rather than distance. Assigning
+// one to a Gemstone/JewelryPiece REPLACES the destination-based
+// ShippingZone rate for that item at checkout (see buildCheckoutBreakdown
+// in lib/checkout.ts); an item with neither a tier nor quoteShipping set
+// keeps using the zone rate exactly as before. Same self-provisioning/
+// admin-editable convention as ShippingZone.
+model ShippingWeightTier {
+  id    String @id @default(cuid())
+  label String
+
+  ratePerOrderLKR Float
+  sortOrder       Int     @default(0)
+  active          Boolean @default(true)
+
+  gemstones Gemstone[]
+  jewelry   JewelryPiece[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

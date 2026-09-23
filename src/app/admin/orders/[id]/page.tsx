@@ -8,6 +8,7 @@ import { BackLink } from "@/components/admin/BackLink";
 import { OrderActions } from "@/components/admin/OrderActions";
 import { ShipOrderForm } from "@/components/admin/ShipOrderForm";
 import { MarkDeliveredButton } from "@/components/admin/MarkDeliveredButton";
+import { ClearShippingToBeArrangedButton } from "@/components/admin/ClearShippingToBeArrangedButton";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { formatPrice } from "@/lib/utils";
 
@@ -134,7 +135,8 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
 
           <div className="rounded-xl border border-border-subtle bg-surface p-5">
             <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Actions</p>
-            <div className="mt-3">
+            <div className="mt-3 space-y-3">
+              {order.shippingToBeArranged && <ClearShippingToBeArrangedButton orderId={order.id} />}
               {order.needsShippingDetails && <p className="text-xs text-charcoal/60">Awaiting customer&apos;s shipping details.</p>}
               {!order.needsShippingDetails && order.status === "PENDING_PAYMENT" && order.paymentMethod === "WIRE_TRANSFER" && (
                 <OrderActions orderId={order.id} orderNumber={order.orderNumber} />

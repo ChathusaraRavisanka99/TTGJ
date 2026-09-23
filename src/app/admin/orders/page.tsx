@@ -122,6 +122,11 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                       {o.quoteRequestId ? "Quote" : "Sourcing"}
                     </span>
                   )}
+                  {o.shippingToBeArranged && (
+                    <span className="ml-2 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-sans text-[10px] uppercase tracking-wide text-amber-800">
+                      Shipping TBD
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-charcoal/70">{o.user.email}</td>
                 <td className="px-4 py-3 text-charcoal/70">{o.market === "lk" ? "Sri Lanka" : "International"}</td>

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getMasterData } from "@/lib/catalog";
+import { getActiveShippingWeightTiers } from "@/lib/shipping";
 import { GemstoneForm } from "@/components/admin/GemstoneForm";
 import { MediaManager } from "@/components/admin/MediaManager";
 import { CertificateManager } from "@/components/admin/CertificateManager";
@@ -8,9 +9,10 @@ import { BackLink } from "@/components/admin/BackLink";
 
 export default async function EditGemstonePage({ params }: PageProps<"/admin/gems/[id]">) {
   const { id } = await params;
-  const [gem, masterData] = await Promise.all([
+  const [gem, masterData, shippingWeightTiers] = await Promise.all([
     prisma.gemstone.findUnique({ where: { id }, include: { media: { orderBy: { sortOrder: "asc" } } } }),
     getMasterData(),
+    getActiveShippingWeightTiers(),
   ]);
 
   if (!gem) notFound();
@@ -28,6 +30,7 @@ export default async function EditGemstonePage({ params }: PageProps<"/admin/gem
           treatments={masterData.treatments}
           origins={masterData.origins}
           certificationLabs={masterData.certificationLabs}
+          shippingWeightTiers={shippingWeightTiers}
           initial={gem}
         />
       </div>

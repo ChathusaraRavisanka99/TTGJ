@@ -42,6 +42,16 @@ export async function getActiveShippingZones() {
 // country list; falls back to whichever zone is flagged isFallback (or,
 // failing that, the first active zone) so an address from an unlisted
 // country never blocks checkout outright.
+export async function getShippingWeightTiers() {
+  return prisma.shippingWeightTier.findMany({ orderBy: { sortOrder: "asc" } });
+}
+
+/** For the catalog forms' tier picker — an admin shouldn't be offered an
+ * inactive tier when assigning one to an item. */
+export async function getActiveShippingWeightTiers() {
+  return prisma.shippingWeightTier.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } });
+}
+
 export async function resolveShippingRate(country: string): Promise<{ zoneLabel: string; rateLKR: number }> {
   const zones = await getActiveShippingZones();
   const needle = country.trim().toLowerCase();

@@ -1,10 +1,12 @@
-import { getShippingZones } from "@/lib/shipping";
+import { getShippingZones, getShippingWeightTiers } from "@/lib/shipping";
 import { ShippingZoneRow } from "@/components/admin/ShippingZoneRow";
 import { CreateShippingZoneForm } from "@/components/admin/CreateShippingZoneForm";
+import { ShippingWeightTierRow } from "@/components/admin/ShippingWeightTierRow";
+import { CreateShippingWeightTierForm } from "@/components/admin/CreateShippingWeightTierForm";
 import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminShippingZonesPage() {
-  const zones = await getShippingZones();
+  const [zones, weightTiers] = await Promise.all([getShippingZones(), getShippingWeightTiers()]);
 
   return (
     <div>
@@ -35,6 +37,36 @@ export default async function AdminShippingZonesPage() {
             {zones.map((z) => <ShippingZoneRow key={z.id} zone={z} />)}
             {zones.length === 0 && (
               <tr><td colSpan={5} className="px-4 py-8 text-center text-charcoal/50">No shipping zones yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="mt-12 font-serif text-2xl text-charcoal">Weight Tiers</h2>
+      <p className="mt-1 text-sm text-charcoal/60">
+        A flat rate for a specific item, by weight rather than destination — assign one from a gem or jewelry piece&apos;s
+        edit form and it replaces the zone rate above for that item at checkout. Leave an item without one and it keeps
+        using the zone rate as before.
+      </p>
+
+      <div className="mt-6">
+        <CreateShippingWeightTierForm />
+      </div>
+
+      <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
+              <th className="px-4 py-3">Tier</th>
+              <th className="px-4 py-3">Rate</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {weightTiers.map((t) => <ShippingWeightTierRow key={t.id} tier={t} />)}
+            {weightTiers.length === 0 && (
+              <tr><td colSpan={4} className="px-4 py-8 text-center text-charcoal/50">No weight tiers yet.</td></tr>
             )}
           </tbody>
         </table>

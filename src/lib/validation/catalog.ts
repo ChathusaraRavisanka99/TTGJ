@@ -29,6 +29,15 @@ function requireLkPrice(data: { market: "intl" | "lk"; lkrRetailPrice?: number }
   }
 }
 
+// At most one shipping override at a time — a weight tier (a specific
+// flat rate) and quoteShipping (no fixed rate at all, arranged after
+// purchase) don't mean anything together.
+function requireExclusiveShippingOverride(data: { shippingWeightTierId?: string; quoteShipping: boolean }, ctx: z.RefinementCtx) {
+  if (data.shippingWeightTierId && data.quoteShipping) {
+    ctx.addIssue({ code: "custom", path: ["quoteShipping"], message: "Choose a weight tier or Quote Shipping, not both." });
+  }
+}
+
 export const gemstoneSchema = z.object({
   name: z.string().min(2).max(150),
   description: z.string().max(4000).optional().or(z.literal("")),
@@ -61,7 +70,9 @@ export const gemstoneSchema = z.object({
   stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
   isPublished: formBoolean(true),
   isFeatured: formBoolean(false),
-}).superRefine(requireLkPrice);
+  shippingWeightTierId: z.string().optional().or(z.literal("")),
+  quoteShipping: formBoolean(false),
+}).superRefine(requireLkPrice).superRefine(requireExclusiveShippingOverride);
 
 export type GemstoneInput = z.infer<typeof gemstoneSchema>;
 
@@ -84,7 +95,9 @@ export const jewelrySchema = z.object({
   stockStatus: z.enum(["AVAILABLE", "RESERVED", "SOLD"]).default("AVAILABLE"),
   isPublished: formBoolean(true),
   isFeatured: formBoolean(false),
-}).superRefine(requireLkPrice);
+  shippingWeightTierId: z.string().optional().or(z.literal("")),
+  quoteShipping: formBoolean(false),
+}).superRefine(requireLkPrice).superRefine(requireExclusiveShippingOverride);
 
 export type JewelryInput = z.infer<typeof jewelrySchema>;
 

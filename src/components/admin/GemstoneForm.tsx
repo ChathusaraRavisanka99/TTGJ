@@ -27,6 +27,7 @@ interface GemstoneFormProps {
   treatments: Option[];
   origins: Option[];
   certificationLabs: Option[];
+  shippingWeightTiers: { id: string; label: string }[];
   initial?: {
     id: string;
     name: string;
@@ -60,18 +61,22 @@ interface GemstoneFormProps {
     market: string;
     lkrRetailPrice: number | null;
     lkrPrice: number | null;
+    shippingWeightTierId: string | null;
+    quoteShipping: boolean;
   };
   /** Which store a NEW gemstone starts on (from the list page's "Add Sri Lanka" button). */
   defaultMarket?: ListingMarket;
 }
 
-export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origins, certificationLabs, initial, defaultMarket }: GemstoneFormProps) {
+export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origins, certificationLabs, shippingWeightTiers, initial, defaultMarket }: GemstoneFormProps) {
   const router = useRouter();
   const [market, setMarket] = useState<ListingMarket>((initial?.market as ListingMarket | undefined) ?? defaultMarket ?? "intl");
   const lk = market === "lk";
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const confirm = useConfirm();
+  const [shippingWeightTierId, setShippingWeightTierId] = useState(initial?.shippingWeightTierId ?? "");
+  const [quoteShipping, setQuoteShipping] = useState(initial?.quoteShipping ?? false);
 
   const [mineralId, setMineralId] = useState(initial?.mineralId ?? minerals[0]?.id ?? "");
   const [cutId, setCutId] = useState(initial?.cutId ?? cuts[0]?.id ?? "");
@@ -352,6 +357,44 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
           <input type="checkbox" name="isFeatured" value="true" defaultChecked={initial?.isFeatured ?? false} className="accent-gold" />
           Featured (shown in the {lk ? "Sri Lanka" : "international"} home page&apos;s Featured Gemstones section)
         </label>
+
+        <section className="rounded-xl border border-border-subtle bg-ivory-soft/50 p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Shipping (optional)</p>
+          <p className="mt-1 text-xs text-charcoal/50">
+            Leave both blank to charge the normal destination-based rate. A weight tier gives this item its own flat
+            rate instead; Quote Shipping charges nothing at checkout and flags the order for you to follow up on.
+          </p>
+          <div className="mt-3">
+            <Label htmlFor="shippingWeightTierId">Weight tier</Label>
+            <Select
+              id="shippingWeightTierId"
+              name="shippingWeightTierId"
+              value={shippingWeightTierId}
+              onChange={(e) => {
+                setShippingWeightTierId(e.target.value);
+                if (e.target.value) setQuoteShipping(false);
+              }}
+            >
+              <option value="">None — use the destination-based rate</option>
+              {shippingWeightTiers.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </Select>
+          </div>
+          <label className="mt-3 flex items-center gap-2 text-sm text-charcoal/75">
+            <input type="hidden" name="quoteShipping" value="false" />
+            <input
+              type="checkbox"
+              name="quoteShipping"
+              value="true"
+              checked={quoteShipping}
+              onChange={(e) => {
+                setQuoteShipping(e.target.checked);
+                if (e.target.checked) setShippingWeightTierId("");
+              }}
+              className="accent-gold"
+            />
+            Quote Shipping (no fixed shipping cost — arranged with the customer after purchase)
+          </label>
+        </section>
 
         <FieldError>{error ?? undefined}</FieldError>
 

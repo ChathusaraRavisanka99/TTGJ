@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Trash2 } from "lucide-react";
 import { updateCertLab, deleteCertLab, toggleCertLabActive, uploadCertLabLogo, removeCertLabLogo } from "@/actions/master-data";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Input, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
@@ -22,6 +23,7 @@ export function CertLabRow({ lab }: { lab: CertLab }) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
   async function handleSave(formData: FormData) {
     setError(null);
@@ -65,8 +67,8 @@ export function CertLabRow({ lab }: { lab: CertLab }) {
           <button
             className="text-xs text-red-700 underline"
             disabled={pending}
-            onClick={() => {
-              if (confirm(`Delete "${lab.name}"? Any gemstones citing it will keep their report number but lose the lab link.`)) {
+            onClick={async () => {
+              if (await confirm(`Delete "${lab.name}"? Any gemstones citing it will keep their report number but lose the lab link.`, { confirmLabel: "Delete", danger: true })) {
                 startTransition(async () => { await deleteCertLab(lab.id); router.refresh(); });
               }
             }}
@@ -138,6 +140,7 @@ function LogoUploader({ labId, logoUrl, name }: { labId: string; logoUrl: string
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const confirm = useConfirm();
 
   function handleUpload() {
     const file = fileInput.current?.files?.[0];
@@ -153,8 +156,8 @@ function LogoUploader({ labId, logoUrl, name }: { labId: string; logoUrl: string
     });
   }
 
-  function handleRemove() {
-    if (!confirm("Remove this lab's logo?")) return;
+  async function handleRemove() {
+    if (!(await confirm("Remove this lab's logo?"))) return;
     startTransition(async () => { await removeCertLabLogo(labId); router.refresh(); });
   }
 

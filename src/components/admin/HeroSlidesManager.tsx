@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Trash2 } from "lucide-react";
 import { addHeroSlide, replaceHeroSlideImage, removeHeroSlide, updateHeroSlideAlt, updateHeroSlideFocus } from "@/actions/page-content";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, FieldError } from "@/components/ui/Field";
 import type { HeroSlide } from "@/lib/page-content";
@@ -20,6 +21,7 @@ function SlideRow({ slide, index, market }: { slide: HeroSlide; index: number; m
   // slider — an onChange-per-pixel save would spam the server action.
   const [focusX, setFocusX] = useState(slide.focusX ?? 50);
   const fileInput = useRef<HTMLInputElement>(null);
+  const confirm = useConfirm();
 
   function handleFocusCommit() {
     if (focusX === (slide.focusX ?? 50)) return;
@@ -51,8 +53,8 @@ function SlideRow({ slide, index, market }: { slide: HeroSlide; index: number; m
     });
   }
 
-  function handleRemove() {
-    if (!confirm("Remove this hero slide?")) return;
+  async function handleRemove() {
+    if (!(await confirm("Remove this hero slide?"))) return;
     startTransition(async () => {
       const result = await removeHeroSlide(index, market);
       if (!result.ok) setError(result.error);

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Reorder, useDragControls } from "motion/react";
 import { GripVertical, Trash2, Plus, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { updateAboutRows, uploadAboutBlockImage } from "@/actions/page-content";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select, Label, FieldError, FieldHint } from "@/components/ui/Field";
 import { AboutBlocksRenderer } from "@/components/about/AboutBlocksRenderer";
@@ -505,6 +506,7 @@ export function AboutBuilder({ initialRows }: { initialRows: AboutRow[] }) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [addRowMenuOpen, setAddRowMenuOpen] = useState(false);
+  const confirm = useConfirm();
   // A nonce alongside the id, not just the id alone, so re-focusing the
   // SAME row (e.g. collapsing and re-expanding its card) still re-triggers
   // the preview's scroll-into-view — React bails out of a state update
@@ -525,15 +527,15 @@ export function AboutBuilder({ initialRows }: { initialRows: AboutRow[] }) {
     setSaved(false);
   }
 
-  function removeColumn(rowId: string, colId: string) {
+  async function removeColumn(rowId: string, colId: string) {
     const row = rows.find((r) => r.id === rowId);
     if (!row) return;
     if (row.columns.length <= 1) {
       if (rows.length <= 1) return;
-      if (!confirm("This is the last column in this row — remove the whole row?")) return;
+      if (!(await confirm("This is the last column in this row — remove the whole row?"))) return;
       setRows(rows.filter((r) => r.id !== rowId));
     } else {
-      if (!confirm("Remove this column?")) return;
+      if (!(await confirm("Remove this column?"))) return;
       setRows(rows.map((r) => (r.id !== rowId ? r : { ...r, columns: r.columns.filter((c) => c.id !== colId) })));
     }
     setSaved(false);
@@ -579,9 +581,9 @@ export function AboutBuilder({ initialRows }: { initialRows: AboutRow[] }) {
     setSaved(false);
   }
 
-  function removeRow(rowId: string) {
+  async function removeRow(rowId: string) {
     if (rows.length <= 1) return;
-    if (!confirm("Remove this row?")) return;
+    if (!(await confirm("Remove this row?"))) return;
     setRows(rows.filter((r) => r.id !== rowId));
     setSaved(false);
   }

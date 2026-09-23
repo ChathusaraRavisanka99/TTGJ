@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateMineral, deleteMineral, toggleMineralActive } from "@/actions/master-data";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Input, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
@@ -19,6 +20,7 @@ export function MineralRow({ mineral }: { mineral: Mineral }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
   async function handleSave(formData: FormData) {
     await updateMineral(mineral.id, formData);
@@ -44,8 +46,8 @@ export function MineralRow({ mineral }: { mineral: Mineral }) {
           <button
             className="text-xs text-red-700 underline"
             disabled={pending}
-            onClick={() => {
-              if (confirm(`Delete "${mineral.name}"?`)) startTransition(async () => { await deleteMineral(mineral.id); router.refresh(); });
+            onClick={async () => {
+              if (await confirm(`Delete "${mineral.name}"?`, { confirmLabel: "Delete", danger: true })) startTransition(async () => { await deleteMineral(mineral.id); router.refresh(); });
             }}
           >
             Delete

@@ -15,6 +15,7 @@ import { getFooterMessages, getTrustBarMessages } from "@/lib/i18n-messages";
 import { getMarket } from "@/lib/market";
 import { APP_PATH_HEADER, withMarket } from "@/lib/market-shared";
 import { MarketProvider } from "@/components/providers/MarketProvider";
+import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
 import type { AppLocale } from "@/i18n/request";
 
 const cormorant = Cormorant_Garamond({
@@ -112,18 +113,20 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-ivory text-charcoal">
         <MarketProvider market={market}>
         <NextIntlClientProvider>
-          <SiteChrome
-            user={session?.user ?? null}
-            footerMessages={footerMessages}
-            trustBarMessages={trustBarMessages}
-            showPromotions={visibilities[seasonalKey] !== "HIDDEN"}
-            showAuction={visibilities[auctionKey] !== "HIDDEN"}
-            cartItemCount={cartItemCount}
-            promotionsThemeIsDark={promotionsThemeIsDark}
-            locale={locale as AppLocale}
-          >
-            <MainWrapper>{children}</MainWrapper>
-          </SiteChrome>
+          <ConfirmProvider>
+            <SiteChrome
+              user={session?.user ?? null}
+              footerMessages={footerMessages}
+              trustBarMessages={trustBarMessages}
+              showPromotions={visibilities[seasonalKey] !== "HIDDEN"}
+              showAuction={visibilities[auctionKey] !== "HIDDEN"}
+              cartItemCount={cartItemCount}
+              promotionsThemeIsDark={promotionsThemeIsDark}
+              locale={locale as AppLocale}
+            >
+              <MainWrapper>{children}</MainWrapper>
+            </SiteChrome>
+          </ConfirmProvider>
         </NextIntlClientProvider>
         </MarketProvider>
       </body>

@@ -3,11 +3,13 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { approveWholesaleApplication, rejectWholesaleApplication } from "@/actions/wholesale";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Button } from "@/components/ui/Button";
 
 export function WholesaleApplicationActions({ userId }: { userId: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
   function approve() {
     startTransition(async () => {
@@ -16,8 +18,8 @@ export function WholesaleApplicationActions({ userId }: { userId: string }) {
     });
   }
 
-  function reject() {
-    if (!confirm("Reject this wholesale application?")) return;
+  async function reject() {
+    if (!(await confirm("Reject this wholesale application?"))) return;
     startTransition(async () => {
       await rejectWholesaleApplication(userId);
       router.refresh();

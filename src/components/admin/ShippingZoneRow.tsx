@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateShippingZone, deleteShippingZone } from "@/actions/shipping-zones";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Input, Label } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
@@ -20,6 +21,7 @@ export function ShippingZoneRow({ zone }: { zone: ShippingZone }) {
   const [editing, setEditing] = useState(false);
   const [isFallback, setIsFallback] = useState(zone.isFallback);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
   async function handleSave(formData: FormData) {
     await updateShippingZone(zone.id, formData);
@@ -42,8 +44,8 @@ export function ShippingZoneRow({ zone }: { zone: ShippingZone }) {
           <button
             className="text-xs text-red-700 underline"
             disabled={pending}
-            onClick={() => {
-              if (confirm(`Delete "${zone.label}"?`)) startTransition(async () => { await deleteShippingZone(zone.id); router.refresh(); });
+            onClick={async () => {
+              if (await confirm(`Delete "${zone.label}"?`, { confirmLabel: "Delete", danger: true })) startTransition(async () => { await deleteShippingZone(zone.id); router.refresh(); });
             }}
           >
             Delete

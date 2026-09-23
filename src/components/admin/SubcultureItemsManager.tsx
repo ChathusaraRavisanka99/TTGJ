@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { addCollectionItem, removeCollectionItem, setCollectionItemFeatured, moveCollectionItem } from "@/actions/subculture-items";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Select, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import type { SubcultureKey } from "@/lib/subculture-collections";
@@ -110,6 +111,7 @@ export function SubcultureItemsManager({
 function CollectionItemRow({ item, isFirst, isLast }: { item: CollectionItem; isFirst: boolean; isLast: boolean }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
   function handleMove(direction: "up" | "down") {
     startTransition(async () => {
@@ -125,8 +127,8 @@ function CollectionItemRow({ item, isFirst, isLast }: { item: CollectionItem; is
     });
   }
 
-  function handleRemove() {
-    if (!confirm(`Remove "${item.label}" from this collection?`)) return;
+  async function handleRemove() {
+    if (!(await confirm(`Remove "${item.label}" from this collection?`))) return;
     startTransition(async () => {
       await removeCollectionItem(item.id);
       router.refresh();

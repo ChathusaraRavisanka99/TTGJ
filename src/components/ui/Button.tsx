@@ -12,6 +12,7 @@ const VARIANTS = {
   outline: "border border-charcoal/30 text-charcoal hover:border-charcoal bg-transparent",
   "outline-light": "border border-ivory/40 text-ivory hover:border-ivory hover:bg-ivory/10 bg-transparent",
   ghost: "text-charcoal hover:bg-charcoal/5",
+  destructive: "bg-red-700 text-ivory hover:bg-red-800",
 };
 
 // min-h keeps every size at a comfortable thumb target (~44px for md/lg,

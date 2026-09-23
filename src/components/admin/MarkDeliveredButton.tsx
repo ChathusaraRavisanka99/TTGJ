@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { markOrderDeliveredByAdmin } from "@/actions/orders";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Button } from "@/components/ui/Button";
 
 // The fallback for when no 17track webhook has (or ever will) mark this
@@ -10,9 +11,10 @@ import { Button } from "@/components/ui/Button";
 export function MarkDeliveredButton({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {
   const router = useRouter();
   const { pending, error, run } = useAdminAction();
+  const confirm = useConfirm();
 
-  function handleClick() {
-    if (!window.confirm(`Mark ${orderNumber} delivered?`)) return;
+  async function handleClick() {
+    if (!(await confirm(`Mark ${orderNumber} delivered?`))) return;
     run(() => markOrderDeliveredByAdmin(orderId), () => router.refresh());
   }
 

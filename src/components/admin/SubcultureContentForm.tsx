@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { updateSubcultureText, updateSubcultureSlug } from "@/actions/subculture-content";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Input, Textarea, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { PageVisibilityControl } from "@/components/admin/PageVisibilityControl";
@@ -141,22 +142,31 @@ function SubcultureSlugForm({ collection, initialSlug }: { collection: Subcultur
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
+  const confirm = useConfirm();
 
   async function handleSubmit() {
     setError(null);
     setSaved(false);
-    if (slug !== initialSlug && !confirm(`Change the live URL from /collections/${initialSlug} to /collections/${slug}? The old link will stop working immediately.`)) {
+    if (
+      slug !== initialSlug &&
+      !(await confirm(`Change the live URL from /collections/${initialSlug} to /collections/${slug}? The old link will stop working immediately.`))
+    ) {
       return;
     }
     setPending(true);
-    const result = await updateSubcultureSlug(collection, slug);
-    setPending(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      const result = await updateSubcultureSlug(collection, slug);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setSaved(true);
+      router.refresh();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setPending(false);
     }
-    setSaved(true);
-    router.refresh();
   }
 
   return (

@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Trash2 } from "lucide-react";
 import { uploadCertificateFile, removeCertificateFile } from "@/actions/catalog-admin";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Button } from "@/components/ui/Button";
 import { FieldError } from "@/components/ui/Field";
 
@@ -12,6 +13,7 @@ export function CertificateManager({ gemstoneId, certFileUrl }: { gemstoneId: st
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const confirm = useConfirm();
 
   function handleUpload() {
     const file = fileInput.current?.files?.[0];
@@ -27,8 +29,8 @@ export function CertificateManager({ gemstoneId, certFileUrl }: { gemstoneId: st
     });
   }
 
-  function handleRemove() {
-    if (!confirm("Remove the attached certificate file?")) return;
+  async function handleRemove() {
+    if (!(await confirm("Remove the attached certificate file?"))) return;
     startTransition(async () => {
       await removeCertificateFile(gemstoneId);
       router.refresh();

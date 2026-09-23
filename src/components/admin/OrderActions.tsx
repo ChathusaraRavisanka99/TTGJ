@@ -3,15 +3,17 @@
 import { useRouter } from "next/navigation";
 import { markOrderPaid, cancelOrderAsAdmin } from "@/actions/orders";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Button } from "@/components/ui/Button";
 
 // Shown only for a bank-transfer order still awaiting payment.
 export function OrderActions({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {
   const router = useRouter();
   const { pending, error, run } = useAdminAction();
+  const confirm = useConfirm();
 
-  function handleClick(action: (id: string) => Promise<{ ok: true } | { ok: false; error: string }>, confirmText: string) {
-    if (!window.confirm(confirmText)) return;
+  async function handleClick(action: (id: string) => Promise<{ ok: true } | { ok: false; error: string }>, confirmText: string) {
+    if (!(await confirm(confirmText))) return;
     run(() => action(orderId), () => router.refresh());
   }
 

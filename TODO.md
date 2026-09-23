@@ -50,10 +50,13 @@ against the shared prod DB before shipping dependent code, then
   reachable/addable-to-cart via direct link) with an explicit "private
   sourcing item" notice and hidden price if someone stumbles onto the
   link — price only shows inside the order itself.
-- **Replace `window.confirm()` with a proper dialog** — used across ~10+
-  admin action components (`OrderActions`, `MarkDeliveredButton`, several
-  delete/toggle buttons). Needs a shared confirm-dialog component/hook and
-  tests; not yet scoped file-by-file.
+- ~~**Replace `window.confirm()` with a proper dialog**~~ — done. All 21
+  call sites across 17 components converted to a shared, Promise-based
+  `useConfirm()` (`ConfirmProvider.tsx`, mounted once in the root layout),
+  matching the native function's call shape so each site only needed
+  `await` added. Found and fixed a few adjacent bugs along the way
+  (`JewelryForm`/`GemstoneForm`'s delete handlers didn't check the
+  result before navigating away, silently hiding a real failure).
 - **Retail vs. wholesale customer distinction** — surface `customerType`
   (already exists: `WHOLESALE`/wholesale-application flow is partially
   built) more clearly in the admin customer views. Plus: admin can

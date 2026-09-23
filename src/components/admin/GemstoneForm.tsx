@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 import { hueAtPercent, percentAtHue, resolveGemColor } from "@/components/gem-visualizer/color";
 import { createGemstone, updateGemstone, deleteGemstone } from "@/actions/catalog-admin";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Input, Textarea, Select, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { StoreField, type ListingMarket } from "@/components/admin/StoreField";
@@ -70,6 +71,7 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
   const lk = market === "lk";
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const confirm = useConfirm();
 
   const [mineralId, setMineralId] = useState(initial?.mineralId ?? minerals[0]?.id ?? "");
   const [cutId, setCutId] = useState(initial?.cutId ?? cuts[0]?.id ?? "");
@@ -106,20 +108,37 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
   async function handleSubmit(formData: FormData) {
     setError(null);
     setPending(true);
-    const result = initial ? await updateGemstone(initial.id, formData) : await createGemstone(formData);
-    setPending(false);
-    if (result && !result.ok) {
-      setError(result.error);
-    } else if (initial) {
-      router.refresh();
+    try {
+      const result = initial ? await updateGemstone(initial.id, formData) : await createGemstone(formData);
+      if (result && !result.ok) {
+        setError(result.error);
+      } else if (initial) {
+        router.refresh();
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setPending(false);
     }
   }
 
   async function handleDelete() {
     if (!initial) return;
-    if (!confirm(`Delete "${initial.name}"? This cannot be undone.`)) return;
-    await deleteGemstone(initial.id);
-    router.push("/admin/gems");
+    if (!(await confirm(`Delete "${initial.name}"? This cannot be undone.`, { confirmLabel: "Delete", danger: true }))) return;
+    setError(null);
+    setPending(true);
+    try {
+      const result = await deleteGemstone(initial.id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      router.push("/admin/gems");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -341,7 +360,7 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
             {pending ? "Saving..." : initial ? "Save Changes" : "Create Gemstone"}
           </Button>
           {initial && (
-            <Button type="button" variant="outline" onClick={handleDelete}>
+            <Button type="button" variant="outline" disabled={pending} onClick={handleDelete}>
               Delete
             </Button>
           )}

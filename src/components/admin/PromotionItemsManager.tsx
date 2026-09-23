@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addPromotionItem, updatePromotionItemPrice, removePromotionItem } from "@/actions/promotion-items";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Input, Select, Label, FieldError, FieldHint } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
@@ -167,6 +168,7 @@ function PromotionItemRow({ item, currency }: { item: PromotedItem; currency: "U
   const [price, setPrice] = useState(String(item.promoPrice));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
   function handleSave() {
     setError(null);
@@ -177,8 +179,8 @@ function PromotionItemRow({ item, currency }: { item: PromotedItem; currency: "U
     });
   }
 
-  function handleRemove() {
-    if (!confirm(`Remove "${item.label}" from the promotional collection?`)) return;
+  async function handleRemove() {
+    if (!(await confirm(`Remove "${item.label}" from the promotional collection?`))) return;
     startTransition(async () => {
       await removePromotionItem(item.id);
       router.refresh();

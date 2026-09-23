@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateClarityGrade, deleteClarityGrade } from "@/actions/master-data";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Input, Textarea, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
@@ -20,6 +21,7 @@ export function ClarityRow({ grade }: { grade: Grade }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const confirm = useConfirm();
 
   async function handleSave(formData: FormData) {
     setError(null);
@@ -45,8 +47,8 @@ export function ClarityRow({ grade }: { grade: Grade }) {
           <button
             className="text-xs text-red-700 underline"
             disabled={pending}
-            onClick={() => {
-              if (confirm(`Delete "${grade.name}"?`)) startTransition(async () => { await deleteClarityGrade(grade.id); router.refresh(); });
+            onClick={async () => {
+              if (await confirm(`Delete "${grade.name}"?`, { confirmLabel: "Delete", danger: true })) startTransition(async () => { await deleteClarityGrade(grade.id); router.refresh(); });
             }}
           >
             Delete

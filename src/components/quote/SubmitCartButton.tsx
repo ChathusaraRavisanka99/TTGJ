@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { submitCart } from "@/actions/cart";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Button } from "@/components/ui/Button";
 import { FieldError } from "@/components/ui/Field";
 
@@ -10,17 +11,22 @@ export function SubmitCartButton() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const confirm = useConfirm();
 
-  function handleSubmit() {
-    if (!confirm("Submit this cart? Ratnavue will review it and follow up with wire transfer details.")) return;
+  async function handleSubmit() {
+    if (!(await confirm("Submit this cart? Ratnavue will review it and follow up with wire transfer details."))) return;
     setError(null);
     startTransition(async () => {
-      const result = await submitCart();
-      if (!result.ok) {
-        setError(result.error);
-        return;
+      try {
+        const result = await submitCart();
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        router.refresh();
+      } catch {
+        setError("Something went wrong. Please try again.");
       }
-      router.refresh();
     });
   }
 

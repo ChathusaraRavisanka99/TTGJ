@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Trash2 } from "lucide-react";
 import { addSubcultureGalleryImage, removeSubcultureGalleryImage } from "@/actions/subculture-content";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, FieldError } from "@/components/ui/Field";
 import type { SubcultureKey } from "@/lib/subculture-collections";
@@ -28,6 +29,7 @@ export function SubcultureGalleryManager({
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const altInput = useRef<HTMLInputElement>(null);
+  const confirm = useConfirm();
 
   function handleAdd() {
     const file = fileInput.current?.files?.[0];
@@ -45,8 +47,8 @@ export function SubcultureGalleryManager({
     });
   }
 
-  function handleRemove(index: number) {
-    if (!confirm("Remove this image?")) return;
+  async function handleRemove(index: number) {
+    if (!(await confirm("Remove this image?"))) return;
     startTransition(async () => {
       await removeSubcultureGalleryImage(collection, field, index);
       router.refresh();

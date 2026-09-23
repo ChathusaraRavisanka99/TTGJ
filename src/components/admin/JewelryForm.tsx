@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createJewelry, updateJewelry, deleteJewelry } from "@/actions/catalog-admin";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Input, Textarea, Select, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { StoreField, type ListingMarket } from "@/components/admin/StoreField";
@@ -41,24 +42,42 @@ export function JewelryForm({ initial, defaultMarket }: JewelryFormProps) {
   const lk = market === "lk";
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const confirm = useConfirm();
 
   async function handleSubmit(formData: FormData) {
     setError(null);
     setPending(true);
-    const result = initial ? await updateJewelry(initial.id, formData) : await createJewelry(formData);
-    setPending(false);
-    if (result && !result.ok) {
-      setError(result.error);
-    } else if (initial) {
-      router.refresh();
+    try {
+      const result = initial ? await updateJewelry(initial.id, formData) : await createJewelry(formData);
+      if (result && !result.ok) {
+        setError(result.error);
+      } else if (initial) {
+        router.refresh();
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setPending(false);
     }
   }
 
   async function handleDelete() {
     if (!initial) return;
-    if (!confirm(`Delete "${initial.name}"? This cannot be undone.`)) return;
-    await deleteJewelry(initial.id);
-    router.push("/admin/jewelry");
+    if (!(await confirm(`Delete "${initial.name}"? This cannot be undone.`, { confirmLabel: "Delete", danger: true }))) return;
+    setError(null);
+    setPending(true);
+    try {
+      const result = await deleteJewelry(initial.id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      router.push("/admin/jewelry");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -174,7 +193,7 @@ export function JewelryForm({ initial, defaultMarket }: JewelryFormProps) {
           {pending ? "Saving..." : initial ? "Save Changes" : "Create Jewelry Piece"}
         </Button>
         {initial && (
-          <Button type="button" variant="outline" onClick={handleDelete}>
+          <Button type="button" variant="outline" disabled={pending} onClick={handleDelete}>
             Delete
           </Button>
         )}

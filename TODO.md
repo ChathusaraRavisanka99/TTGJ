@@ -114,10 +114,12 @@ shipped (`lib/analytics.ts`, `computeProfit`).*
 
 ## Storefront UX
 
-- **Search overlay with live suggestions** — clicking the search icon
-  should open a popup/overlay (not just navigate to `/search`), with
-  type-ahead suggestions as the customer types, and a clear "no results"
-  state.
+- ~~**Search overlay with live suggestions**~~ — done. Clicking search now
+  opens a `Modal` overlay with debounced (300ms) live suggestions
+  (`lib/search-suggestions.ts` — a fast, minimal-select query, separate
+  from the full `/search` page's own heavier one), thumbnail + name +
+  price per result, a "no matches" state, and "View all results" still
+  going to `/search?q=...`.
 - **T&Cs checkbox** — a required "I agree to the Terms & Conditions"
   checkbox at signup and again before placing an order. Terms should
   state that returns/refunds after a sale aren't guaranteed by default,

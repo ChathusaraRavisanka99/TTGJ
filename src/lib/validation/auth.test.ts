@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { registerSchema } from "@/lib/validation/auth";
 
-const validRetail = { name: "Jane Doe", email: "jane@example.com", password: "password123", customerType: "RETAIL" as const };
+const validRetail = { name: "Jane Doe", email: "jane@example.com", password: "password123", customerType: "RETAIL" as const, agreedToTerms: "true" };
 
 describe("registerSchema", () => {
   it("accepts a valid retail registration", () => {
@@ -52,5 +52,17 @@ describe("registerSchema", () => {
 
   it("does not require business details for a retail registration", () => {
     expect(registerSchema.safeParse(validRetail).success).toBe(true);
+  });
+
+  it("rejects a registration that hasn't agreed to the Terms & Conditions", () => {
+    const result = registerSchema.safeParse({ ...validRetail, agreedToTerms: "false" });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues.map((i) => i.path[0])).toContain("agreedToTerms");
+  });
+
+  it("rejects a registration missing the agreedToTerms field entirely", () => {
+    const { agreedToTerms, ...withoutTerms } = validRetail;
+    void agreedToTerms;
+    expect(registerSchema.safeParse(withoutTerms).success).toBe(false);
   });
 });

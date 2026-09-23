@@ -64,6 +64,13 @@ model User {
   // in the app while true.
   mustChangePassword Boolean @default(false)
 
+  // Stamped the moment a self-registered account agrees to the Terms &
+  // Conditions checkbox at signup (see registerSchema/registerCustomer) —
+  // an audit record that they were asked and agreed, not an access gate.
+  // Null for an account created another way (e.g. an admin-registered
+  // wholesale account), since no signup form was ever shown to agree on.
+  termsAcceptedAt DateTime?
+
   // Both optional — collected at registration or later in account
   // settings. Used only by the birthday promotion (lib/checkout.ts):
   // eligible any day within the birth month, but lastBirthdayDiscountAt
@@ -107,6 +114,7 @@ model User {
 
   retailCarts             RetailCart[]
   orders                  Order[]
+  refundRequests          RefundRequest[]
   discountCodeRedemptions DiscountCodeRedemption[]
   // Codes minted for this specific customer (DiscountCode.scope ==
   // CUSTOMER) — see DiscountCode.assignedUser below.
@@ -1568,6 +1576,17 @@ model Order {
   manualPaymentReference  String?
   manualReceiptUrl        String?
 
+  // Stamped when this order was placed through the checkout form's own
+  // Terms & Conditions checkbox (see shippingSchema/initiateRetailCheckout)
+  // — an order-level audit record, separate from User.termsAcceptedAt
+  // (signup-time agreement), since a returning customer re-agrees at
+  // every checkout, not just once. Null for an order created another way
+  // (quote/sourcing/auction win/manual sale), where no checkout form was
+  // ever shown.
+  termsAcceptedAt DateTime?
+
+  refundRequest RefundRequest?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1581,6 +1600,67 @@ model Order {
   @@index([status, paidAt])
   // The 17track webhook looks an order up by its tracking number.
   @@index([trackingNumber])
+}
+
+enum RefundReason {
+  DAMAGED
+  NOT_AS_DESCRIBED
+  CHANGED_MIND
+  WRONG_ITEM
+  OTHER
+}
+
+enum RefundStatus {
+  REQUESTED
+  REFUNDED
+  DENIED
+}
+
+enum RefundResolution {
+  FULL
+  MINUS_SHIPPING
+  PARTIAL
+}
+
+// A customer-started refund/return on an order (see lib/refunds.ts) — the
+// conversation itself happens in the order's own existing ChatThread
+// (ChatThread.orderId; see lib/chat.ts's "order" request type), so this
+// model only tracks the request's own reason and how an admin finalized
+// it, not the back-and-forth. One per order (@@unique) — a second request
+// on the same order isn't supported in this first pass.
+model RefundRequest {
+  id      String @id @default(cuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+
+  reason      RefundReason
+  reasonNotes String?      @db.Text
+
+  status RefundStatus @default(REQUESTED)
+
+  // Set together when an admin resolves the request (see
+  // resolveRefundRequest in actions/refunds.ts). resolution determines how
+  // refundAmount was computed (FULL = order.total, MINUS_SHIPPING =
+  // order.total - order.shippingAmount, PARTIAL = an admin-entered
+  // figure) — kept as its own field rather than re-derived, since the
+  // order's own shippingAmount could theoretically change in meaning over
+  // time and this is a settled, historical figure.
+  resolution   RefundResolution?
+  refundAmount Float?
+  // Whether resolving released the returned item(s) back to AVAILABLE —
+  // admin's own call (a damaged/non-returnable item might be refunded
+  // without restocking), not automatic.
+  restocked    Boolean           @default(false)
+  adminNotes   String?           @db.Text
+  resolvedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 model OrderItem {

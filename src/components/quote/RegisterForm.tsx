@@ -12,6 +12,7 @@ const initialState: ActionResult = { ok: false, error: "" };
 
 export function RegisterForm({ callbackUrl }: { callbackUrl: string }) {
   const [customerType, setCustomerType] = useState<"RETAIL" | "WHOLESALE">("RETAIL");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [state, formAction, pending] = useActionState(async (_prev: ActionResult, formData: FormData) => {
     const result = await registerCustomer(formData);
     if (!result.ok) return result;
@@ -86,8 +87,27 @@ export function RegisterForm({ callbackUrl }: { callbackUrl: string }) {
           <Label htmlFor="password">Password</Label>
           <Input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
         </div>
+
+        <label className="flex items-start gap-2 text-sm text-charcoal/75">
+          <input
+            type="checkbox"
+            name="agreedToTerms"
+            value="true"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            required
+            className="mt-0.5 accent-gold"
+          />
+          <span>
+            I agree to the{" "}
+            <Link href="/terms" target="_blank" className="text-gold-deep underline hover:text-charcoal">
+              Terms &amp; Conditions
+            </Link>
+          </span>
+        </label>
+
         {!state.ok && state.error && <p className="text-sm text-red-700">{state.error}</p>}
-        <Button type="submit" variant="primary" size="lg" className="w-full" disabled={pending}>
+        <Button type="submit" variant="primary" size="lg" className="w-full" disabled={pending || !agreedToTerms}>
           {pending ? "Creating account..." : "Create Account"}
         </Button>
       </form>

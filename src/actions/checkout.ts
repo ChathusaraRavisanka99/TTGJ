@@ -8,7 +8,7 @@ import { nextOrderNumber, cancelPendingOrder as cancelOrder, recomputeJewelryAva
 import { getMarket } from "@/lib/market";
 import { LK_PREFIX } from "@/lib/market-shared";
 import { defaultPaymentMethod, isPaymentMethodLive } from "@/lib/payment-methods";
-import { shippingSchema } from "@/lib/validation/checkout";
+import { shippingSchema, agreedToTermsSchema } from "@/lib/validation/checkout";
 
 // Not ActionResult — that type's success case is a bare { ok: true },
 // which would make it indistinguishable at the call site from this
@@ -50,6 +50,11 @@ export async function initiateRetailCheckout(formData: FormData): Promise<Initia
     return { ok: false, error: parsedShipping.error.issues[0]?.message ?? "Please check your shipping details." };
   }
   const { firstName, lastName, phone, address, city, country } = parsedShipping.data;
+
+  const parsedTerms = agreedToTermsSchema.safeParse({ agreedToTerms: formData.get("agreedToTerms") });
+  if (!parsedTerms.success) {
+    return { ok: false, error: parsedTerms.error.issues[0]?.message ?? "Please agree to the Terms & Conditions to continue." };
+  }
 
   const requestedMethod = String(formData.get("paymentMethod") ?? "") || defaultPaymentMethod(market);
   if (!isPaymentMethodLive(market, requestedMethod)) {
@@ -96,6 +101,7 @@ export async function initiateRetailCheckout(formData: FormData): Promise<Initia
       shipCity: city,
       shipAddressLine1: address,
       shippingToBeArranged: breakdown.shippingToBeArranged,
+      termsAcceptedAt: new Date(),
       status: "PENDING_PAYMENT" as const,
       discountCodeId: breakdown.discountCodeId,
       items: {

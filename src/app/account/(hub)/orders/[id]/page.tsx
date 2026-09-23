@@ -11,9 +11,11 @@ import { pollChatMessages } from "@/actions/chat";
 import { Badge } from "@/components/ui/Badge";
 import { BackLink } from "@/components/admin/BackLink";
 import { OrderShippingDetailsForm } from "@/components/account/OrderShippingDetailsForm";
+import { RefundRequestForm } from "@/components/account/RefundRequestForm";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { formatPrice } from "@/lib/utils";
 import { withMarket, type Market } from "@/lib/market-shared";
+import { isRefundEligible } from "@/lib/refunds";
 
 export const metadata: Metadata = { title: "Order Details" };
 
@@ -31,6 +33,14 @@ const METHOD_LABELS: Record<string, string> = {
   WIRE_TRANSFER: "Bank transfer",
   COD: "Cash on delivery",
   CASH: "Cash",
+};
+
+const REFUND_REASON_LABELS: Record<string, string> = {
+  DAMAGED: "Item arrived damaged",
+  NOT_AS_DESCRIBED: "Not as described",
+  CHANGED_MIND: "Changed my mind",
+  WRONG_ITEM: "Wrong item received",
+  OTHER: "Other",
 };
 
 // The full record of one order: every item, the complete price breakdown
@@ -53,6 +63,7 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
           },
         },
         discountCode: { select: { code: true } },
+        refundRequest: true,
       },
     }),
     getTranslations("orders"),
@@ -206,6 +217,31 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
                 <br />
                 {order.shipPhone}
               </address>
+            </section>
+          )}
+
+          {(order.refundRequest || isRefundEligible(order)) && (
+            <section className="rounded-xl border border-border-subtle bg-surface p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Refund / Return</p>
+              {order.refundRequest ? (
+                <div className="mt-2 space-y-1 text-sm">
+                  <p className="text-charcoal/75">
+                    Reason: <span className="text-charcoal">{REFUND_REASON_LABELS[order.refundRequest.reason] ?? order.refundRequest.reason}</span>
+                  </p>
+                  <p className="text-charcoal/75">
+                    Status:{" "}
+                    <span className="text-charcoal">
+                      {order.refundRequest.status === "REQUESTED" && "Submitted — we'll follow up in the messages below."}
+                      {order.refundRequest.status === "REFUNDED" && order.refundRequest.refundAmount != null && `Approved — ${formatPrice(order.refundRequest.refundAmount, currency)} refunded.`}
+                      {order.refundRequest.status === "DENIED" && "Not approved — see the messages below for details."}
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <RefundRequestForm orderId={order.id} />
+                </div>
+              )}
             </section>
           )}
 

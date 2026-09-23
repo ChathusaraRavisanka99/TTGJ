@@ -32,6 +32,7 @@ export async function registerCustomer(formData: FormData): Promise<ActionResult
     businessName: formData.get("businessName") ?? "",
     businessRegNo: formData.get("businessRegNo") ?? "",
     dateOfBirth: formData.get("dateOfBirth") ?? "",
+    agreedToTerms: formData.get("agreedToTerms"),
   };
 
   const parsed = registerSchema.safeParse(raw);
@@ -66,6 +67,7 @@ export async function registerCustomer(formData: FormData): Promise<ActionResult
       businessName: isWholesale ? businessName || undefined : undefined,
       businessRegNo: isWholesale ? businessRegNo || undefined : undefined,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      termsAcceptedAt: new Date(),
     },
   });
 

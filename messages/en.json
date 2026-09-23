@@ -65,6 +65,7 @@
         "hint": "Available to registered customers."
       }
     },
+    "agreeToTerms": "I agree to the <link>Terms & Conditions</link>",
     "placeOrder": "Place Order",
     "continueToPayment": "Continue to Payment",
     "preparing": "Preparing payment...",

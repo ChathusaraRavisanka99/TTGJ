@@ -22,7 +22,7 @@ vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
 function registerFormData(overrides: Record<string, string> = {}): FormData {
   const fd = new FormData();
-  const data = { name: "Jane Doe", email: "jane@example.com", password: "password123", ...overrides };
+  const data = { name: "Jane Doe", email: "jane@example.com", password: "password123", agreedToTerms: "true", ...overrides };
   for (const [key, value] of Object.entries(data)) fd.set(key, value);
   return fd;
 }

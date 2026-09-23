@@ -17,3 +17,12 @@ export const shippingSchema = z.object({
 });
 
 export type ShippingInput = z.infer<typeof shippingSchema>;
+
+// Checked separately from shippingSchema (not merged into it) — this only
+// gates the actual "place order" step (initiateRetailCheckout), not the
+// shipping-details-only form a quote/sourcing/auction-win order's
+// recipient fills in afterward (submitOrderShippingDetailsAction), which
+// isn't "placing an order" in the same sense.
+export const agreedToTermsSchema = z
+  .object({ agreedToTerms: z.preprocess((v) => v === "true" || v === true, z.boolean()) })
+  .refine((d) => d.agreedToTerms, { message: "Please agree to the Terms & Conditions to continue.", path: ["agreedToTerms"] });

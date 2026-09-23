@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { initiateRetailCheckout } from "@/actions/checkout";
 import type { PayhereCheckoutFields } from "@/lib/payhere";
+import Link from "@/components/ui/MarketLink";
 import { Input, Label, FieldError } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { useMarket } from "@/components/providers/MarketProvider";
@@ -25,6 +26,7 @@ export function CheckoutForm() {
   const market = useMarket();
   const methods = paymentMethodsFor(market);
   const [method, setMethod] = useState(defaultPaymentMethod(market));
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const isWire = method === "WIRE_TRANSFER";
@@ -140,8 +142,29 @@ export function CheckoutForm() {
         </fieldset>
       )}
 
+      <label className="flex items-start gap-2 text-sm text-charcoal/75">
+        <input
+          type="checkbox"
+          name="agreedToTerms"
+          value="true"
+          checked={agreedToTerms}
+          onChange={(e) => setAgreedToTerms(e.target.checked)}
+          required
+          className="mt-0.5 accent-gold"
+        />
+        <span>
+          {t.rich("agreeToTerms", {
+            link: (chunks) => (
+              <Link href="/terms" target="_blank" className="text-gold-deep underline hover:text-charcoal">
+                {chunks}
+              </Link>
+            ),
+          })}
+        </span>
+      </label>
+
       <FieldError>{error ?? undefined}</FieldError>
-      <Button type="submit" variant="gold" size="lg" className="w-full" disabled={pending}>
+      <Button type="submit" variant="gold" size="lg" className="w-full" disabled={pending || !agreedToTerms}>
         {isWire ? (pending ? t("placing") : t("placeOrder")) : pending ? t("preparing") : t("continueToPayment")}
       </Button>
       <p className="text-center text-xs text-charcoal/65">{isWire ? t("wireNote") : t("payhereNote")}</p>

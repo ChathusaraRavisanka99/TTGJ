@@ -9,6 +9,7 @@ import { OrderActions } from "@/components/admin/OrderActions";
 import { ShipOrderForm } from "@/components/admin/ShipOrderForm";
 import { MarkDeliveredButton } from "@/components/admin/MarkDeliveredButton";
 import { ClearShippingToBeArrangedButton } from "@/components/admin/ClearShippingToBeArrangedButton";
+import { RefundResolutionPanel } from "@/components/admin/RefundResolutionPanel";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { formatPrice } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
             jewelry: { select: { name: true, slug: true, media: { orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } } } },
           },
         },
+        refundRequest: true,
       },
     }),
     auth(),
@@ -167,6 +169,10 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
               {order.status === "SHIPPED" && <MarkDeliveredButton orderId={order.id} orderNumber={order.orderNumber} />}
             </div>
           </div>
+
+          {order.refundRequest && (
+            <RefundResolutionPanel orderId={order.id} refund={order.refundRequest} currency={order.currency === "LKR" ? "LKR" : "USD"} />
+          )}
         </div>
       </div>
     </div>

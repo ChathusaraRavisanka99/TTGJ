@@ -14,8 +14,12 @@ export const registerSchema = z
     // Optional for everyone — collectible later in account settings too.
     // Used only by the birthday promotion (lib/checkout.ts).
     dateOfBirth: z.string().optional().or(z.literal("")),
+    agreedToTerms: z.preprocess((v) => v === "true" || v === true, z.boolean()),
   })
   .superRefine((data, ctx) => {
+    if (!data.agreedToTerms) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please agree to the Terms & Conditions to continue.", path: ["agreedToTerms"] });
+    }
     if (data.customerType !== "WHOLESALE") return;
     if (!data.businessName?.trim()) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Business name is required for a wholesale account", path: ["businessName"] });

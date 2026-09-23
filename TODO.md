@@ -204,16 +204,44 @@ shipped (`lib/analytics.ts`, `computeProfit`).*
   from the full `/search` page's own heavier one), thumbnail + name +
   price per result, a "no matches" state, and "View all results" still
   going to `/search?q=...`.
-- **T&Cs checkbox** — a required "I agree to the Terms & Conditions"
-  checkbox at signup and again before placing an order. Terms should
-  state that returns/refunds after a sale aren't guaranteed by default,
-  but the site does have a process to handle them (see Refunds below).
-- **Refunds/returns system** — customer can start a refund from "My
-  Orders," picking from a set of reasons. Admin/support can have a
-  conversation about it (reuse the chat-thread pattern already built for
-  orders — see `lib/chat.ts`'s `"order"` request type) and finalize one
-  of: full refund, refund minus shipping, or a partial refund. No schema,
-  actions, or UI exist for this yet.
+- ~~**T&Cs checkbox**~~ — done. A required, unchecked-by-default checkbox
+  (submit stays disabled until checked, plus the usual server-side refusal
+  too) at signup (`RegisterForm.tsx`) and again on the checkout form
+  (`CheckoutForm.tsx`), both linking to a new static `/terms` page. Stamps
+  an audit timestamp either way — `User.termsAcceptedAt` at signup,
+  `Order.termsAcceptedAt` at checkout (a returning customer re-agrees on
+  every order, not just once at signup) — both nullable, so an account/
+  order created another way (admin-registered wholesale, quote/sourcing/
+  auction-win/manual-sale orders, which never show a checkout form) simply
+  has no stamp rather than a fabricated one. An account created via Google
+  sign-in also has no signup-time stamp, but still can't complete a
+  purchase without agreeing at checkout — that's an acceptable, deliberate
+  gap, not a hole (no purchase is possible without ever agreeing). New
+  tests for both gates.
+- ~~**Refunds/returns system**~~ — done. New `RefundRequest` model
+  (`lib/refunds.ts`/`actions/refunds.ts`) — a customer starts one from
+  their own order page (`/account/orders/[id]`) once it's PAID/SHIPPED/
+  DELIVERED, picking a reason; the conversation happens in that order's
+  own existing chat thread (reused as designed, no new thread type
+  needed). An admin finalizes it from the order's admin page as Full,
+  Minus Shipping, or Partial (admin enters the amount), with their own
+  explicit choice of whether to release the item(s) back to `AVAILABLE`
+  — restocking is never automatic, since a damaged/non-returnable item
+  might be refunded without going back on sale. 27 new tests; live-
+  verified end-to-end via Playwright (customer requested a refund on a
+  seeded paid order, admin approved a full refund with restock checked,
+  confirmed the item released back to stock, the refund amount, and the
+  customer's own notification/page update). Found and fixed a real bug
+  along the way during that live pass: the admin resolve form's "restock"
+  checkbox (a checkbox + hidden-false-fallback pair, the same convention
+  used all over this app's admin forms) was read with `formData.get()`,
+  which returns the *first* of the two same-named fields — the hidden
+  "false" — instead of `Object.fromEntries(formData.entries())`, which
+  correctly keeps the checkbox's later "true" when checked. The checkbox
+  silently never took effect; a unit test alone wouldn't have caught it
+  since a hand-built test FormData doesn't reproduce a real browser's
+  duplicate-name submission. Fixed, and a regression test now
+  specifically reproduces the duplicate-field submission.
 
 ## Known, diagnosed, not yet fixed
 

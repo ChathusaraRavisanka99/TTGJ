@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/Button";
 interface Settings {
   pointsPerCurrencyUnit: number;
   pointsRedemptionValue: number;
+  pointsPerCurrencyUnitLkr: number;
+  pointsRedemptionValueLkr: number;
   minRedeemPoints: number;
   maxRedeemPercentOfOrder: number;
   referralMinOrderValue: number;
@@ -39,21 +41,44 @@ export function LoyaltySettingsForm({ settings }: { settings: Settings }) {
   return (
     <form action={handleSubmit} className="max-w-2xl space-y-6 rounded-xl border border-border-subtle bg-surface p-6">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Earning & redemption</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Earning & redemption — International (USD)</p>
         <div className="mt-3 grid gap-5 sm:grid-cols-2">
           <div>
             <Label htmlFor="pointsPerCurrencyUnit">Points per $1 spent</Label>
             <Input id="pointsPerCurrencyUnit" name="pointsPerCurrencyUnit" type="number" step="0.1" min="0" defaultValue={settings.pointsPerCurrencyUnit} />
-            <FieldHint>Applied to an order&apos;s subtotal (before tax/shipping). LKR orders convert through the USD → LKR rate on Commerce Settings.</FieldHint>
+            <FieldHint>Applied to an order&apos;s subtotal (before tax/shipping) on the international store.</FieldHint>
           </div>
           <div>
             <Label htmlFor="pointsRedemptionValue">Value of 1 point ($)</Label>
             <Input id="pointsRedemptionValue" name="pointsRedemptionValue" type="number" step="0.001" min="0" defaultValue={settings.pointsRedemptionValue} />
             <FieldHint>e.g. 0.01 means 100 points redeem for $1 off.</FieldHint>
           </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Earning & redemption — Sri Lanka (LKR)</p>
+        <div className="mt-3 grid gap-5 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="pointsPerCurrencyUnitLkr">Points per Rs 1 spent</Label>
+            <Input id="pointsPerCurrencyUnitLkr" name="pointsPerCurrencyUnitLkr" type="number" step="0.001" min="0" defaultValue={settings.pointsPerCurrencyUnitLkr} />
+            <FieldHint>Its own native rate — not converted through the USD → LKR rate on Commerce Settings, so it never drifts when that&apos;s updated.</FieldHint>
+          </div>
+          <div>
+            <Label htmlFor="pointsRedemptionValueLkr">Value of 1 point (Rs)</Label>
+            <Input id="pointsRedemptionValueLkr" name="pointsRedemptionValueLkr" type="number" step="0.1" min="0" defaultValue={settings.pointsRedemptionValueLkr} />
+            <FieldHint>e.g. 1 means 100 points redeem for Rs 100 off.</FieldHint>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Shared limits</p>
+        <div className="mt-3 grid gap-5 sm:grid-cols-2">
           <div>
             <Label htmlFor="minRedeemPoints">Minimum points to redeem</Label>
             <Input id="minRedeemPoints" name="minRedeemPoints" type="number" step="1" min="0" defaultValue={settings.minRedeemPoints} />
+            <FieldHint>Same floor on both stores — each is a meaningful amount in its own currency.</FieldHint>
           </div>
           <div>
             <Label htmlFor="maxRedeemPercentOfOrder">Max redemption (% of order)</Label>

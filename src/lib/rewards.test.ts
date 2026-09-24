@@ -16,6 +16,8 @@ const loyaltyFixture: LoyaltySettings = {
   id: "singleton",
   pointsPerCurrencyUnit: 1,
   pointsRedemptionValue: 0.01,
+  pointsPerCurrencyUnitLkr: 0.01,
+  pointsRedemptionValueLkr: 1,
   minRedeemPoints: 500,
   maxRedeemPercentOfOrder: 50,
   referralMinOrderValue: 50,
@@ -56,9 +58,14 @@ describe("pointsForAmount", () => {
     await expect(pointsForAmount(10, "USD")).resolves.toBe(3); // floor(3.3)
   });
 
-  it("converts an LKR amount through usdToLkrRate first", async () => {
+  it("uses the Sri Lanka store's own native LKR rate, not a USD conversion", async () => {
     mockSettings();
-    await expect(pointsForAmount(30000, "LKR")).resolves.toBe(100); // 30000 / 300 = 100
+    await expect(pointsForAmount(30000, "LKR")).resolves.toBe(300); // 30000 * 0.01 (pointsPerCurrencyUnitLkr)
+  });
+
+  it("changing usdToLkrRate has no effect on LKR earning (it's not consulted)", async () => {
+    mockSettings({}, { usdToLkrRate: 9999 });
+    await expect(pointsForAmount(30000, "LKR")).resolves.toBe(300);
   });
 });
 
@@ -68,9 +75,9 @@ describe("pointsValue", () => {
     await expect(pointsValue(100, "USD")).resolves.toBeCloseTo(1);
   });
 
-  it("converts the USD value into LKR for an LKR order", async () => {
+  it("values points in LKR at the Sri Lanka store's own native redemption rate", async () => {
     mockSettings();
-    await expect(pointsValue(100, "LKR")).resolves.toBeCloseTo(300);
+    await expect(pointsValue(100, "LKR")).resolves.toBeCloseTo(100); // 100 * 1 (pointsRedemptionValueLkr)
   });
 });
 
@@ -100,11 +107,11 @@ describe("resolvePointsRedemption", () => {
     expect(result).toEqual({ points: 0, discount: 0 });
   });
 
-  it("clamps LKR redemption through the order's own currency cap", async () => {
+  it("clamps LKR redemption through the order's own currency cap, using the native LKR redemption rate", async () => {
     mockSettings();
-    // orderableAmount 30000 LKR ~= $100 -> cap 50% = $50 -> 5000 points -> discount 5000 * 0.01 * 300 = 15000 LKR
+    // cap = 30000 LKR * 50% = 15000 LKR -> 15000 / 1 (pointsRedemptionValueLkr) = 15000 points -> discount 15000 * 1 = 15000 LKR
     const result = await resolvePointsRedemption({ requestedPoints: 100000, availableBalance: 100000, orderableAmount: 30000, currency: "LKR" });
-    expect(result).toEqual({ points: 5000, discount: 15000 });
+    expect(result).toEqual({ points: 15000, discount: 15000 });
   });
 });
 
@@ -203,14 +210,14 @@ describe("settlePointsForPaidOrder", () => {
     );
   });
 
-  it("converts an LKR subtotal through usdToLkrRate before earning", async () => {
+  it("earns an LKR order's points at the Sri Lanka store's own native rate, not a USD conversion", async () => {
     await settlePointsForPaidOrder(
       prismaMock,
       { id: "o1", userId: "u1", currency: "LKR", subtotal: 30000, pointsRedeemed: 0 },
       { loyalty: loyaltyFixture, commerce: commerceFixture },
     );
     expect(prismaMock.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ pointsBalance: { increment: 100 } }) }),
+      expect.objectContaining({ data: expect.objectContaining({ pointsBalance: { increment: 300 } }) }), // 30000 * 0.01 (pointsPerCurrencyUnitLkr)
     );
   });
 

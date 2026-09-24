@@ -1,7 +1,6 @@
 import { randomBytes } from "crypto";
 import type { CommerceSettings, LoyaltySettings, Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getCommerceSettings } from "@/lib/commerce-settings";
 import { getLoyaltySettings } from "@/lib/loyalty-settings";
 
 type Tx = Prisma.TransactionClient | PrismaClient;
@@ -45,22 +44,23 @@ export async function ensureReferralCode(userId: string): Promise<string> {
   throw new Error("Could not generate a referral code — try again.");
 }
 
-/** Converts a currency amount into whole points at the current rate,
- * converting an LKR amount into the same USD-equivalent basis a dollar
- * amount already is in — same cross-currency reference point
- * (usdToLkrRate) the rest of checkout already uses. */
+/** Converts a currency amount into whole points at the current rate — the
+ * Sri Lanka store uses its own native LKR rate (LoyaltySettings.
+ * pointsPerCurrencyUnitLkr), not a USD-equivalent converted through
+ * CommerceSettings.usdToLkrRate, so a customer's earn rate never
+ * silently drifts when that exchange rate is updated. */
 export async function pointsForAmount(amount: number, currency: "USD" | "LKR"): Promise<number> {
-  const [loyalty, commerce] = await Promise.all([getLoyaltySettings(), getCommerceSettings()]);
-  const usdAmount = currency === "LKR" ? amount / commerce.usdToLkrRate : amount;
-  return Math.floor(usdAmount * loyalty.pointsPerCurrencyUnit);
+  const loyalty = await getLoyaltySettings();
+  const rate = currency === "LKR" ? loyalty.pointsPerCurrencyUnitLkr : loyalty.pointsPerCurrencyUnit;
+  return Math.floor(amount * rate);
 }
 
 /** The currency value redeeming `points` is worth, in the order's own
- * currency (LKR points convert back through the same rate). */
+ * currency — same native-rate reasoning as pointsForAmount above. */
 export async function pointsValue(points: number, currency: "USD" | "LKR"): Promise<number> {
-  const [loyalty, commerce] = await Promise.all([getLoyaltySettings(), getCommerceSettings()]);
-  const usdValue = points * loyalty.pointsRedemptionValue;
-  return currency === "LKR" ? usdValue * commerce.usdToLkrRate : usdValue;
+  const loyalty = await getLoyaltySettings();
+  const rate = currency === "LKR" ? loyalty.pointsRedemptionValueLkr : loyalty.pointsRedemptionValue;
+  return points * rate;
 }
 
 /** The single place "how many of the requested points can actually be
@@ -77,10 +77,10 @@ export async function resolvePointsRedemption(input: {
 }): Promise<{ points: number; discount: number }> {
   if (input.requestedPoints <= 0) return { points: 0, discount: 0 };
 
-  const [loyalty, commerce] = await Promise.all([getLoyaltySettings(), getCommerceSettings()]);
+  const loyalty = await getLoyaltySettings();
+  const redemptionValue = input.currency === "LKR" ? loyalty.pointsRedemptionValueLkr : loyalty.pointsRedemptionValue;
   const capAmount = input.orderableAmount * (loyalty.maxRedeemPercentOfOrder / 100);
-  const capUsdAmount = input.currency === "LKR" ? capAmount / commerce.usdToLkrRate : capAmount;
-  const capPoints = Math.floor(capUsdAmount / loyalty.pointsRedemptionValue);
+  const capPoints = Math.floor(capAmount / redemptionValue);
 
   let points = Math.min(input.requestedPoints, input.availableBalance, capPoints);
   if (points < loyalty.minRedeemPoints) points = 0;
@@ -130,8 +130,8 @@ export async function settlePointsForPaidOrder(
   order: { id: string; userId: string; currency: string; subtotal: number; pointsRedeemed: number },
   settings: { loyalty: LoyaltySettings; commerce: CommerceSettings },
 ): Promise<void> {
-  const usdAmount = order.currency === "LKR" ? order.subtotal / settings.commerce.usdToLkrRate : order.subtotal;
-  const earned = Math.floor(usdAmount * settings.loyalty.pointsPerCurrencyUnit);
+  const earnRate = order.currency === "LKR" ? settings.loyalty.pointsPerCurrencyUnitLkr : settings.loyalty.pointsPerCurrencyUnit;
+  const earned = Math.floor(order.subtotal * earnRate);
   if (earned > 0) {
     await recordPointsTransaction(tx, { userId: order.userId, amount: earned, reason: "EARNED_PURCHASE", orderId: order.id });
   }

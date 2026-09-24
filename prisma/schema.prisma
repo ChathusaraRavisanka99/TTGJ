@@ -946,12 +946,21 @@ model BusinessAccount {
 model LoyaltySettings {
   id String @id @default("singleton")
 
-  // Points earned per whole currency unit spent (order.subtotal), e.g.
-  // 1 = one point per dollar/rupee-equivalent spent.
+  // Points earned per whole USD spent (order.subtotal, international
+  // store only — see pointsPerCurrencyUnitLkr for /lk) — 1 = one point
+  // per dollar spent.
   pointsPerCurrencyUnit Float @default(1)
-  // Currency value of a single point when redeemed at checkout, e.g. 0.01
-  // = 100 points redeem for $1 (or its LKR equivalent).
+  // USD value of a single point when redeemed at checkout on the
+  // international store, e.g. 0.01 = 100 points redeem for $1.
   pointsRedemptionValue Float @default(0.01)
+  // The Sri Lanka store's own native rates — kept separate rather than
+  // converted through CommerceSettings.usdToLkrRate, so a customer's
+  // rupee point value doesn't silently drift every time that exchange
+  // rate is updated. Default keeps the same ~1% earn-and-redeem economics
+  // as the international rates (0.01 pts per Rs 1 spent = 1 pt per Rs
+  // 100; 1 pt = Rs 1 on redemption), just expressed natively.
+  pointsPerCurrencyUnitLkr Float @default(0.01)
+  pointsRedemptionValueLkr Float @default(1)
   // A customer can't redeem a token handful of points — keeps the "Use my
   // points" control from being offered for a balance too small to matter.
   minRedeemPoints Int @default(500)

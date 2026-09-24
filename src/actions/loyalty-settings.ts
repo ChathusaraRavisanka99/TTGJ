@@ -16,6 +16,8 @@ export async function updateLoyaltySettings(formData: FormData): Promise<ActionR
   };
   const pointsPerCurrencyUnit = num("pointsPerCurrencyUnit");
   const pointsRedemptionValue = num("pointsRedemptionValue");
+  const pointsPerCurrencyUnitLkr = num("pointsPerCurrencyUnitLkr");
+  const pointsRedemptionValueLkr = num("pointsRedemptionValueLkr");
   const minRedeemPoints = num("minRedeemPoints");
   const maxRedeemPercentOfOrder = num("maxRedeemPercentOfOrder");
   const referralMinOrderValue = num("referralMinOrderValue");
@@ -25,6 +27,8 @@ export async function updateLoyaltySettings(formData: FormData): Promise<ActionR
   if (
     pointsPerCurrencyUnit == null || pointsPerCurrencyUnit < 0 ||
     pointsRedemptionValue == null || pointsRedemptionValue < 0 ||
+    pointsPerCurrencyUnitLkr == null || pointsPerCurrencyUnitLkr < 0 ||
+    pointsRedemptionValueLkr == null || pointsRedemptionValueLkr < 0 ||
     minRedeemPoints == null || minRedeemPoints < 0 ||
     maxRedeemPercentOfOrder == null || maxRedeemPercentOfOrder < 0 || maxRedeemPercentOfOrder > 100 ||
     referralMinOrderValue == null || referralMinOrderValue < 0 ||
@@ -39,6 +43,8 @@ export async function updateLoyaltySettings(formData: FormData): Promise<ActionR
     data: {
       pointsPerCurrencyUnit,
       pointsRedemptionValue,
+      pointsPerCurrencyUnitLkr,
+      pointsRedemptionValueLkr,
       minRedeemPoints,
       maxRedeemPercentOfOrder,
       referralMinOrderValue,

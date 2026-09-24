@@ -173,12 +173,23 @@ against the shared prod DB before shipping dependent code, then
 *Depends on: per-item `costPrice` and sold-only profit analytics — already
 shipped (`lib/analytics.ts`, `computeProfit`).*
 
-- **Separate points currencies** — international customers earn/redeem
-  USD-rate points (100 pts = $1, matches existing
-  `pointsRedemptionValue`); Sri Lanka customers earn/redeem LKR-rate local
-  points (1 pt = Rs 1). Today there's one unified rate
-  (`LoyaltySettings.pointsRedemptionValue`) — needs a second, LK-specific
-  rate and probably a market-scoped points ledger rather than one balance.
+- ~~**Separate points currencies**~~ — done. Confirmed with you first:
+  one shared `User.pointsBalance` (not a separate per-market ledger) —
+  just earned/redeemed at a different, independent rate depending on
+  which store the order is on. New `LoyaltySettings.pointsPerCurrencyUnitLkr`/
+  `pointsRedemptionValueLkr`, applied directly to the LKR amount instead of
+  (as before) converting through `CommerceSettings.usdToLkrRate` — a
+  customer's rupee point value no longer silently drifts whenever that
+  exchange rate changes. Default rates (0.01 pts/Rs 1 earned, 1 pt = Rs 1
+  redeemed) keep the same ~1% earn-and-redeem economics as the
+  international side, just expressed natively — my own judgment call
+  since the TODO only specified the redemption side explicitly.
+  `minRedeemPoints`/`maxRedeemPercentOfOrder` stay shared across both
+  stores (not called out for separation, and each is already a
+  meaningful floor/cap within its own currency thanks to the rate
+  design). Admin loyalty-settings page split into International/Sri
+  Lanka sections. New/updated tests; live-verified via Playwright
+  against a real LK checkout with points staged.
 - **Post-purchase reward game** — after a wire-transfer order is marked
   paid (or a card payment succeeds), the customer gets a one-time "dig for
   a gem" animation (a cute figure mining/digging, revealing a gem) instead

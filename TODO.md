@@ -464,11 +464,20 @@ unless noted.*
   photo-upload ring preview. Needs real image-compositing work or a
   third-party AR SDK, not a small feature — worth its own scoping pass
   before committing to it.
-- **Diamond-style trade-up credit program** *(flagged, policy decision)* —
-  trade an existing stone for credit toward a larger one (Blue Nile/James
-  Allen's lifetime-upgrade model). More a financial/operational policy
-  call than an engineering one — needs your decision before any schema
-  work starts.
+- ~~**Diamond-style trade-up credit program**~~ — investigated, shelved
+  (your call, 2026-09-24). James Allen/Blue Nile's 100%-credit model works
+  because diamonds are graded/fungible; the closest real precedent for
+  *colored* gemstones (GemsNY, ~90% credit toward a ≥125%-priced item,
+  certificate/condition requirements) is the exception — most mainstream
+  jewelers (Zales, Kay) exclude colored gemstones from trade-in entirely
+  because of the appraisal/resale risk a non-standardized stone carries.
+  Ratnavue's own Terms already promise every item is one-of-a-kind and
+  never restocked once sold, which a returned trade-in stone would need
+  careful handling not to quietly contradict. Given it wasn't a
+  customer-requested gap — just a feature some diamond retailers happen
+  to have — parked rather than built. Revisit only if you want to define
+  concrete terms (credit %, minimum trade-up value, certificate/condition
+  requirements, how a returned stone is disclosed/relisted) yourself.
 
 ## Known, diagnosed, not yet fixed
 

@@ -96,7 +96,7 @@ export async function resolvePointsRedemption(input: {
  * open mid-transaction. */
 export async function recordPointsTransaction(
   tx: Tx,
-  input: { userId: string; amount: number; reason: "EARNED_PURCHASE" | "REDEEMED_CHECKOUT" | "REFERRAL_BONUS_REFERRER" | "REFERRAL_BONUS_REFEREE" | "ADMIN_ADJUSTMENT"; orderId?: string },
+  input: { userId: string; amount: number; reason: "EARNED_PURCHASE" | "REDEEMED_CHECKOUT" | "REFERRAL_BONUS_REFERRER" | "REFERRAL_BONUS_REFEREE" | "ADMIN_ADJUSTMENT" | "GEM_DIG_BONUS"; orderId?: string },
 ): Promise<void> {
   await tx.user.update({
     where: { id: input.userId },

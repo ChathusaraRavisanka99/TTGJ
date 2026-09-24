@@ -864,6 +864,8 @@ enum PointsTransactionReason {
   REFERRAL_BONUS_REFERRER
   REFERRAL_BONUS_REFEREE
   ADMIN_ADJUSTMENT
+  // The one-time post-purchase "dig for a gem" game — see lib/gem-dig.ts.
+  GEM_DIG_BONUS
 }
 
 model PointsTransaction {
@@ -1569,6 +1571,14 @@ model Order {
   // "flag, don't block" pattern as shippingToBeArranged above). An admin
   // clears it once reviewed (see actions/orders.ts).
   needsPointsApproval Boolean @default(false)
+
+  // The one-time post-purchase "dig for a gem" reward game (see
+  // lib/gem-dig.ts) — null until played, and only offered once per
+  // order. gemDigPointsAwarded is the actual bonus rolled (1-5% of the
+  // order's own profit margin, converted to points), recorded here so
+  // the result page can show it again without re-rolling.
+  gemDigPlayedAt      DateTime?
+  gemDigPointsAwarded Int?
 
   // One thread per order, created lazily on the first message — see
   // getOrCreateChatThread("order", ...) in lib/chat.ts and the admin order

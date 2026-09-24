@@ -16,6 +16,7 @@ import { ChatPanel } from "@/components/chat/ChatPanel";
 import { formatPrice } from "@/lib/utils";
 import { withMarket, type Market } from "@/lib/market-shared";
 import { isRefundEligible } from "@/lib/refunds";
+import { isGemDigEligible } from "@/lib/gem-dig";
 
 export const metadata: Metadata = { title: "Order Details" };
 
@@ -58,8 +59,9 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
       include: {
         items: {
           include: {
-            gemstone: { select: { name: true, slug: true, media: { orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } } } },
-            jewelry: { select: { name: true, slug: true, media: { orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } } } },
+            gemstone: { select: { name: true, slug: true, costPrice: true, media: { orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } } } },
+            jewelry: { select: { name: true, slug: true, costPrice: true, media: { orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } } } },
+            jewelryVariant: { select: { costPrice: true } },
           },
         },
         discountCode: { select: { code: true } },
@@ -120,6 +122,18 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
             className="inline-flex items-center rounded-full border border-gold bg-surface px-4 py-1.5 text-sm font-medium text-charcoal transition-colors hover:bg-gold/25"
           >
             {order.paymentMethod === "WIRE_TRANSFER" ? t("paymentInstructions") : t("detail.completePayment")}
+          </NextLink>
+        </div>
+      )}
+
+      {isGemDigEligible(order) && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/40 bg-gold/10 p-4">
+          <p className="text-sm text-charcoal">You&apos;ve earned a chance to dig for a bonus gem on this order.</p>
+          <NextLink
+            href={`/account/orders/${order.id}/dig`}
+            className="inline-flex items-center rounded-full border border-gold bg-surface px-4 py-1.5 text-sm font-medium text-charcoal transition-colors hover:bg-gold/25"
+          >
+            Dig for a gem
           </NextLink>
         </div>
       )}

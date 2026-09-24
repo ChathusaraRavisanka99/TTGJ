@@ -190,15 +190,36 @@ shipped (`lib/analytics.ts`, `computeProfit`).*
   design). Admin loyalty-settings page split into International/Sri
   Lanka sections. New/updated tests; live-verified via Playwright
   against a real LK checkout with points staged.
-- **Post-purchase reward game** — after a wire-transfer order is marked
-  paid (or a card payment succeeds), the customer gets a one-time "dig for
-  a gem" animation (a cute figure mining/digging, revealing a gem) instead
-  of a spin wheel. Before digging, show the possible min/max point range
-  and a "Good luck" button with a punchline. After digging, show the
-  actual points awarded (1% or 5% of the order's profit, per
-  `computeProfit`) and a note that Ratnavue can change or remove this
-  reward program at any time. One-time only, delivered via an in-app
-  message.
+- ~~**Post-purchase reward game**~~ — done. Once an order reaches PAID
+  (any payment path — card, wire confirmation, manual sale — all funnel
+  through `finalizePaidOrder`), `notifyGemDigAvailable` (`lib/gem-dig.ts`)
+  sends an in-app notification if the order actually has real profit to
+  draw a bonus from (`isGemDigEligible` — skipped silently for a $0/
+  uncosted-profit order, never offering a hollow dig). The notification
+  points at the order's own page (not a dedicated link — `NotificationBell`
+  hardcodes its link target per request type, and the order page is now
+  also the CTA entry point) via a new banner + "Dig for a gem" link, shown
+  only while the reward is still unclaimed. `/account/orders/[id]/dig`
+  shows the possible range (1%-5% of the order's profit, same
+  `unitPrice − costPrice` basis as `computeProfit`/the birthday discount,
+  converted to points at the order's own currency's native rate) with a
+  "Good luck" button and a punchline; `DigForGemAnimation.tsx` swings a
+  pickaxe then reveals a gem with the awarded points and a note that
+  Ratnavue can change or remove the reward program at any time. One-time
+  only — `playGemDig` claims it via a conditional `updateMany`
+  (`gemDigPlayedAt: null → now`) inside the same transaction as the
+  `PointsTransaction` (`reason: GEM_DIG_BONUS`) it records, so a
+  double-click or a race against itself can't award twice; revisiting
+  `/dig` afterward shows the persisted result instead of replaying.
+  New migration (`Order.gemDigPlayedAt`/`gemDigPointsAwarded`,
+  `PointsTransactionReason.GEM_DIG_BONUS`). 20 new tests
+  (`lib/gem-dig.test.ts`, `actions/gem-dig.test.ts`). Live-verified via
+  Playwright against a real PAID order with a known $100 profit margin:
+  CTA banner appeared, range showed correctly (1-5 points), digging
+  awarded 4 points (within range), `PointsTransaction`/`pointsBalance`
+  updated correctly in the DB, reloading `/dig` showed the persisted
+  result without re-awarding, and the CTA banner correctly disappeared
+  from the order page afterward.
 - ~~**Admin approval gate**~~ — done. Confirmed with you first: the order
   still completes normally (payment, stock, points all settle exactly as
   before) — a new `Order.needsPointsApproval` flag is just a paper-trail

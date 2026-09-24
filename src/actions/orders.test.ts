@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { markOrderShippedByAdmin, markOrderDeliveredByAdmin } from "@/actions/orders";
+import { prismaMock } from "@/test/prisma-mock";
+import { markOrderShippedByAdmin, markOrderDeliveredByAdmin, clearPointsApproval, clearShippingToBeArranged } from "@/actions/orders";
 import { markOrderShipped, markOrderDelivered } from "@/lib/orders";
 
 vi.mock("@/lib/rbac", () => ({ requireAdmin: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN" }) }));
@@ -57,5 +58,23 @@ describe("markOrderDeliveredByAdmin", () => {
     vi.mocked(markOrderDelivered).mockResolvedValue({ ok: false });
     const result = await markOrderDeliveredByAdmin("order-1");
     expect(result).toEqual({ ok: false, error: "This order isn't marked shipped yet." });
+  });
+});
+
+describe("clearPointsApproval", () => {
+  it("clears the flag without touching anything else about the order", async () => {
+    prismaMock.order.update.mockResolvedValue({} as never);
+    const result = await clearPointsApproval("order-1");
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.order.update).toHaveBeenCalledWith({ where: { id: "order-1" }, data: { needsPointsApproval: false } });
+  });
+});
+
+describe("clearShippingToBeArranged", () => {
+  it("clears the flag without touching anything else about the order", async () => {
+    prismaMock.order.update.mockResolvedValue({} as never);
+    const result = await clearShippingToBeArranged("order-1");
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.order.update).toHaveBeenCalledWith({ where: { id: "order-1" }, data: { shippingToBeArranged: false } });
   });
 });

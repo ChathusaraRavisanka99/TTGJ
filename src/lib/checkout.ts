@@ -55,6 +55,11 @@ export interface CheckoutBreakdown {
    * charged as $0 for it (see the per-item loop below), so the resulting
    * Order needs Order.shippingToBeArranged set. */
   shippingToBeArranged: boolean;
+  /** The points redemption covers more than the order's actual profit
+   * margin (summed per-item retailPrice - costPrice, same basis as the
+   * birthday discount above it) — flags the resulting Order for admin
+   * review rather than blocking checkout; see Order.needsPointsApproval. */
+  needsPointsApproval: boolean;
   handlingFee: number;
   total: number;
 }
@@ -131,6 +136,10 @@ export async function buildCheckoutBreakdown(input: {
 
   let subtotal = 0;
   let birthdayDiscount = 0;
+  // Summed regardless of birthday eligibility/promo status — this is the
+  // order's actual profit margin, used only to gate points redemption
+  // below, not to compute any discount itself.
+  let totalProfit = 0;
   const items: CheckoutLineItem[] = cart.items.map((item) => {
     const product = item.gemstone ?? item.jewelry;
     const variant = item.jewelryVariant;
@@ -151,9 +160,12 @@ export async function buildCheckoutBreakdown(input: {
     // Lanka listing, dollars for an international one), so it lines up with
     // the price without any conversion.
     const costPrice = variant?.costPrice ?? product?.costPrice ?? null;
-    if (birthdayEligible && !isPromotional && costPrice != null) {
+    if (costPrice != null) {
       const profit = Math.max(0, unitPrice - costPrice);
-      birthdayDiscount += profit * (settings.birthdayDiscountPercent / 100) * item.quantity;
+      totalProfit += profit * item.quantity;
+      if (birthdayEligible && !isPromotional) {
+        birthdayDiscount += profit * (settings.birthdayDiscountPercent / 100) * item.quantity;
+      }
     }
 
     return { gemstoneId: item.gemstoneId, jewelryId: item.jewelryId, jewelryVariantId: item.jewelryVariantId, label, unitPrice, quantity: item.quantity, lineTotal };
@@ -174,6 +186,11 @@ export async function buildCheckoutBreakdown(input: {
     currency: lk ? "LKR" : "USD",
   });
   const afterDiscounts = Math.max(0, afterCodeDiscounts - pointsDiscount);
+  // An item with no costPrice recorded contributes nothing to totalProfit
+  // (same treatment as the birthday discount above) — deliberately
+  // conservative: an unknown margin counts as $0 profit here, so it's
+  // more likely to flag for review, not less.
+  const needsPointsApproval = pointsDiscount > 0 && pointsDiscount > totalProfit;
 
   // Per item: quoteShipping contributes nothing (flagged separately
   // below instead — see Order.shippingToBeArranged), an assigned weight
@@ -230,6 +247,7 @@ export async function buildCheckoutBreakdown(input: {
     shipping,
     shippingZoneLabel,
     shippingToBeArranged,
+    needsPointsApproval,
     handlingFee,
     total,
   };

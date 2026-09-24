@@ -199,9 +199,22 @@ shipped (`lib/analytics.ts`, `computeProfit`).*
   `computeProfit`) and a note that Ratnavue can change or remove this
   reward program at any time. One-time only, delivered via an in-app
   message.
-- **Admin approval gate** — if a customer's points redemption would cover
-  more than the order's actual profit, admin must review and explicitly
-  approve ("thumbs up") before the order can be processed.
+- ~~**Admin approval gate**~~ — done. Confirmed with you first: the order
+  still completes normally (payment, stock, points all settle exactly as
+  before) — a new `Order.needsPointsApproval` flag is just a paper-trail
+  review flag, same "flag, don't block" pattern as the existing Shipping
+  TBD one, not a checkout gate. `lib/checkout.ts`'s `buildCheckoutBreakdown`
+  sums each item's actual profit (retailPrice − costPrice, same basis the
+  birthday discount already uses) and sets the flag when the points
+  discount exceeds it; an item with no recorded costPrice counts as $0
+  profit (a deliberately conservative default — more likely to flag for
+  review, not less). Shows as a "Needs Points Approval" badge on the
+  admin orders list/detail page with an "Approve points redemption"
+  button to clear it (`ClearPointsApprovalButton.tsx`, mirrors the
+  Shipping TBD button exactly). New tests; live-verified end-to-end via
+  Playwright (a Rs 50,000 points redemption against a Rs 20,000-profit
+  item correctly flagged the order, and the admin button correctly
+  cleared it).
 - ~~**Customer point history on admin order/customer views**~~ — done.
   `/admin/customers/[id]` gained an Orders list (order number, date, total,
   status, and points used on it when any) alongside the rewards-points

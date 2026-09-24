@@ -306,4 +306,61 @@ describe("buildCheckoutBreakdown", () => {
       await expect(buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "Sri Lanka", market: "lk" })).rejects.toThrow(/can't be bought online in rupees/i);
     });
   });
+
+  describe("needsPointsApproval", () => {
+    it("flags the order when the points redeemed cover more than the item's actual profit", async () => {
+      // retailPrice 100, costPrice 90 -> profit 10; redeeming enough points
+      // for a $50 discount (well within the balance/cap) far exceeds it.
+      prismaMock.user.findUniqueOrThrow.mockResolvedValue({ ...userFixture, pointsBalance: 10000 } as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [gemCartItem({ gemstone: { id: "gem-1", name: "Blue Sapphire", stockStatus: "AVAILABLE", retailPrice: 100, lkrRetailPrice: 30000, costPrice: 90 } })],
+        pointsToRedeem: 5000, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States" });
+
+      // cap = 100 * 50% = $50 -> 5000 points -> $50 discount, profit is only $10
+      expect(result.pointsDiscount).toBeCloseTo(50);
+      expect(result.needsPointsApproval).toBe(true);
+    });
+
+    it("does not flag the order when the points redeemed stay within the item's profit", async () => {
+      // retailPrice 100, costPrice 10 -> profit 90, comfortably covers a
+      // small redemption.
+      prismaMock.user.findUniqueOrThrow.mockResolvedValue({ ...userFixture, pointsBalance: 10000 } as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [gemCartItem({ gemstone: { id: "gem-1", name: "Blue Sapphire", stockStatus: "AVAILABLE", retailPrice: 100, lkrRetailPrice: 30000, costPrice: 10 } })],
+        pointsToRedeem: 500, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States" });
+
+      expect(result.pointsDiscount).toBeCloseTo(5);
+      expect(result.needsPointsApproval).toBe(false);
+    });
+
+    it("does not flag an order with no points redeemed at all", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [gemCartItem({ gemstone: { id: "gem-1", name: "Blue Sapphire", stockStatus: "AVAILABLE", retailPrice: 100, lkrRetailPrice: 30000, costPrice: null } })],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States" });
+
+      expect(result.needsPointsApproval).toBe(false);
+    });
+
+    it("treats an item with no recorded costPrice as zero profit — flags rather than assumes it's fine", async () => {
+      prismaMock.user.findUniqueOrThrow.mockResolvedValue({ ...userFixture, pointsBalance: 10000 } as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [gemCartItem({ gemstone: { id: "gem-1", name: "Blue Sapphire", stockStatus: "AVAILABLE", retailPrice: 100, lkrRetailPrice: 30000, costPrice: null } })],
+        pointsToRedeem: 500, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States" });
+
+      expect(result.pointsDiscount).toBeGreaterThan(0);
+      expect(result.needsPointsApproval).toBe(true);
+    });
+  });
 });

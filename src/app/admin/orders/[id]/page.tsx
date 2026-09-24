@@ -10,6 +10,7 @@ import { OrderActions } from "@/components/admin/OrderActions";
 import { ShipOrderForm } from "@/components/admin/ShipOrderForm";
 import { MarkDeliveredButton } from "@/components/admin/MarkDeliveredButton";
 import { ClearShippingToBeArrangedButton } from "@/components/admin/ClearShippingToBeArrangedButton";
+import { ClearPointsApprovalButton } from "@/components/admin/ClearPointsApprovalButton";
 import { RefundResolutionPanel } from "@/components/admin/RefundResolutionPanel";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { formatPrice } from "@/lib/utils";
@@ -69,6 +70,9 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
         <div className="flex items-center gap-2">
           {order.manualSale && (
             <Badge className="border-sapphire-soft/30 bg-sapphire-soft/15 text-sapphire">Manual Sale</Badge>
+          )}
+          {order.needsPointsApproval && (
+            <Badge className="border-amber-300 bg-amber-50 text-amber-800">Needs Points Approval</Badge>
           )}
           <Badge className={STATUS_STYLES[order.status] ?? ""}>{order.status.replaceAll("_", " ")}</Badge>
         </div>
@@ -185,6 +189,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
             <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Actions</p>
             <div className="mt-3 space-y-3">
               {order.shippingToBeArranged && <ClearShippingToBeArrangedButton orderId={order.id} />}
+              {order.needsPointsApproval && <ClearPointsApprovalButton orderId={order.id} />}
               {order.needsShippingDetails && <p className="text-xs text-charcoal/60">Awaiting customer&apos;s shipping details.</p>}
               {!order.needsShippingDetails && order.status === "PENDING_PAYMENT" && order.paymentMethod === "WIRE_TRANSFER" && (
                 <OrderActions orderId={order.id} orderNumber={order.orderNumber} />

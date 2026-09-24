@@ -135,3 +135,15 @@ export async function clearShippingToBeArranged(orderId: string): Promise<Action
   revalidateOrders();
   return { ok: true };
 }
+
+// Once an admin has reviewed a points redemption that covered more than
+// the order's own profit margin and decided it's fine, clears the flag —
+// same "paper trail, not a blocker" pattern as clearShippingToBeArranged.
+// The order itself was never held up; this just stops it showing as
+// needing review.
+export async function clearPointsApproval(orderId: string): Promise<ActionResult> {
+  await requireAdmin();
+  await prisma.order.update({ where: { id: orderId }, data: { needsPointsApproval: false } });
+  revalidateOrders();
+  return { ok: true };
+}

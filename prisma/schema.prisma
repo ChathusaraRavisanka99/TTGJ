@@ -1562,6 +1562,14 @@ model Order {
   // clears it once that's been sorted out (see actions/orders.ts).
   shippingToBeArranged Boolean @default(false)
 
+  // Set at checkout when the points redeemed on this order cover more
+  // than its actual profit margin (see needsPointsApproval in
+  // lib/checkout.ts) — a paper-trail flag only: the order still
+  // completes, pays, and settles points normally either way (same
+  // "flag, don't block" pattern as shippingToBeArranged above). An admin
+  // clears it once reviewed (see actions/orders.ts).
+  needsPointsApproval Boolean @default(false)
+
   // One thread per order, created lazily on the first message — see
   // getOrCreateChatThread("order", ...) in lib/chat.ts and the admin order
   // detail page.

@@ -101,6 +101,7 @@ export async function initiateRetailCheckout(formData: FormData): Promise<Initia
       shipCity: city,
       shipAddressLine1: address,
       shippingToBeArranged: breakdown.shippingToBeArranged,
+      needsPointsApproval: breakdown.needsPointsApproval,
       termsAcceptedAt: new Date(),
       status: "PENDING_PAYMENT" as const,
       discountCodeId: breakdown.discountCodeId,

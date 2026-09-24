@@ -292,6 +292,84 @@ shipped (`lib/analytics.ts`, `computeProfit`).*
   duplicate-name submission. Fixed, and a regression test now
   specifically reproduces the duplicate-field submission.
 
+## Growth & trust (competitor research, 2026-09-24)
+
+*Sourced from a competitor pass over James Allen/Blue Nile, Angara,
+Brilliant Earth, direct Ceylon-gemstone sellers (Wijaya Gems, GemSelect,
+Ceylon Gem Hub), and jewelry-ecommerce UX benchmarks (Baymard, Branvas).
+Ordered roughly by impact/effort, not dependency — each is independent
+unless noted.*
+
+- **Product reviews (verified purchasers only)** — new `Review` model tied
+  to a specific `OrderItem` (only someone who actually bought that exact
+  piece can review it), a post-purchase "leave a review" prompt (in-app now,
+  email once the Phase 3 transactional-email work lands), admin moderation
+  before anything publishes, star rating + optional photos shown on the
+  gem/jewelry product page. Never fabricated — matches the standing
+  "real reviews only" rule. Largest item here; treat as its own sub-plan
+  rather than a quick add-on. Overlaps with the existing roadmap plan's
+  Phase 5 reviews item — this is the same feature, just re-confirmed as
+  high-priority by the research (reviews-with-photos is the single
+  most-cited trust signal in every jewelry-ecommerce benchmark found).
+- **Wishlist / favorites** — new model + a save icon on `GemCard`/
+  `JewelryCard`/product pages + an account-hub "Saved" list view. Every
+  direct competitor checked (GemSelect, Angara) has one; also already in
+  the existing roadmap plan's Phase 5, unbuilt.
+- **360°-style product video + zoom** — video upload already exists
+  (`MediaAsset`/`MediaType.VIDEO`, rendered via `<video controls>` in
+  `MediaGallery.tsx`), but it's a static admin-uploaded clip, not the
+  looping-rotation-plus-magnify view James Allen/Angara use to reassure
+  buyers the physical stone matches its photos. Add a zoom/magnify overlay
+  on both photos and video frames; no new upload infra needed, just admin
+  guidance to shoot a slow rotation instead of an arbitrary clip.
+- **"One of one" scarcity messaging** — a plain, honest note on a
+  gemstone's product page when it's the only one of its kind in stock
+  (true for nearly all loose-stone inventory, unlike graded/substitutable
+  diamonds) — real urgency from real uniqueness, not a manufactured
+  countdown or fake low-stock banner.
+- **Origin/provenance content blocks** — a short "About this origin"
+  marketing block per Sri Lankan mining region, reusing the existing
+  `PageContent`/subculture-content system, surfaced on a gemstone's product
+  page based on its `Origin`. Plays to Ratnavue's actual authenticity
+  advantage (real Ceylon provenance) the way Brilliant Earth's traceability
+  storytelling does for lab/recycled sourcing.
+- **Ring/jewelry size guide** — a static size-guide page + an
+  international size-conversion table linked from every jewelry product
+  page. Baymard flags "communicating fit" and "international size guide
+  presentation" as a top jewelry-specific conversion killer; nothing like
+  this exists in the app today.
+- **Free-shipping threshold** — a new `CommerceSettings` field that zeroes
+  `shippingAmount` in `buildCheckoutBreakdown` once the order subtotal
+  clears it. Benchmark guidance: set it ~20-30% above current AOV to
+  nudge a second item into the cart rather than just eating the margin on
+  every order.
+- **Bundle pricing on curated collections** — extend the existing
+  `PromotionItem`/collections system with an optional bundle price when a
+  customer buys the whole curated set, instead of only single-item
+  promotions. Cited as the most reliable AOV lever in the category
+  ("wear it three ways" sets, gifting bundles beat single-item upsells).
+- **"Book a live video call" CTA on quote/sourcing chats** — a lightweight
+  scheduling prompt on an existing quote/sourcing chat thread, formalizing
+  the ad hoc "ask about this stone over chat" flow into an explicit
+  inspection-call feature, the way James Allen's on-demand diamond
+  inspection works. Fits naturally on top of the chat threads that already
+  exist for every quote/sourcing request.
+- **BNPL at checkout** *(flagged, needs research before scoping)* — a
+  named cart-abandonment fix in every benchmark (jewelry cart abandonment
+  runs ~81%), but needs checking whether PayHere (the Sri Lanka gateway)
+  or an alternative offers installment/BNPL for the international USD
+  store — may not fit the LK market at all. Don't build until that's
+  confirmed.
+- **AR virtual try-on** *(flagged, bigger lift)* — a Brilliant-Earth-style
+  photo-upload ring preview. Needs real image-compositing work or a
+  third-party AR SDK, not a small feature — worth its own scoping pass
+  before committing to it.
+- **Diamond-style trade-up credit program** *(flagged, policy decision)* —
+  trade an existing stone for credit toward a larger one (Blue Nile/James
+  Allen's lifetime-upgrade model). More a financial/operational policy
+  call than an engineering one — needs your decision before any schema
+  work starts.
+
 ## Known, diagnosed, not yet fixed
 
 - **Hero CTA buttons on the LK home page** — reported as hidden "in first

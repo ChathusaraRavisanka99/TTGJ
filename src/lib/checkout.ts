@@ -51,6 +51,14 @@ export interface CheckoutBreakdown {
   tax: number;
   shipping: number;
   shippingZoneLabel: string;
+  /** The configured free-shipping threshold in this order's own currency,
+   * or null when the admin hasn't set one — lets the cart/checkout UI show
+   * a "spend $X more for free shipping" nudge. */
+  freeShippingThreshold: number | null;
+  /** How much more the customer needs to add to the cart to clear
+   * freeShippingThreshold — 0 once they qualify or when no threshold is
+   * configured. */
+  amountToFreeShipping: number;
   /** At least one cart item is marked quoteShipping — shipping was
    * charged as $0 for it (see the per-item loop below), so the resulting
    * Order needs Order.shippingToBeArranged set. */
@@ -219,8 +227,16 @@ export async function buildCheckoutBreakdown(input: {
   // total — CommerceSettings.usdToLkrRate exists for this (and the /lk
   // birthday-discount cost above), not for pricing the order itself. On
   // /lk it's already in the right currency.
+  // Waives only the destination-zone rate on the untiered portion of the
+  // order — a weight-tiered item already carries its own deliberate flat
+  // rate (usually for something heavy/oversized) and isn't affected by
+  // this threshold either way.
+  const freeShippingThreshold = lk ? settings.freeShippingThresholdLkr : settings.freeShippingThresholdUsd;
+  const qualifiesForFreeShipping = freeShippingThreshold != null && subtotal >= freeShippingThreshold;
+  const amountToFreeShipping = freeShippingThreshold != null ? Math.max(0, freeShippingThreshold - subtotal) : 0;
+
   const { zoneLabel: shippingZoneLabel, rateLKR: zoneRateLKR } = await resolveShippingRate(input.shippingCountry);
-  const shippingRateLKR = tieredShippingRateLKR + (hasUntieredItem ? zoneRateLKR : 0);
+  const shippingRateLKR = tieredShippingRateLKR + (hasUntieredItem && !qualifiesForFreeShipping ? zoneRateLKR : 0);
   const shipping = lk ? shippingRateLKR : shippingRateLKR / settings.usdToLkrRate;
 
   const tax = domestic || settings.applyVatToInternational ? afterDiscounts * (settings.vatPercent / 100) : 0;
@@ -246,6 +262,8 @@ export async function buildCheckoutBreakdown(input: {
     tax,
     shipping,
     shippingZoneLabel,
+    freeShippingThreshold,
+    amountToFreeShipping,
     shippingToBeArranged,
     needsPointsApproval,
     handlingFee,

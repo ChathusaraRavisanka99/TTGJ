@@ -105,6 +105,10 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
             {piece.styleTags.length > 0 && <Spec label={t("spec.style")} value={piece.styleTags.join(", ")} />}
           </dl>
 
+          <Link href={`/size-guide${sizeGuideAnchor(piece.pieceType)}`} className="mt-3 inline-block text-xs text-charcoal/65 underline-offset-2 hover:text-charcoal hover:underline">
+            {t("sizeGuide")} →
+          </Link>
+
           {piece.gemstones.length > 0 && (
             <div className="mt-6">
               <p className="text-xs uppercase tracking-wide text-charcoal/65">{t("gemstonesSet")}</p>
@@ -183,6 +187,13 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
       <StickyBuyBar name={piece.name} priceLabel={stickyPriceLabel} />
     </div>
   );
+}
+
+function sizeGuideAnchor(pieceType: string): string {
+  if (pieceType === "RING") return "#rings";
+  if (pieceType === "NECKLACE" || pieceType === "PENDANT") return "#necklaces";
+  if (pieceType === "BRACELET") return "#bracelets";
+  return "";
 }
 
 function Spec({ label, value }: { label: string; value: string }) {

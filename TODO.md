@@ -322,27 +322,45 @@ unless noted.*
   buyers the physical stone matches its photos. Add a zoom/magnify overlay
   on both photos and video frames; no new upload infra needed, just admin
   guidance to shoot a slow rotation instead of an arbitrary clip.
-- **"One of one" scarcity messaging** — a plain, honest note on a
-  gemstone's product page when it's the only one of its kind in stock
-  (true for nearly all loose-stone inventory, unlike graded/substitutable
-  diamonds) — real urgency from real uniqueness, not a manufactured
-  countdown or fake low-stock banner.
+- ~~**"One of one" scarcity messaging"**~~ — investigated: already fully
+  built. Both `gems/[slug]/page.tsx` and `jewelry/[slug]/page.tsx` already
+  show a "the only one" note (Sparkles icon, `t("onlyOne")`/
+  `t("onlyOneJewelry")`) whenever `stockStatus === "AVAILABLE"` — the
+  jewelry page correctly limits it to pieces with no variants (a piece
+  with several variants can have more than one unit available at once, so
+  the claim wouldn't be true there). Nothing left to build here — this
+  entry was stale before it was even written.
 - **Origin/provenance content blocks** — a short "About this origin"
   marketing block per Sri Lankan mining region, reusing the existing
   `PageContent`/subculture-content system, surfaced on a gemstone's product
   page based on its `Origin`. Plays to Ratnavue's actual authenticity
   advantage (real Ceylon provenance) the way Brilliant Earth's traceability
   storytelling does for lab/recycled sourcing.
-- **Ring/jewelry size guide** — a static size-guide page + an
-  international size-conversion table linked from every jewelry product
-  page. Baymard flags "communicating fit" and "international size guide
-  presentation" as a top jewelry-specific conversion killer; nothing like
-  this exists in the app today.
-- **Free-shipping threshold** — a new `CommerceSettings` field that zeroes
-  `shippingAmount` in `buildCheckoutBreakdown` once the order subtotal
-  clears it. Benchmark guidance: set it ~20-30% above current AOV to
-  nudge a second item into the cart rather than just eating the margin on
-  every order.
+- ~~**Ring/jewelry size guide**~~ — done. New static `/size-guide` page
+  (ring US/UK/EU/circumference table, necklace length reference, bracelet
+  measuring instructions — plain reference data, no admin editing needed,
+  same static-page convention as `/terms`). Every jewelry product page now
+  links to it as "Size Guide →", anchored to the right section for that
+  piece's `pieceType` (`#rings`/`#necklaces`/`#bracelets`). Live-verified
+  via Playwright: the link on a real published ring correctly points to
+  `/size-guide#rings` and the page loads with that section visible.
+- ~~**Free-shipping threshold**~~ — done. New `CommerceSettings.
+  freeShippingThresholdUsd`/`freeShippingThresholdLkr` fields (opt-in,
+  null/blank disables it, same currency-native convention as
+  `LoyaltySettings`' LKR-specific rates) — `buildCheckoutBreakdown` waives
+  the destination `ShippingZone` rate once the cart subtotal clears the
+  threshold, but a weight-tiered item's own flat rate still applies
+  regardless (that's a deliberate per-item exception, usually for
+  something heavy/oversized, not something a store-wide promotion should
+  override). The retail cart page shows a live "Add $X more to unlock
+  free shipping" / "You've unlocked free shipping!" nudge computed from
+  the real subtotal — a threshold that's invisible to the customer
+  wouldn't do its job as a growth lever. Admin sets it per store on
+  `/admin/commerce-settings`. 10 new tests; live-verified end-to-end via
+  Playwright — set both thresholds through the real admin form, confirmed
+  they persisted, then confirmed the customer-facing nudge correctly
+  showed "Add $50 more" below the threshold and "You've unlocked free
+  shipping!" once the cart cleared it.
 - **Bundle pricing on curated collections** — extend the existing
   `PromotionItem`/collections system with an optional bundle price when a
   customer buys the whole curated set, instead of only single-item

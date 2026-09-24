@@ -13,6 +13,8 @@ interface Settings {
   handlingFeeMarginPercent: number;
   birthdayDiscountPercent: number;
   usdToLkrRate: number;
+  freeShippingThresholdUsd: number | null;
+  freeShippingThresholdLkr: number | null;
 }
 
 export function CommerceSettingsForm({ settings }: { settings: Settings }) {
@@ -76,6 +78,35 @@ export function CommerceSettingsForm({ settings }: { settings: Settings }) {
             Orders are always charged in USD through PayHere — a Sri Lankan customer&apos;s card converts it to LKR at
             their bank&apos;s own rate. This setting only converts EMS&apos;s LKR-denominated shipping rates into USD.
           </FieldHint>
+        </div>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="freeShippingThresholdUsd">Free Shipping Threshold (USD)</Label>
+          <Input
+            id="freeShippingThresholdUsd"
+            name="freeShippingThresholdUsd"
+            type="number"
+            step="0.01"
+            min="0"
+            defaultValue={settings.freeShippingThresholdUsd ?? ""}
+            placeholder="Disabled"
+          />
+          <FieldHint>Leave blank to disable. Waives standard shipping once the cart subtotal reaches this — a weight-tiered item&apos;s own rate still applies.</FieldHint>
+        </div>
+        <div>
+          <Label htmlFor="freeShippingThresholdLkr">Free Shipping Threshold (LKR)</Label>
+          <Input
+            id="freeShippingThresholdLkr"
+            name="freeShippingThresholdLkr"
+            type="number"
+            step="1"
+            min="0"
+            defaultValue={settings.freeShippingThresholdLkr ?? ""}
+            placeholder="Disabled"
+          />
+          <FieldHint>Same, for the Sri Lanka store — set independently since it&apos;s in its own currency, not converted.</FieldHint>
         </div>
       </div>
 

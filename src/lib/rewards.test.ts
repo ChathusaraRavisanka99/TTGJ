@@ -34,6 +34,8 @@ const commerceFixture: CommerceSettings = {
   handlingFeeMarginPercent: 1,
   birthdayDiscountPercent: 10,
   usdToLkrRate: 300,
+  freeShippingThresholdUsd: null,
+  freeShippingThresholdLkr: null,
   updatedAt: new Date("2026-01-01"),
 };
 

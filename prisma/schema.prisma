@@ -1794,6 +1794,17 @@ model CommerceSettings {
   // scope for that either; admin updates this periodically.
   usdToLkrRate Float @default(300)
 
+  // Opt-in — null (the default) disables free shipping entirely, keeping
+  // every existing order's shipping math unchanged until an admin sets one.
+  // Each is in its own store's native currency (same convention as
+  // LoyaltySettings' LKR-specific rate fields), and only waives the
+  // destination ShippingZone rate on an order with at least one untiered
+  // item — a weight-tiered item's own flat rate is a deliberate per-item
+  // exception (usually for something heavy/oversized) and stays chargeable
+  // regardless of order size. See lib/checkout.ts's buildCheckoutBreakdown.
+  freeShippingThresholdUsd Float?
+  freeShippingThresholdLkr Float?
+
   updatedAt DateTime @updatedAt
 }
 

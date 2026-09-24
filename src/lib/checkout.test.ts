@@ -22,7 +22,8 @@ describe("isSriLanka", () => {
 
 const commerceFixture = {
   id: "singleton", vatPercent: 18, applyVatToInternational: false, gatewayCommissionPercent: 3.5,
-  handlingFeeMarginPercent: 1, birthdayDiscountPercent: 10, usdToLkrRate: 300, updatedAt: new Date(),
+  handlingFeeMarginPercent: 1, birthdayDiscountPercent: 10, usdToLkrRate: 300,
+  freeShippingThresholdUsd: null, freeShippingThresholdLkr: null, updatedAt: new Date(),
 };
 
 const userFixture = { id: "user-1", pointsBalance: 0, dateOfBirth: null, lastBirthdayDiscountAt: null };
@@ -245,6 +246,58 @@ describe("buildCheckoutBreakdown", () => {
 
       expect(result.shipping).toBeCloseTo(3000 / 300);
       expect(result.shippingToBeArranged).toBe(false);
+    });
+  });
+
+  describe("free shipping threshold", () => {
+    it("exposes a null threshold and 0 amountToFreeShipping when the admin hasn't set one", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({ items: [gemCartItem()], pointsToRedeem: 0, discountCode: null } as never);
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl" });
+      expect(result.freeShippingThreshold).toBeNull();
+      expect(result.amountToFreeShipping).toBe(0);
+      expect(result.shipping).toBeCloseTo(3000 / 300); // unaffected — same as before this feature existed
+    });
+
+    it("still charges the normal zone rate when the subtotal is below the threshold", async () => {
+      prismaMock.commerceSettings.findUnique.mockResolvedValue({ ...commerceFixture, freeShippingThresholdUsd: 500 } as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({ items: [gemCartItem()], pointsToRedeem: 0, discountCode: null } as never); // subtotal 100
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl" });
+      expect(result.shipping).toBeCloseTo(3000 / 300);
+      expect(result.freeShippingThreshold).toBe(500);
+      expect(result.amountToFreeShipping).toBe(400);
+    });
+
+    it("waives the zone rate once the subtotal clears the threshold", async () => {
+      prismaMock.commerceSettings.findUnique.mockResolvedValue({ ...commerceFixture, freeShippingThresholdUsd: 100 } as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({ items: [gemCartItem()], pointsToRedeem: 0, discountCode: null } as never); // subtotal 100, exactly at threshold
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl" });
+      expect(result.shipping).toBe(0);
+      expect(result.amountToFreeShipping).toBe(0);
+    });
+
+    it("still charges a weight-tiered item's own flat rate even once the threshold is cleared", async () => {
+      prismaMock.commerceSettings.findUnique.mockResolvedValue({ ...commerceFixture, freeShippingThresholdUsd: 50 } as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({
+        items: [
+          gemCartItem({ gemstoneId: "gem-1", gemstone: { id: "gem-1", name: "Sapphire", stockStatus: "AVAILABLE", retailPrice: 100, lkrRetailPrice: 30000, costPrice: 60, shippingWeightTier: { ratePerOrderLKR: 500 }, quoteShipping: false } }),
+          gemCartItem({ gemstoneId: "gem-2", gemstone: { id: "gem-2", name: "Ruby", stockStatus: "AVAILABLE", retailPrice: 200, lkrRetailPrice: 60000, costPrice: 120, shippingWeightTier: null, quoteShipping: false } }),
+        ],
+        pointsToRedeem: 0, discountCode: null,
+      } as never);
+
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl", paymentMethod: "WIRE_TRANSFER" });
+
+      // subtotal (300) clears the 50 threshold — the untiered item's zone-rate
+      // share is waived, but the tiered item's own 500 LKR rate still applies
+      expect(result.shipping).toBeCloseTo(500 / 300);
+    });
+
+    it("applies the LKR threshold independently on the Sri Lanka store", async () => {
+      prismaMock.commerceSettings.findUnique.mockResolvedValue({ ...commerceFixture, freeShippingThresholdLkr: 20000 } as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({ items: [gemCartItem()], pointsToRedeem: 0, discountCode: null } as never); // lkr subtotal 30000
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "Sri Lanka", market: "lk" });
+      expect(result.shipping).toBe(0);
+      expect(result.freeShippingThreshold).toBe(20000);
     });
   });
 

@@ -3,6 +3,7 @@ import Link from "@/components/ui/MarketLink";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getRetailCartWithItems, retailCartItemLabel, retailCartSubtotal, retailCartUnitPrice } from "@/lib/retail-cart";
+import { getCommerceSettings } from "@/lib/commerce-settings";
 import { getMarket } from "@/lib/market";
 import { getTranslations } from "next-intl/server";
 import { MARKETS } from "@/lib/market-shared";
@@ -22,13 +23,18 @@ export default async function RetailCartPage() {
 
   const [market, t] = await Promise.all([getMarket(), getTranslations("cart")]);
   const currency = MARKETS[market].currency;
-  const [cart, user, promotions] = await Promise.all([
+  const [cart, user, promotions, commerceSettings] = await Promise.all([
     getRetailCartWithItems(session.user.id, market),
     prisma.user.findUniqueOrThrow({ where: { id: session.user.id }, select: { dateOfBirth: true, lastBirthdayDiscountAt: true, pointsBalance: true } }),
     getActivePromotionMaps(market),
+    getCommerceSettings(),
   ]);
 
   const subtotal = retailCartSubtotal(cart.items.map((item) => ({ unitPrice: retailCartUnitPrice(item, market), quantity: item.quantity })));
+  // Same currency-native convention as LoyaltySettings' LKR-specific rates —
+  // each store's threshold is its own field, never converted from the other.
+  const freeShippingThreshold = market === "lk" ? commerceSettings.freeShippingThresholdLkr : commerceSettings.freeShippingThresholdUsd;
+  const amountToFreeShipping = freeShippingThreshold != null ? Math.max(0, freeShippingThreshold - subtotal) : null;
   const birthdayEligible = isBirthdayEligible(user);
   // A varianted line's real availability is its own variant's stock — the
   // parent piece's stockStatus is only a derived "any variant left"
@@ -93,6 +99,11 @@ export default async function RetailCartPage() {
             <p className="font-serif text-2xl text-charcoal">{formatPrice(subtotal, currency)}</p>
           </div>
           <p className="mt-1 text-right text-xs text-charcoal/65">{t("taxNote")}</p>
+          {amountToFreeShipping != null && (
+            <p className="mt-1 text-right text-xs font-medium text-gold-deep">
+              {amountToFreeShipping === 0 ? t("freeShippingUnlocked") : t("freeShippingProgress", { amount: formatPrice(amountToFreeShipping, currency) })}
+            </p>
+          )}
 
           {hasUnavailableItem && (
             <p className="mt-4 text-right text-sm text-red-700">{t("removeUnavailable")}</p>

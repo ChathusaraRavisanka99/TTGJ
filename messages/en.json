@@ -205,6 +205,7 @@
       "style": "Style"
     },
     "gemstonesSet": "Gemstones Set In This Piece",
+    "sizeGuide": "Size Guide",
     "verifyCertificate": "Verify Certificate",
     "viewCertificate": "View Certificate",
     "signInToAddPrompt": "Sign in to add {name} to your cart at the retail price.",
@@ -228,6 +229,8 @@
     "browseGems": "Browse Gemstones",
     "birthday": "🎂 Happy birthday month! You'll get a discount off the profit margin on eligible items, applied automatically at checkout — once per year.",
     "subtotalItems": "Subtotal ({count, plural, one {# item} other {# items}})",
+    "freeShippingUnlocked": "You've unlocked free shipping!",
+    "freeShippingProgress": "Add {amount} more to unlock free shipping.",
     "taxNote": "Tax, shipping, and handling are calculated at checkout.",
     "removeUnavailable": "Remove the unavailable item(s) above to continue to checkout.",
     "proceed": "Proceed to Checkout",

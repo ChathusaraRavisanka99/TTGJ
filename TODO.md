@@ -465,10 +465,21 @@ unless noted.*
   outside this app until/unless a foreign entity is ever on the table for
   other reasons — revisit then, with the specific entity's country in
   hand so the actual Stripe/provider integration can be scoped for real.
-- **AR virtual try-on** *(flagged, bigger lift)* — a Brilliant-Earth-style
-  photo-upload ring preview. Needs real image-compositing work or a
-  third-party AR SDK, not a small feature — worth its own scoping pass
-  before committing to it.
+- ~~**AR virtual try-on**~~ — investigated, shelved (your call,
+  2026-09-24). Real hand/neck-tracking AR (GlamAr, Perfect Corp, Banuba,
+  Camweara) is custom/enterprise-priced (no published small-business
+  tier) and carries genuine legal exposure — this exact feature is why
+  Brilliant Earth is currently facing an Illinois BIPA class action, since
+  hand-tracking AR processes biometric hand-geometry data without the
+  disclosure/written-consent BIPA requires (no-damages-required private
+  right of action, $1,000-$5,000 per violation). A lower-risk manual-
+  overlay alternative exists (customer drags/resizes a ring image onto
+  their own uploaded photo by hand — no algorithmic tracking, no
+  biometric processing, no BIPA exposure) and was offered as a smaller
+  buildable option, but shelved along with the full version since this
+  wasn't a customer-requested gap. Revisit the manual-overlay version
+  specifically if wanted later — it doesn't carry the SDK version's cost
+  or legal risk.
 - ~~**Diamond-style trade-up credit program**~~ — investigated, shelved
   (your call, 2026-09-24). James Allen/Blue Nile's 100%-credit model works
   because diamonds are graded/fungible; the closest real precedent for

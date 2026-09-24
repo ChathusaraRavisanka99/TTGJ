@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { hasStaffArea, marketFilterFor } from "@/lib/rbac";
 import { getHomeContent } from "@/lib/page-content";
 import { setHomeImage } from "@/actions/page-content";
 import { HomeContentForm } from "@/components/admin/HomeContentForm";
@@ -8,12 +11,17 @@ import { BackLink } from "@/components/admin/BackLink";
 import { MarketTabs, parseAdminMarket } from "@/components/admin/MarketTabs";
 
 export default async function AdminHomeContentPage({ searchParams }: PageProps<"/admin/content/home">) {
-  const market = parseAdminMarket((await searchParams).market);
+  const user = (await auth())?.user;
+  if (!user || !hasStaffArea(user, "content")) notFound();
+  // A STAFF member scoped to one store can only ever edit that store's page,
+  // whatever the query string asks for.
+  const scopedMarket = marketFilterFor(user);
+  const market = scopedMarket ?? parseAdminMarket((await searchParams).market);
   const content = await getHomeContent(market);
 
   return (
     <div>
-      <BackLink href="/admin" label="Back to Dashboard" />
+      {user.role === "ADMIN" && <BackLink href="/admin" label="Back to Dashboard" />}
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-3xl text-charcoal">Home Page Content</h1>
         <Link href={market === "lk" ? "/lk" : "/"} target="_blank" className="text-sm text-gold underline">
@@ -26,7 +34,7 @@ export default async function AdminHomeContentPage({ searchParams }: PageProps<"
         sections on or off (under Text → Sections, below).
       </p>
 
-      <MarketTabs basePath="/admin/content/home" current={market} />
+      {!scopedMarket && <MarketTabs basePath="/admin/content/home" current={market} />}
       {market === "lk" && (
         <p className="mt-3 text-sm text-charcoal/60">
           Editing the <strong>Sri Lanka store</strong> home page (/lk). Featured items are picked with the LK★ star on

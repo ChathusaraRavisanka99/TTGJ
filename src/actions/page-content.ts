@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/rbac";
+import { requireAdmin, requireStaffArea, requireMarketAccess } from "@/lib/rbac";
 import { saveUploadedMedia } from "@/lib/media";
 import { savePageContent, getSeasonalContent, getHomeContent, LK_PAYMENTS_KEY } from "@/lib/page-content";
 import { marketKey, type Market } from "@/lib/market-shared";
@@ -48,7 +48,8 @@ const homeTextSchema = z.object({
 });
 
 export async function updateHomeText(formData: FormData, market: Market = "intl"): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("content");
+  await requireMarketAccess(user, market);
   const parsed = homeTextSchema.safeParse(obj(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid content." };
 
@@ -59,7 +60,8 @@ export async function updateHomeText(formData: FormData, market: Market = "intl"
 }
 
 export async function setHomeImage(market: Market, field: "heritageImage" | "sourcingImage", formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("content");
+  await requireMarketAccess(user, market);
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) return { ok: false, error: "No file provided." };
   try {
@@ -75,7 +77,8 @@ export async function setHomeImage(market: Market, field: "heritageImage" | "sou
 }
 
 export async function addHeroSlide(formData: FormData, market: Market = "intl"): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("content");
+  await requireMarketAccess(user, market);
   const file = formData.get("file") as File | null;
   const alt = ((formData.get("alt") as string | null) ?? "").slice(0, 200);
   if (!file || file.size === 0) return { ok: false, error: "No file provided." };
@@ -94,7 +97,8 @@ export async function addHeroSlide(formData: FormData, market: Market = "intl"):
 }
 
 export async function replaceHeroSlideImage(index: number, formData: FormData, market: Market = "intl"): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("content");
+  await requireMarketAccess(user, market);
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) return { ok: false, error: "No file provided." };
 
@@ -113,7 +117,8 @@ export async function replaceHeroSlideImage(index: number, formData: FormData, m
 }
 
 export async function updateHeroSlideAlt(index: number, alt: string, market: Market = "intl"): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("content");
+  await requireMarketAccess(user, market);
   const current = await getHomeContent(market);
   if (index < 0 || index >= current.heroSlides.length) return { ok: false, error: "Slide not found." };
   const heroSlides = current.heroSlides.map((s, i) => (i === index ? { ...s, alt: alt.slice(0, 200) } : s));
@@ -123,7 +128,8 @@ export async function updateHeroSlideAlt(index: number, alt: string, market: Mar
 }
 
 export async function updateHeroSlideFocus(index: number, focusX: number, market: Market = "intl"): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("content");
+  await requireMarketAccess(user, market);
   const current = await getHomeContent(market);
   if (index < 0 || index >= current.heroSlides.length) return { ok: false, error: "Slide not found." };
   const clamped = Math.min(100, Math.max(0, Math.round(focusX)));
@@ -134,7 +140,8 @@ export async function updateHeroSlideFocus(index: number, focusX: number, market
 }
 
 export async function removeHeroSlide(index: number, market: Market = "intl"): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("content");
+  await requireMarketAccess(user, market);
   const current = await getHomeContent(market);
   if (current.heroSlides.length <= 1) return { ok: false, error: "Keep at least one hero slide." };
   if (index < 0 || index >= current.heroSlides.length) return { ok: false, error: "Slide not found." };
@@ -147,7 +154,7 @@ export async function removeHeroSlide(index: number, market: Market = "intl"): P
 // ---------- About (block-based page builder) ----------
 
 export async function updateAboutRows(rows: AboutRow[]): Promise<ActionResult> {
-  await requireAdmin();
+  await requireStaffArea("content");
   const parsed = aboutRowsSchema.safeParse(rows);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid content." };
 
@@ -158,7 +165,7 @@ export async function updateAboutRows(rows: AboutRow[]): Promise<ActionResult> {
 }
 
 export async function uploadAboutBlockImage(formData: FormData): Promise<ActionResult & { url?: string }> {
-  await requireAdmin();
+  await requireStaffArea("content");
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) return { ok: false, error: "No file provided." };
   try {

@@ -68,11 +68,11 @@ export function wholesaleAccountCreatedEmail(input: { email: string; temporaryPa
   return { subject, html, text };
 }
 
-export function staffAccountCreatedEmail(input: { email: string; temporaryPassword: string; changePasswordUrl: string; marketScopeLabel: string }): EmailContent {
+export function staffAccountCreatedEmail(input: { email: string; temporaryPassword: string; changePasswordUrl: string; marketScopeLabel: string; areasLabel?: string }): EmailContent {
   const subject = "Your Ratnavue staff account is ready";
   const html = emailLayout(`
     <h1 style="margin:0 0 16px;font-size:22px;font-weight:normal;color:#2b2b28;">Your staff account is ready</h1>
-    <p style="margin:0 0 20px;">An account has been created for you on Ratnavue's admin back office, scoped to <strong>${input.marketScopeLabel}</strong> orders. Sign in with the temporary password below, then change it right away.</p>
+    <p style="margin:0 0 20px;">An account has been created for you on Ratnavue's admin back office, covering <strong>${input.marketScopeLabel}</strong>${input.areasLabel ? `, with access to: <strong>${input.areasLabel}</strong>` : ""}. Sign in with the temporary password below, then change it right away.</p>
     <p style="margin:0 0 8px;"><strong>Email:</strong> ${input.email}</p>
     <p style="margin:0 0 24px;"><strong>Temporary password:</strong> ${input.temporaryPassword}</p>
     <p style="margin:0 0 24px;">
@@ -80,7 +80,21 @@ export function staffAccountCreatedEmail(input: { email: string; temporaryPasswo
     </p>
     <p style="margin:0;font-size:13px;color:#6b6b66;">For your security, please change this password the first time you sign in.</p>
   `);
-  const text = `Your Ratnavue staff account is ready\n\nScope: ${input.marketScopeLabel} orders\nEmail: ${input.email}\nTemporary password: ${input.temporaryPassword}\n\nSign in and change your password right away: ${input.changePasswordUrl}`;
+  const text = `Your Ratnavue staff account is ready\n\nScope: ${input.marketScopeLabel}${input.areasLabel ? `\nAccess: ${input.areasLabel}` : ""}\nEmail: ${input.email}\nTemporary password: ${input.temporaryPassword}\n\nSign in and change your password right away: ${input.changePasswordUrl}`;
+  return { subject, html, text };
+}
+
+export function staffAccessGrantedEmail(input: { marketScopeLabel: string; areasLabel: string; adminUrl: string }): EmailContent {
+  const subject = "You now have staff access on Ratnavue";
+  const html = emailLayout(`
+    <h1 style="margin:0 0 16px;font-size:22px;font-weight:normal;color:#2b2b28;">You now have staff access</h1>
+    <p style="margin:0 0 20px;">Your existing Ratnavue account has been given access to the admin back office, covering <strong>${input.marketScopeLabel}</strong>. You can manage: <strong>${input.areasLabel}</strong>.</p>
+    <p style="margin:0 0 24px;">Sign in with your usual email and password, then open the Admin Portal from your account menu.</p>
+    <p style="margin:0 0 24px;">
+      <a href="${input.adminUrl}" style="display:inline-block;background-color:#2b2b28;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:4px;font-family:Arial,sans-serif;font-size:14px;">Open Admin Portal</a>
+    </p>
+  `);
+  const text = `You now have staff access on Ratnavue\n\nCovers: ${input.marketScopeLabel}\nYou can manage: ${input.areasLabel}\n\nOpen the Admin Portal: ${input.adminUrl}`;
   return { subject, html, text };
 }
 

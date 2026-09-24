@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { createStaffAccount, updateStaffMarketScope, updateStaffPermissions, revokeStaffAccess } from "@/actions/staff";
+import { createStaffAccount, updateStaffMarketScope, updateStaffPermissions, revokeStaffAccess, grantStaffAccess, searchUsersForStaff } from "@/actions/staff";
 import { createNotification } from "@/lib/notifications";
 import { sendEmail } from "@/lib/email";
 
@@ -103,6 +103,48 @@ describe("updateStaffMarketScope", () => {
     const result = await updateStaffMarketScope("staff-1", "both");
     expect(result).toEqual({ ok: true });
     expect(prismaMock.user.update).toHaveBeenCalledWith({ where: { id: "staff-1" }, data: { staffMarketScope: "both" } });
+  });
+});
+
+describe("searchUsersForStaff", () => {
+  it("ignores a query shorter than two characters without touching the database", async () => {
+    expect(await searchUsersForStaff(" a ")).toEqual([]);
+    expect(prismaMock.user.findMany).not.toHaveBeenCalled();
+  });
+
+  it("only ever searches customer accounts, by email or name", async () => {
+    prismaMock.user.findMany.mockResolvedValue([{ id: "u1", name: "Sam", email: "sam@x.com" }] as never);
+    const result = await searchUsersForStaff("sam");
+    expect(result).toHaveLength(1);
+    expect(prismaMock.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ role: "CUSTOMER" }), take: 8 }));
+  });
+});
+
+describe("grantStaffAccess", () => {
+  it("turns an existing customer into staff with the chosen scope and areas", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ role: "CUSTOMER", email: "sam@x.com" } as never);
+    prismaMock.user.update.mockResolvedValue({} as never);
+
+    const result = await grantStaffAccess("u1", "lk", ["reviews", "orders"]);
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.user.update).toHaveBeenCalledWith({ where: { id: "u1" }, data: { role: "STAFF", staffMarketScope: "lk", staffPermissions: ["orders", "reviews"] } });
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "sam@x.com" }));
+  });
+
+  it("refuses an admin account and an account that is already staff", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ role: "ADMIN", email: "a@x.com" } as never);
+    expect((await grantStaffAccess("u1", "intl", ["orders"])).ok).toBe(false);
+    prismaMock.user.findUnique.mockResolvedValue({ role: "STAFF", email: "s@x.com" } as never);
+    expect((await grantStaffAccess("u1", "intl", ["orders"])).ok).toBe(false);
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it("needs a real scope and at least one real area", async () => {
+    expect((await grantStaffAccess("u1", "everywhere", ["orders"])).ok).toBe(false);
+    expect((await grantStaffAccess("u1", "intl", [])).ok).toBe(false);
+    expect((await grantStaffAccess("u1", "intl", ["superuser"])).ok).toBe(false);
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
   });
 });
 

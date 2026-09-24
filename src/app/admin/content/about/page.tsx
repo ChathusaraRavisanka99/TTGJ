@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { hasStaffArea } from "@/lib/rbac";
 import { getPageContent, DEFAULT_ABOUT_CONTENT } from "@/lib/page-content";
 import { AboutBuilder } from "@/components/admin/AboutBuilder";
 import { BackLink } from "@/components/admin/BackLink";
 
 export default async function AdminAboutContentPage() {
+  const user = (await auth())?.user;
+  if (!user || !hasStaffArea(user, "content")) notFound();
   const content = await getPageContent("about", DEFAULT_ABOUT_CONTENT);
 
   return (

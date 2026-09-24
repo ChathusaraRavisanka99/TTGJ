@@ -1,11 +1,12 @@
 // Edge-safe (no Prisma/auth imports) — proxy.ts uses this too.
 
-export const STAFF_AREAS = ["orders", "catalog", "requests", "reviews"] as const;
+export const STAFF_AREAS = ["orders", "catalog", "content", "requests", "reviews"] as const;
 export type StaffArea = (typeof STAFF_AREAS)[number];
 
 export const STAFF_AREA_LABELS: Record<StaffArea, { label: string; description: string }> = {
   orders: { label: "Orders", description: "Mark bank transfers paid, add tracking, revert a payment, chat on an order." },
   catalog: { label: "Gems & Jewelry", description: "Add and edit listings, photos, stock and visibility. No deleting, featuring, cost price, or price changes on existing items." },
+  content: { label: "Home & About pages", description: "Edit the text, images and slideshow on the home page (limited to their store) and the About page. Not promotions, payment instructions, page visibility or pricing." },
   requests: { label: "Messages, quotes & sourcing", description: "Reply to chats and work quote and sourcing requests. These have no store, so they aren't limited by market." },
   reviews: { label: "Review moderation", description: "Approve or reject customer reviews." },
 };
@@ -13,6 +14,7 @@ export const STAFF_AREA_LABELS: Record<StaffArea, { label: string; description: 
 const AREA_PATHS: Record<StaffArea, string[]> = {
   orders: ["/admin/orders"],
   catalog: ["/admin/gems", "/admin/jewelry"],
+  content: ["/admin/content"],
   requests: ["/admin/messages", "/admin/quotes", "/admin/sourcing", "/admin/support"],
   reviews: ["/admin/reviews"],
 };
@@ -50,6 +52,9 @@ export function staffNavLinks(permissions: readonly string[]): { href: string; l
   if (permissions.includes("orders")) links.push({ href: "/admin/orders", label: "Orders" });
   if (permissions.includes("catalog")) {
     links.push({ href: "/admin/gems", label: "Gemstones" }, { href: "/admin/jewelry", label: "Jewelry" });
+  }
+  if (permissions.includes("content")) {
+    links.push({ href: "/admin/content/home", label: "Home Page" }, { href: "/admin/content/about", label: "About Page" });
   }
   if (permissions.includes("requests")) {
     links.push({ href: "/admin/messages", label: "Messages" }, { href: "/admin/quotes", label: "Quote Requests" }, { href: "/admin/sourcing", label: "Sourcing Requests" });

@@ -6,9 +6,10 @@ import { updateStaffMarketScope, updateStaffPermissions, revokeStaffAccess } fro
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { DisableUserControl } from "@/components/admin/DisableUserControl";
 import { STAFF_AREAS, STAFF_AREA_LABELS } from "@/lib/staff-permissions";
 
-export function StaffAccountRow({ userId, marketScope, permissions, name }: { userId: string; marketScope: string; permissions: string[]; name: string }) {
+export function StaffAccountRow({ userId, marketScope, permissions, name, disabled }: { userId: string; marketScope: string; permissions: string[]; name: string; disabled: { label: string; reason: string | null } | null }) {
   const router = useRouter();
   const [scope, setScope] = useState(marketScope);
   const [areas, setAreas] = useState<string[]>(permissions);
@@ -60,6 +61,7 @@ export function StaffAccountRow({ userId, marketScope, permissions, name }: { us
           Revoke Access
         </Button>
       </div>
+      <DisableUserControl userId={userId} name={name} status={disabled} />
       {areas.length === 0 && <p className="text-xs text-red-700">No areas switched on — this account can&apos;t open anything.</p>}
     </div>
   );

@@ -4,15 +4,21 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
-import { parseStaffPermissions } from "@/lib/staff-permissions";
+import { parseStaffPermissions, STAFF_AREA_LABELS } from "@/lib/staff-permissions";
 import { createStaffAccountSchema } from "@/lib/validation/auth";
 import { createNotification } from "@/lib/notifications";
 import { sendEmail } from "@/lib/email";
-import { staffAccountCreatedEmail } from "@/lib/email-templates";
+import { staffAccountCreatedEmail, staffAccessGrantedEmail } from "@/lib/email-templates";
 import { withMarket } from "@/lib/market-shared";
 import type { ActionResult } from "./auth";
 
-const SCOPE_LABELS: Record<string, string> = { intl: "International", lk: "Sri Lanka", both: "both stores'" };
+const SCOPE_LABELS: Record<string, string> = { intl: "the International store", lk: "the Sri Lanka store", both: "both stores" };
+
+function areasLabel(permissions: string[]): string {
+  return parseStaffPermissions(permissions)
+    .map((a) => STAFF_AREA_LABELS[a].label)
+    .join(", ");
+}
 
 // Admin-only — every action here manages who else gets into the back
 // office at all, which is itself the thing "staff can't abuse the
@@ -51,11 +57,63 @@ export async function createStaffAccount(formData: FormData): Promise<ActionResu
   });
   const emailResult = await sendEmail({
     to: email,
-    ...staffAccountCreatedEmail({ email, temporaryPassword, changePasswordUrl, marketScopeLabel: SCOPE_LABELS[marketScope] ?? marketScope }),
+    ...staffAccountCreatedEmail({ email, temporaryPassword, changePasswordUrl, marketScopeLabel: SCOPE_LABELS[marketScope] ?? marketScope, areasLabel: areasLabel(permissions) }),
   });
   if (!emailResult.ok) console.warn(`Staff account email not sent for ${email}: ${emailResult.error}`);
 
   revalidatePath("/admin/staff");
+  return { ok: true };
+}
+
+// Finds existing (non-staff, non-admin) accounts an admin might want to
+// make staff — by email or name, a handful at a time.
+export async function searchUsersForStaff(query: string): Promise<{ id: string; name: string | null; email: string }[]> {
+  await requireAdmin();
+  const q = query.trim();
+  if (q.length < 2) return [];
+  return prisma.user.findMany({
+    where: {
+      role: "CUSTOMER",
+      OR: [{ email: { contains: q, mode: "insensitive" } }, { name: { contains: q, mode: "insensitive" } }],
+    },
+    select: { id: true, name: true, email: true },
+    orderBy: { email: "asc" },
+    take: 8,
+  });
+}
+
+// Turns an existing customer account into a staff account, keeping their own
+// password. Only ever CUSTOMER -> STAFF: an ADMIN is never touched here, and
+// someone already staff is edited from their row instead.
+export async function grantStaffAccess(userId: string, marketScope: string, permissions: string[]): Promise<ActionResult> {
+  await requireAdmin();
+  if (marketScope !== "intl" && marketScope !== "lk" && marketScope !== "both") return { ok: false, error: "Choose which store(s) they can manage." };
+  const areas = parseStaffPermissions(permissions);
+  if (areas.length === 0) return { ok: false, error: "Switch on at least one area." };
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, email: true } });
+  if (!user) return { ok: false, error: "User not found." };
+  if (user.role === "STAFF") return { ok: false, error: "This person is already staff — change their access from the list below." };
+  if (user.role !== "CUSTOMER") return { ok: false, error: "This account can't be made staff." };
+
+  await prisma.user.update({ where: { id: userId }, data: { role: "STAFF", staffMarketScope: marketScope, staffPermissions: areas } });
+
+  await createNotification({
+    userId,
+    type: "STATUS_CHANGE",
+    message: "You've been given staff access. Open the Admin Portal from your account menu.",
+    requestType: "general",
+    requestId: userId,
+  });
+  const adminUrl = `${process.env.AUTH_URL ?? "http://localhost:3000"}/admin`;
+  const emailResult = await sendEmail({
+    to: user.email,
+    ...staffAccessGrantedEmail({ marketScopeLabel: SCOPE_LABELS[marketScope], areasLabel: areasLabel(areas), adminUrl }),
+  });
+  if (!emailResult.ok) console.warn(`Staff access email not sent for ${user.email}: ${emailResult.error}`);
+
+  revalidatePath("/admin/staff");
+  revalidatePath("/admin/customers");
   return { ok: true };
 }
 

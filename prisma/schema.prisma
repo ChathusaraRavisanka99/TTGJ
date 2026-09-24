@@ -72,6 +72,14 @@ model User {
   // anything that has a market.
   staffPermissions String[] @default([])
 
+  // Account suspension, set by an admin. disabledAt set with no disabledUntil
+  // is permanent; with a disabledUntil in the future it lifts by itself on
+  // that date. See lib/user-status.ts for the one definition of "disabled
+  // right now". Blocks sign-in, and cuts off staff access immediately.
+  disabledAt     DateTime?
+  disabledUntil  DateTime?
+  disabledReason String?
+
   customerType    CustomerType     @default(RETAIL)
   // Null for RETAIL accounts (approval is a wholesale-only concept).
   // PENDING the moment a WHOLESALE registration is submitted — see

@@ -66,6 +66,36 @@ against the shared prod DB before shipping dependent code, then
 
 ## Orders & admin workflow
 
+- ~~**Existing-user staff access, account disabling, Home & About area**~~ —
+  done. Follow-up to the per-area permissions below. On `/admin/staff`:
+  **Add Existing User** (search customer accounts by email/name, pick store
+  + areas; they keep their own password; only CUSTOMER -> STAFF, never an
+  admin) alongside Create Staff Account; each row edits areas, store, and
+  now has **Disable / Enable**. Disabling (any non-admin account, also on the
+  customer detail page; never an admin, never yourself) is temporary (until
+  a date, lifts by itself) or permanent, with an admin-only reason — new
+  `User.disabledAt/disabledUntil/disabledReason` (migration
+  `20260925110000_add_user_disabled`, applied to the shared DB first),
+  one definition in `lib/user-status.ts`. Enforcement: credentials sign-in
+  refuses it (only after the right password, so it never confirms an
+  email exists) with a clear message, Google sign-in refuses it, a STAFF
+  token is re-read every request so a disabled staff member loses all
+  back-office rights at once, `requireUser()` (every admin/staff server
+  action) refuses it, and the account area redirects to `/account/disabled`.
+  Known limit: a disabled *customer's* already-open browser session can't
+  be revoked server-side — it can still browse the public storefront until
+  the token expires, but can't use the account area or those actions and
+  can't sign in again. New fifth staff area **Home & About pages**: edit
+  the home page (limited to the staff member's store; a single-store staff
+  member gets no store tabs) and the About page. Deliberately left
+  admin-only even inside that area: promotions/seasonal themes, alternative
+  collections, payment/bank-transfer instructions, page visibility,
+  pricing. 25 new tests (667 total). Live-verified with a temporary user
+  and two browser sessions: grant an existing user, staff sees exactly the
+  granted areas, unticking an area blocks it on the next page load, a
+  temporary disable cuts off an already-open staff session and refuses
+  sign-in with the disabled message, enable restores access, revoke ends
+  it.
 - ~~**Per-area staff permissions + admin-portal link**~~ — done. Staff
   accounts are no longer order-only: an admin switches on any of four areas
   per account on `/admin/staff` — **Orders**, **Gems & Jewelry**,

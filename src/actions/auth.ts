@@ -118,6 +118,9 @@ export async function authenticateWithCredentials(formData: FormData): Promise<A
     });
   } catch (error) {
     if (error instanceof AuthError) {
+      if ((error as { code?: string }).code === "account_disabled") {
+        return { ok: false, error: "This account has been disabled. Please contact support." };
+      }
       return { ok: false, error: "Incorrect email or password." };
     }
     throw error;

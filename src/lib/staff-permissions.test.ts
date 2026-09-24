@@ -10,10 +10,12 @@ describe("staffAreaForPath", () => {
     expect(staffAreaForPath("/admin/quotes/abc")).toBe("requests");
     expect(staffAreaForPath("/admin/support/user-1")).toBe("requests");
     expect(staffAreaForPath("/admin/reviews")).toBe("reviews");
+    expect(staffAreaForPath("/admin/content/home")).toBe("content");
+    expect(staffAreaForPath("/admin/content/about")).toBe("content");
   });
 
   it("never maps an admin-only page", () => {
-    for (const p of ["/admin", "/admin/customers", "/admin/discount-codes", "/admin/staff", "/admin/analytics", "/admin/media", "/admin/commerce-settings"]) {
+    for (const p of ["/admin", "/admin/customers", "/admin/discount-codes", "/admin/staff", "/admin/analytics", "/admin/media", "/admin/commerce-settings", "/admin/promotions", "/admin/alt-collections", "/admin/loyalty-settings"]) {
       expect(staffAreaForPath(p)).toBeNull();
     }
   });

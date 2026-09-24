@@ -3,6 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { QuoteStatusBadge, Badge } from "@/components/ui/Badge";
 import { BackLink } from "@/components/admin/BackLink";
+import { DisableUserControl } from "@/components/admin/DisableUserControl";
+import { describeDisabled } from "@/lib/user-status";
 import { formatPrice } from "@/lib/utils";
 
 const ORDER_STATUS_STYLES: Record<string, string> = {
@@ -40,7 +42,12 @@ export default async function AdminCustomerDetailPage({ params }: PageProps<"/ad
           {customer.customerType === "WHOLESALE" ? "Wholesale" : "Retail"}
         </Badge>
       </div>
-      <p className="text-sm text-charcoal/60">{customer.email}{customer.phone ? ` · ${customer.phone}` : ""}</p>
+      {customer.role !== "ADMIN" && (
+        <div className="mt-2">
+          <DisableUserControl userId={customer.id} name={customer.name ?? customer.email} status={describeDisabled(customer) ? { label: describeDisabled(customer)!, reason: customer.disabledReason } : null} />
+        </div>
+      )}
+      <p className="mt-2 text-sm text-charcoal/60">{customer.email}{customer.phone ? ` · ${customer.phone}` : ""}</p>
       <p className="mt-1 text-xs text-charcoal/45">Joined {customer.createdAt.toLocaleDateString()}</p>
       {customer.customerType === "WHOLESALE" && (
         <p className="mt-1 text-xs text-charcoal/60">

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { requireStaffArea, hasStaffArea, marketFilterFor, requireMarketAccess } from "@/lib/rbac";
 import { auth } from "@/lib/auth";
+import { prismaMock } from "@/test/prisma-mock";
 
 vi.mock("@/lib/auth", () => ({ auth: vi.fn() }));
 
@@ -30,6 +31,20 @@ describe("requireStaffArea", () => {
   it("gives a STAFF with no permissions no access at all", async () => {
     vi.mocked(auth).mockResolvedValue({ user: { id: "u1", role: "STAFF", staffMarketScope: "both", staffPermissions: [] } } as never);
     await expect(requireStaffArea("orders")).rejects.toThrow("FORBIDDEN");
+  });
+});
+
+describe("a disabled account", () => {
+  it("is refused by every guard even with a valid session", async () => {
+    vi.mocked(auth).mockResolvedValue({ user: { id: "u1", role: "STAFF", staffMarketScope: "intl", staffPermissions: ["orders"] } } as never);
+    prismaMock.user.findUnique.mockResolvedValue({ disabledAt: new Date(), disabledUntil: null } as never);
+    await expect(requireStaffArea("orders")).rejects.toThrow("ACCOUNT_DISABLED");
+  });
+
+  it("is allowed again once a temporary disable has ended", async () => {
+    vi.mocked(auth).mockResolvedValue({ user: { id: "u1", role: "STAFF", staffMarketScope: "intl", staffPermissions: ["orders"] } } as never);
+    prismaMock.user.findUnique.mockResolvedValue({ disabledAt: new Date(Date.now() - 2 * 86400000), disabledUntil: new Date(Date.now() - 86400000) } as never);
+    await expect(requireStaffArea("orders")).resolves.toMatchObject({ id: "u1" });
   });
 });
 

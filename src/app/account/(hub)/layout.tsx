@@ -1,6 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getMarket } from "@/lib/market";
+import { redirect } from "next/navigation";
+import { isUserDisabled } from "@/lib/user-status";
 import { hasAdminPortalAccess } from "@/lib/admin-access";
 import { getHubCounts } from "@/lib/account-hub";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
@@ -17,8 +19,12 @@ export default async function AccountHubLayout({ children }: { children: React.R
   const market = await getMarket();
   const [counts, user] = await Promise.all([
     getHubCounts(session.user.id, market),
-    prisma.user.findUniqueOrThrow({ where: { id: session.user.id }, select: { businessRole: true } }),
+    prisma.user.findUniqueOrThrow({ where: { id: session.user.id }, select: { businessRole: true, disabledAt: true, disabledUntil: true } }),
   ]);
+
+  // A disabled account's existing session can't be revoked from here, so
+  // it just can't use the account area.
+  if (isUserDisabled(user)) redirect("/account/disabled");
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8 lg:py-12">

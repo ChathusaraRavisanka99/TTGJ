@@ -1,4 +1,5 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
+import { isUserDisabled } from "@/lib/user-status";
 import type { Provider } from "@auth/core/providers";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
@@ -9,6 +10,10 @@ import { prisma } from "@/lib/prisma";
 import authConfig from "@/lib/auth.config";
 import { captureReferral, REF_COOKIE } from "@/lib/rewards";
 import { captureBusinessInvite, BIZ_INVITE_COOKIE } from "@/lib/business";
+
+export class AccountDisabledError extends CredentialsSignin {
+  code = "account_disabled";
+}
 
 const providers: Provider[] = [];
 
@@ -38,6 +43,9 @@ providers.push(
 
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
+        // Only reached with the right password, so this never confirms to
+        // a stranger that an email belongs to a (disabled) account.
+        if (isUserDisabled(user)) throw new AccountDisabledError();
 
         return {
           id: user.id,
@@ -67,6 +75,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers,
   callbacks: {
     ...authConfig.callbacks,
+    // Google sign-in has no password step to hang the disabled check on, so
+    // it's refused here for an existing account that's currently disabled.
+    // (Credentials sign-in is handled in authorize() above with its own,
+    // clearer message.)
+    async signIn({ user, account }) {
+      if (account?.provider !== "google" || !user.email) return true;
+      const existing = await prisma.user.findUnique({ where: { email: user.email }, select: { disabledAt: true, disabledUntil: true } });
+      return !isUserDisabled(existing);
+    },
     // Overrides auth.config.ts's jwt callback: same "embed role at
     // sign-in" behaviour, plus a Prisma fallback for tokens that predate
     // the role field. Prisma is only available here (Node runtime, not
@@ -86,11 +103,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // the layout and every action re-check.
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, staffMarketScope: true, staffPermissions: true },
+          select: { role: true, staffMarketScope: true, staffPermissions: true, disabledAt: true, disabledUntil: true },
         });
-        token.role = dbUser?.role ?? "CUSTOMER";
-        token.staffMarketScope = dbUser?.staffMarketScope ?? null;
-        token.staffPermissions = dbUser?.staffPermissions ?? [];
+        // A disabled staff member loses every back-office right at once.
+        const disabled = isUserDisabled(dbUser);
+        token.role = disabled ? "CUSTOMER" : (dbUser?.role ?? "CUSTOMER");
+        token.staffMarketScope = disabled ? null : (dbUser?.staffMarketScope ?? null);
+        token.staffPermissions = disabled ? [] : (dbUser?.staffPermissions ?? []);
       }
       return token;
     },

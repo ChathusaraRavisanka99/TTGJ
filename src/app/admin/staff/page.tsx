@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { CreateStaffAccountForm } from "@/components/admin/CreateStaffAccountForm";
+import { GrantStaffAccessForm } from "@/components/admin/GrantStaffAccessForm";
+import { describeDisabled } from "@/lib/user-status";
 import { StaffAccountRow } from "@/components/admin/StaffAccountRow";
 import { BackLink } from "@/components/admin/BackLink";
 
@@ -7,7 +9,7 @@ export default async function AdminStaffPage() {
   const staff = await prisma.user.findMany({
     where: { role: "STAFF" },
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, email: true, staffMarketScope: true, staffPermissions: true, createdAt: true },
+    select: { id: true, name: true, email: true, staffMarketScope: true, staffPermissions: true, disabledAt: true, disabledUntil: true, disabledReason: true, createdAt: true },
   });
 
   return (
@@ -23,7 +25,10 @@ export default async function AdminStaffPage() {
             staff account. Changes apply on their next page load.
           </p>
         </div>
-        <div className="shrink-0"><CreateStaffAccountForm /></div>
+        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+          <GrantStaffAccessForm />
+          <CreateStaffAccountForm />
+        </div>
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
@@ -43,7 +48,7 @@ export default async function AdminStaffPage() {
                 <td className="px-4 py-3 text-charcoal/70">{s.email}</td>
                 <td className="px-4 py-3 text-charcoal/70">{s.createdAt.toLocaleDateString()}</td>
                 <td className="px-4 py-3">
-                  <StaffAccountRow userId={s.id} marketScope={s.staffMarketScope ?? "intl"} permissions={s.staffPermissions} name={s.name ?? s.email} />
+                  <StaffAccountRow userId={s.id} marketScope={s.staffMarketScope ?? "intl"} permissions={s.staffPermissions} name={s.name ?? s.email} disabled={describeDisabled(s) ? { label: describeDisabled(s)!, reason: s.disabledReason } : null} />
                 </td>
               </tr>
             ))}

@@ -1,10 +1,18 @@
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { isUserDisabled } from "@/lib/user-status";
 import type { StaffArea } from "@/lib/staff-permissions";
 
 export async function requireUser() {
   const session = await auth();
   if (!session?.user) {
     throw new Error("UNAUTHENTICATED");
+  }
+  // The session token can outlive an admin disabling the account, so every
+  // server action that goes through here re-checks the account itself.
+  const status = await prisma.user.findUnique({ where: { id: session.user.id }, select: { disabledAt: true, disabledUntil: true } });
+  if (isUserDisabled(status)) {
+    throw new Error("ACCOUNT_DISABLED");
   }
   return session.user;
 }

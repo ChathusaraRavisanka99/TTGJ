@@ -15,6 +15,7 @@ export const ACCOUNT_MENU_LINKS = [
   { href: "/account/orders", label: "My Orders" },
   { href: "/account/messages", label: "Messages" },
   { href: "/account/retail-cart", label: "My Cart" },
+  { href: "/account/wishlist", label: "My Wishlist" },
   { href: "/account/sourcing", label: "Sourcing Requests" },
   { href: "/account/custom-designs", label: "Custom Designs" },
   { href: "/account/quotes", label: "Quote Requests" },

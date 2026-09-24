@@ -10,6 +10,8 @@ import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { ProductPrice } from "@/components/catalog/ProductPrice";
 import { AddToCartButton } from "@/components/catalog/AddToCartButton";
+import { WishlistButton } from "@/components/catalog/WishlistButton";
+import { getWishlistedIds } from "@/lib/wishlist";
 import { JewelryVariantPicker } from "@/components/catalog/JewelryVariantPicker";
 import { JewelryCard } from "@/components/catalog/JewelryCard";
 import { Button } from "@/components/ui/Button";
@@ -47,11 +49,12 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 
   if (!piece || !piece.isPublished) notFound();
 
-  const [promotion, relatedJewelry, { jewelryPrices }, trustBarMessages] = await Promise.all([
+  const [promotion, relatedJewelry, { jewelryPrices }, trustBarMessages, wishlistedIds] = await Promise.all([
     getActivePromotion({ jewelryId: piece.id }, market),
     getRelatedJewelry(piece, 4, market),
     getActivePromotionMaps(market),
     getTrustBarMessages(),
+    getWishlistedIds(session?.user?.id),
   ]);
 
   const pieceTypeLabel = piece.pieceType.charAt(0) + piece.pieceType.slice(1).toLowerCase();
@@ -83,7 +86,10 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
             <p className="text-xs uppercase tracking-widest text-gold-deep">{pieceTypeLabel}</p>
             <StockBadge status={piece.stockStatus} />
           </div>
-          <h1 className="mt-2 font-serif text-4xl text-charcoal">{piece.name}</h1>
+          <div className="mt-2 flex items-start justify-between gap-3">
+            <h1 className="font-serif text-4xl text-charcoal">{piece.name}</h1>
+            <WishlistButton jewelryId={piece.id} initialSaved={wishlistedIds.has(piece.id)} isAuthenticated={!!session?.user} className="mt-1 shrink-0 bg-ivory-soft" />
+          </div>
           <ProductPrice price={piece.price} showPrice={piece.showPrice} retailPrice={piece.retailPrice} promotion={promotion} />
           {piece.description && <p className="mt-4 leading-relaxed text-charcoal/70">{piece.description}</p>}
 
@@ -166,6 +172,9 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
               {relatedJewelry.map((related) => (
                 <div key={related.id} className="w-[calc(50%-12px)] shrink-0 snap-start sm:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)]">
                   <JewelryCard
+                    id={related.id}
+                    isWishlisted={wishlistedIds.has(related.id)}
+                    isAuthenticated={!!session?.user}
                     slug={related.slug}
                     name={related.name}
                     pieceType={related.pieceType}

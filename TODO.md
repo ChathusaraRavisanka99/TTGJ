@@ -311,10 +311,28 @@ unless noted.*
   Phase 5 reviews item — this is the same feature, just re-confirmed as
   high-priority by the research (reviews-with-photos is the single
   most-cited trust signal in every jewelry-ecommerce benchmark found).
-- **Wishlist / favorites** — new model + a save icon on `GemCard`/
-  `JewelryCard`/product pages + an account-hub "Saved" list view. Every
-  direct competitor checked (GemSelect, Angara) has one; also already in
-  the existing roadmap plan's Phase 5, unbuilt.
+- ~~**Wishlist / favorites**~~ — done. New `WishlistItem` model (exclusive
+  gemstone/jewelry FK pair, same convention as `OrderItem` — not a DB
+  uniqueness constraint, since a toggle button has no financial stakes if
+  a rare double-click race ever left a duplicate row). A heart button
+  (`WishlistButton.tsx`) now appears on every `GemCard`/`JewelryCard` —
+  bottom-left of the thumbnail, deliberately not bottom-right, since the
+  stock badge already moves there on mobile — and beside the title on
+  both product detail pages. Signed-out visitors see the same heart
+  routing to login instead of a hidden control, matching how Add to Cart
+  already handles guests. Every catalog page (`/gems`, `/jewelry`,
+  `/search`, home, both detail pages' related-items sliders) fetches the
+  viewer's full saved-id set in one extra cheap indexed query
+  (`getWishlistedIds`) so hearts show their real state everywhere, not
+  just on the wishlist page itself. New `/account/wishlist` page lists
+  everything saved, filtering out anything since unpublished or moved to
+  the other store rather than showing it broken. 8 new tests
+  (`lib/wishlist.test.ts`, `actions/wishlist.test.ts`); live-verified end-
+  to-end via Playwright — saved a real gemstone from its product page,
+  confirmed it persisted across reload, appeared on the wishlist page and
+  as a filled heart back on the `/gems` grid, then removed it from the
+  wishlist page and confirmed the card disappeared live (via
+  `router.refresh()`) without a manual reload.
 - **360°-style product video + zoom** — video upload already exists
   (`MediaAsset`/`MediaType.VIDEO`, rendered via `<video controls>` in
   `MediaGallery.tsx`), but it's a static admin-uploaded clip, not the

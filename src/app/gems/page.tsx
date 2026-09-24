@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getGemstones, getMasterData, type GemColorFamily } from "@/lib/catalog";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
+import { getWishlistedIds } from "@/lib/wishlist";
+import { auth } from "@/lib/auth";
 import { getMarket } from "@/lib/market";
 import { getTranslations } from "next-intl/server";
 import { GemFilterBar } from "@/components/catalog/GemFilterBar";
@@ -40,13 +42,15 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
     market,
   };
 
-  const [{ items: gems, page, totalPages }, masterData, promotions] = await Promise.all([
+  const session = await auth();
+  const [{ items: gems, page, totalPages }, masterData, promotions, wishlistedIds] = await Promise.all([
     getGemstones(filters),
     getMasterData(),
     // Fetched regardless of the filter above — every card needs to know
     // whether *it* is on promotion to show its badge/discounted price,
     // not just the subset a customer happens to have filtered down to.
     getActivePromotionMaps(market),
+    getWishlistedIds(session?.user?.id),
   ]);
 
   return (
@@ -73,7 +77,11 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
       {gems.length === 0 ? (
         <p className="py-20 text-center text-charcoal/65">{t("empty")}</p>
       ) : (
-        <GemResults gems={gems.map((gem) => ({ ...gem, promoPrice: promotions.gemstonePrices.get(gem.id) ?? null }))} />
+        <GemResults
+          gems={gems.map((gem) => ({ ...gem, promoPrice: promotions.gemstonePrices.get(gem.id) ?? null }))}
+          wishlistedIds={wishlistedIds}
+          isAuthenticated={!!session?.user}
+        />
       )}
 
       <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "@/components/ui/MarketLink";
 import { getGemstones, getJewelry } from "@/lib/catalog";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
+import { getWishlistedIds } from "@/lib/wishlist";
+import { auth } from "@/lib/auth";
 import { getMarket } from "@/lib/market";
 import { GemResults } from "@/components/catalog/GemResults";
 import { JewelryResults } from "@/components/catalog/JewelryResults";
@@ -27,10 +29,12 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
     );
   }
 
-  const [{ items: gems, total: gemTotal }, { items: pieces, total: jewelryTotal }, promotions] = await Promise.all([
+  const session = await auth();
+  const [{ items: gems, total: gemTotal }, { items: pieces, total: jewelryTotal }, promotions, wishlistedIds] = await Promise.all([
     getGemstones({ q, sort: "newest", market }),
     getJewelry({ q, sort: "newest", market }),
     getActivePromotionMaps(market),
+    getWishlistedIds(session?.user?.id),
   ]);
 
   const noResults = gemTotal === 0 && jewelryTotal === 0;
@@ -58,13 +62,21 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
           {gems.length > 0 && (
             <section>
               <h2 className="mb-6 font-serif text-2xl text-charcoal">Gemstones</h2>
-              <GemResults gems={gems.map((gem) => ({ ...gem, promoPrice: promotions.gemstonePrices.get(gem.id) ?? null }))} />
+              <GemResults
+                gems={gems.map((gem) => ({ ...gem, promoPrice: promotions.gemstonePrices.get(gem.id) ?? null }))}
+                wishlistedIds={wishlistedIds}
+                isAuthenticated={!!session?.user}
+              />
             </section>
           )}
           {pieces.length > 0 && (
             <section>
               <h2 className="mb-6 font-serif text-2xl text-charcoal">Jewelry</h2>
-              <JewelryResults pieces={pieces.map((piece) => ({ ...piece, promoPrice: promotions.jewelryPrices.get(piece.id) ?? null }))} />
+              <JewelryResults
+                pieces={pieces.map((piece) => ({ ...piece, promoPrice: promotions.jewelryPrices.get(piece.id) ?? null }))}
+                wishlistedIds={wishlistedIds}
+                isAuthenticated={!!session?.user}
+              />
             </section>
           )}
         </div>

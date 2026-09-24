@@ -125,6 +125,7 @@ model User {
   referralAsReferee    Referral?           @relation("ReferralReferee")
   ownedBusinessAccount BusinessAccount?    @relation("BusinessAccountOwner")
   passwordResetTokens  PasswordResetToken[]
+  wishlistItems        WishlistItem[]
 
   @@index([businessAccountId])
 }
@@ -389,6 +390,7 @@ model Gemstone {
   taggedInChatMessages ChatMessage[]
   retailCartItems      RetailCartItem[]
   orderItems           OrderItem[]
+  wishlistItems        WishlistItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -482,6 +484,7 @@ model JewelryPiece {
   taggedInChatMessages ChatMessage[]
   retailCartItems      RetailCartItem[]
   orderItems           OrderItem[]
+  wishlistItems        WishlistItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -885,6 +888,31 @@ model PointsTransaction {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// A customer's saved-for-later items — shown on their own /account/wishlist
+// page and toggled with a heart button on every catalog card/product page.
+model WishlistItem {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Exactly one of these two, same convention as OrderItem/RetailCartItem.
+  // Not a DB constraint (same call this schema already makes for e.g.
+  // ShippingWeightTier/quoteShipping's exclusive pair) — the toggle action
+  // checks-then-writes instead; a rare double-click race could in
+  // principle create a duplicate row for the same item, but there's no
+  // financial stakes here, and a second toggle still removes one of them.
+  gemstoneId String?
+  gemstone   Gemstone?     @relation(fields: [gemstoneId], references: [id], onDelete: Cascade)
+  jewelryId  String?
+  jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([gemstoneId])
+  @@index([jewelryId])
 }
 
 enum ReferralStatus {

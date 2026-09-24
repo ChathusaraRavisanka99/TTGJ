@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getJewelry } from "@/lib/catalog";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
+import { getWishlistedIds } from "@/lib/wishlist";
+import { auth } from "@/lib/auth";
 import { getMarket } from "@/lib/market";
 import { getTranslations } from "next-intl/server";
 import { JewelryFilterBar } from "@/components/catalog/JewelryFilterBar";
@@ -31,12 +33,14 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
     market,
   };
 
-  const [{ items: pieces, page, totalPages }, promotions] = await Promise.all([
+  const session = await auth();
+  const [{ items: pieces, page, totalPages }, promotions, wishlistedIds] = await Promise.all([
     getJewelry(filters),
     // Fetched regardless of the filter above — every card needs to know
     // whether *it* is on promotion to show its badge/discounted price,
     // not just the subset a customer happens to have filtered down to.
     getActivePromotionMaps(market),
+    getWishlistedIds(session?.user?.id),
   ]);
 
   return (
@@ -56,7 +60,11 @@ export default async function JewelryPage({ searchParams }: PageProps<"/jewelry"
       {pieces.length === 0 ? (
         <p className="py-20 text-center text-charcoal/65">{t("empty")}</p>
       ) : (
-        <JewelryResults pieces={pieces.map((piece) => ({ ...piece, promoPrice: promotions.jewelryPrices.get(piece.id) ?? null }))} />
+        <JewelryResults
+          pieces={pieces.map((piece) => ({ ...piece, promoPrice: promotions.jewelryPrices.get(piece.id) ?? null }))}
+          wishlistedIds={wishlistedIds}
+          isAuthenticated={!!session?.user}
+        />
       )}
 
       <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />

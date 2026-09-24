@@ -12,6 +12,8 @@ import { QuoteRequestPanel } from "@/components/quote/QuoteRequestPanel";
 import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { ProductPrice } from "@/components/catalog/ProductPrice";
 import { AddToCartButton } from "@/components/catalog/AddToCartButton";
+import { WishlistButton } from "@/components/catalog/WishlistButton";
+import { getWishlistedIds } from "@/lib/wishlist";
 import { GemCard } from "@/components/catalog/GemCard";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/layout/Reveal";
@@ -43,11 +45,12 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
 
   if (!gem || !gem.isPublished) notFound();
 
-  const [promotion, relatedGems, { gemstonePrices }, trustBarMessages] = await Promise.all([
+  const [promotion, relatedGems, { gemstonePrices }, trustBarMessages, wishlistedIds] = await Promise.all([
     getActivePromotion({ gemstoneId: gem.id }, market),
     getRelatedGemstones(gem, 4, market),
     getActivePromotionMaps(market),
     getTrustBarMessages(),
+    getWishlistedIds(session?.user?.id),
   ]);
 
   const dimensions = [gem.lengthMm, gem.widthMm, gem.depthMm].filter(Boolean).join(" x ");
@@ -91,7 +94,10 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
             )}
             {gem.certLab && <CertifiedBadge lab={gem.certLab} />}
           </div>
-          <h1 className="mt-2 font-serif text-4xl text-charcoal">{gem.name}</h1>
+          <div className="mt-2 flex items-start justify-between gap-3">
+            <h1 className="font-serif text-4xl text-charcoal">{gem.name}</h1>
+            <WishlistButton gemstoneId={gem.id} initialSaved={wishlistedIds.has(gem.id)} isAuthenticated={!!session?.user} className="mt-1 shrink-0 bg-ivory-soft" />
+          </div>
           <ProductPrice price={gem.price} showPrice={gem.showPrice} retailPrice={gem.retailPrice} promotion={promotion} />
           {gem.description && <p className="mt-4 leading-relaxed text-charcoal/70">{gem.description}</p>}
 
@@ -183,6 +189,9 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
               {relatedGems.map((related) => (
                 <div key={related.id} className="w-[calc(50%-12px)] shrink-0 snap-start sm:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)]">
                   <GemCard
+                    id={related.id}
+                    isWishlisted={wishlistedIds.has(related.id)}
+                    isAuthenticated={!!session?.user}
                     slug={related.slug}
                     name={related.name}
                     mineralName={related.mineral.name}

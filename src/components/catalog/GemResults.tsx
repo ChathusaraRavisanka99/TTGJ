@@ -29,7 +29,17 @@ export interface GemResultItem {
   promoPrice?: number | null;
 }
 
-export function GemResults({ gems }: { gems: GemResultItem[] }) {
+export function GemResults({
+  gems,
+  wishlistedIds,
+  isAuthenticated,
+}: {
+  gems: GemResultItem[];
+  /** ids currently saved by the viewer — see lib/wishlist.ts's
+   * getWishlistedIds. Omit (or pass an empty Set) for a guest. */
+  wishlistedIds?: Set<string>;
+  isAuthenticated?: boolean;
+}) {
   const [view, setView] = useCatalogView();
 
   return (
@@ -48,6 +58,9 @@ export function GemResults({ gems }: { gems: GemResultItem[] }) {
               // Largest Contentful Paint element and recommending exactly
               // this. Below the fold, lazy (the Image default) is correct.
               priority={i < 5}
+              id={gem.id}
+              isWishlisted={wishlistedIds?.has(gem.id)}
+              isAuthenticated={isAuthenticated}
               slug={gem.slug}
               name={gem.name}
               mineralName={gem.mineral.name}

@@ -23,7 +23,17 @@ export interface JewelryResultItem {
   promoPrice?: number | null;
 }
 
-export function JewelryResults({ pieces }: { pieces: JewelryResultItem[] }) {
+export function JewelryResults({
+  pieces,
+  wishlistedIds,
+  isAuthenticated,
+}: {
+  pieces: JewelryResultItem[];
+  /** ids currently saved by the viewer — see lib/wishlist.ts's
+   * getWishlistedIds. Omit (or pass an empty Set) for a guest. */
+  wishlistedIds?: Set<string>;
+  isAuthenticated?: boolean;
+}) {
   const [view, setView] = useCatalogView();
 
   return (
@@ -42,6 +52,9 @@ export function JewelryResults({ pieces }: { pieces: JewelryResultItem[] }) {
               // Largest Contentful Paint element and recommending exactly
               // this. Below the fold, lazy (the Image default) is correct.
               priority={i < 5}
+              id={piece.id}
+              isWishlisted={wishlistedIds?.has(piece.id)}
+              isAuthenticated={isAuthenticated}
               slug={piece.slug}
               name={piece.name}
               pieceType={piece.pieceType}

@@ -4,9 +4,16 @@ import { ChevronRight } from "lucide-react";
 import { GemVisualizer } from "@/components/gem-visualizer/GemVisualizer";
 import { StorefrontStockBadge as StockBadge } from "@/components/catalog/StorefrontStockBadge";
 import { CardPrice, PromotionBadge } from "@/components/catalog/CardPrice";
+import { WishlistButton } from "@/components/catalog/WishlistButton";
 import { cn } from "@/lib/utils";
 
 interface GemCardProps {
+  /** Needed only for the wishlist heart button — omit it (or leave
+   * isAuthenticated false) to render the card without one, e.g. a context
+   * where the caller hasn't fetched wishlist state. */
+  id?: string;
+  isWishlisted?: boolean;
+  isAuthenticated?: boolean;
   slug: string;
   name: string;
   mineralName: string;
@@ -100,7 +107,18 @@ function GemCardList(props: GemCardProps) {
       href={`/gems/${props.slug}`}
       className="group flex items-center gap-5 rounded-xl border border-border-subtle bg-surface p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-gold/40 hover:bg-ivory-soft/40 hover:shadow-lg hover:shadow-charcoal/5 sm:p-5"
     >
-      <Thumbnail props={props} className="h-24 w-24 rounded-lg ring-1 ring-inset ring-charcoal/5 sm:h-28 sm:w-28" sizes="(min-width: 640px) 112px, 96px" />
+      <Thumbnail props={props} className="h-24 w-24 rounded-lg ring-1 ring-inset ring-charcoal/5 sm:h-28 sm:w-28" sizes="(min-width: 640px) 112px, 96px">
+        {props.id && (
+          <div className="absolute bottom-1 right-1">
+            <WishlistButton
+              gemstoneId={props.id}
+              initialSaved={!!props.isWishlisted}
+              isAuthenticated={!!props.isAuthenticated}
+              className="h-6 w-6"
+            />
+          </div>
+        )}
+      </Thumbnail>
       <div className="min-w-0 flex-1">
         <p className="truncate font-serif text-lg text-charcoal sm:text-xl">{props.name}</p>
         <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/65">
@@ -173,6 +191,15 @@ function GemCardGrid(props: GemCardProps) {
             </span>
           )}
         </div>
+        {/* Bottom-left, not bottom-right: the stock badge above moves to
+            bottom-right on mobile (see its own comment), which would
+            otherwise collide with this. Bottom-left stays free at every
+            breakpoint since the promo/Ceylon pills are pinned to the top. */}
+        {props.id && (
+          <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3">
+            <WishlistButton gemstoneId={props.id} initialSaved={!!props.isWishlisted} isAuthenticated={!!props.isAuthenticated} />
+          </div>
+        )}
       </Thumbnail>
       <div className="flex flex-1 flex-col p-4">
         {/* Each block below reserves its two-line height even when the text

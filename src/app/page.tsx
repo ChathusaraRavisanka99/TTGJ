@@ -4,6 +4,8 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getHomeContent } from "@/lib/page-content";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
+import { getWishlistedIds } from "@/lib/wishlist";
+import { auth } from "@/lib/auth";
 import { getMarket } from "@/lib/market";
 import { pricesForMarket } from "@/lib/market-pricing";
 import { LinkButton } from "@/components/ui/Button";
@@ -67,14 +69,16 @@ const getFeaturedJewelryForMarket = unstable_cache(
 
 export default async function HomePage() {
   const market = await getMarket();
+  const session = await auth();
   // Each storefront features its own listings only (a listing belongs to one
   // storefront) and has its own home copy (see getHomeContent).
-  const [rawFeaturedGems, rawFeaturedJewelry, content, { gemstonePrices, jewelryPrices }, trustBarMessages] = await Promise.all([
+  const [rawFeaturedGems, rawFeaturedJewelry, content, { gemstonePrices, jewelryPrices }, trustBarMessages, wishlistedIds] = await Promise.all([
     getFeaturedGemsForMarket(market),
     getFeaturedJewelryForMarket(market),
     getHomeContent(market),
     getActivePromotionMaps(market),
     getTrustBarMessages(),
+    getWishlistedIds(session?.user?.id),
   ]);
   const featuredGems = pricesForMarket(rawFeaturedGems, market);
   const featuredJewelry = pricesForMarket(rawFeaturedJewelry, market);
@@ -192,6 +196,9 @@ export default async function HomePage() {
               {featuredGems.map((gem) => (
                 <div key={gem.id} className="w-[calc(50%-12px)] shrink-0 snap-start sm:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)]">
                   <GemCard
+                    id={gem.id}
+                    isWishlisted={wishlistedIds.has(gem.id)}
+                    isAuthenticated={!!session?.user}
                     slug={gem.slug}
                     name={gem.name}
                     mineralName={gem.mineral.name}
@@ -237,6 +244,9 @@ export default async function HomePage() {
               {featuredJewelry.map((piece) => (
                 <div key={piece.id} className="w-[calc(50%-12px)] shrink-0 snap-start sm:w-[calc(33.333%-16px)] lg:w-[calc(25%-18px)]">
                   <JewelryCard
+                    id={piece.id}
+                    isWishlisted={wishlistedIds.has(piece.id)}
+                    isAuthenticated={!!session?.user}
                     slug={piece.slug}
                     name={piece.name}
                     pieceType={piece.pieceType}

@@ -66,6 +66,7 @@ describe("buildCheckoutBreakdown", () => {
     } as never);
     vi.mocked(getActivePromotionMaps).mockResolvedValue({ themeLabel: null, gemstonePrices: new Map(), jewelryPrices: new Map() });
     vi.mocked(resolveShippingRate).mockResolvedValue({ zoneLabel: "Rest of World", rateLKR: 3000 });
+    prismaMock.bundle.findMany.mockResolvedValue([]);
   });
 
   it("throws when the cart is empty", async () => {
@@ -246,6 +247,80 @@ describe("buildCheckoutBreakdown", () => {
 
       expect(result.shipping).toBeCloseTo(3000 / 300);
       expect(result.shippingToBeArranged).toBe(false);
+    });
+  });
+
+  describe("bundle discounts", () => {
+    function twoItemCart() {
+      return [
+        gemCartItem({ gemstoneId: "gem-1", gemstone: { id: "gem-1", name: "Sapphire", stockStatus: "AVAILABLE", retailPrice: 500, lkrRetailPrice: 150000, costPrice: 300 } }),
+        gemCartItem({ gemstoneId: "gem-2", gemstone: { id: "gem-2", name: "Studs", stockStatus: "AVAILABLE", retailPrice: 350, lkrRetailPrice: 105000, costPrice: 200 } }),
+      ];
+    }
+
+    it("applies no discount when no bundle matches the cart", async () => {
+      prismaMock.retailCart.findUnique.mockResolvedValue({ items: [gemCartItem()], pointsToRedeem: 0, discountCode: null } as never);
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl" });
+      expect(result.bundleDiscount).toBe(0);
+    });
+
+    it("discounts a cart holding every item in an active matching bundle", async () => {
+      prismaMock.bundle.findMany.mockResolvedValue([
+        { id: "bundle-1", market: "intl", price: 700, active: true, sortOrder: 0, items: [{ gemstoneId: "gem-1" }, { gemstoneId: "gem-2" }] },
+      ] as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({ items: twoItemCart(), pointsToRedeem: 0, discountCode: null } as never);
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl" });
+      // individually 500 + 350 = 850, bundle price 700 -> discount 150
+      expect(result.bundleDiscount).toBe(150);
+    });
+
+    it("does not discount when only some of a bundle's items are in the cart", async () => {
+      prismaMock.bundle.findMany.mockResolvedValue([
+        { id: "bundle-1", market: "intl", price: 700, active: true, sortOrder: 0, items: [{ gemstoneId: "gem-1" }, { gemstoneId: "gem-2" }] },
+      ] as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({ items: [gemCartItem({ gemstoneId: "gem-1", gemstone: { id: "gem-1", name: "Sapphire", stockStatus: "AVAILABLE", retailPrice: 500, lkrRetailPrice: 150000, costPrice: 300 } })], pointsToRedeem: 0, discountCode: null } as never);
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl" });
+      expect(result.bundleDiscount).toBe(0);
+    });
+
+    it("never produces a negative discount when the bundle price is above the individual total", async () => {
+      prismaMock.bundle.findMany.mockResolvedValue([
+        { id: "bundle-1", market: "intl", price: 5000, active: true, sortOrder: 0, items: [{ gemstoneId: "gem-1" }, { gemstoneId: "gem-2" }] },
+      ] as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({ items: twoItemCart(), pointsToRedeem: 0, discountCode: null } as never);
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl" });
+      expect(result.bundleDiscount).toBe(0);
+    });
+
+    it("doesn't let one item count toward two overlapping bundles — first match by sortOrder wins", async () => {
+      prismaMock.bundle.findMany.mockResolvedValue([
+        { id: "bundle-1", market: "intl", price: 700, active: true, sortOrder: 0, items: [{ gemstoneId: "gem-1" }, { gemstoneId: "gem-2" }] },
+        { id: "bundle-2", market: "intl", price: 600, active: true, sortOrder: 1, items: [{ gemstoneId: "gem-1" }, { gemstoneId: "gem-2" }] },
+      ] as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({ items: twoItemCart(), pointsToRedeem: 0, discountCode: null } as never);
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl" });
+      // only bundle-1 (sortOrder 0) applies — its items are claimed before bundle-2 is considered
+      expect(result.bundleDiscount).toBe(150);
+    });
+
+    it("ignores a malformed bundle with fewer than 2 items", async () => {
+      prismaMock.bundle.findMany.mockResolvedValue([
+        { id: "bundle-1", market: "intl", price: 100, active: true, sortOrder: 0, items: [{ gemstoneId: "gem-1" }] },
+      ] as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({ items: twoItemCart(), pointsToRedeem: 0, discountCode: null } as never);
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl" });
+      expect(result.bundleDiscount).toBe(0);
+    });
+
+    it("subtracts the bundle discount from the subtotal alongside the birthday/code discounts", async () => {
+      prismaMock.bundle.findMany.mockResolvedValue([
+        { id: "bundle-1", market: "intl", price: 700, active: true, sortOrder: 0, items: [{ gemstoneId: "gem-1" }, { gemstoneId: "gem-2" }] },
+      ] as never);
+      prismaMock.retailCart.findUnique.mockResolvedValue({ items: twoItemCart(), pointsToRedeem: 0, discountCode: null } as never);
+      const result = await buildCheckoutBreakdown({ userId: "user-1", shippingCountry: "United States", market: "intl" });
+      // subtotal 850, bundleDiscount 150 -> tax/shipping computed off 700, no VAT (non-domestic)
+      expect(result.subtotal).toBe(850);
+      expect(result.tax).toBe(0);
     });
   });
 

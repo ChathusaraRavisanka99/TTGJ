@@ -13,7 +13,9 @@ import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { ProductPrice } from "@/components/catalog/ProductPrice";
 import { AddToCartButton } from "@/components/catalog/AddToCartButton";
 import { WishlistButton } from "@/components/catalog/WishlistButton";
+import { CompleteTheLookPanel } from "@/components/catalog/CompleteTheLookPanel";
 import { getWishlistedIds } from "@/lib/wishlist";
+import { getBundlesForItem } from "@/lib/bundles";
 import { GemCard } from "@/components/catalog/GemCard";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/layout/Reveal";
@@ -46,13 +48,14 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
 
   if (!gem || !gem.isPublished) notFound();
 
-  const [promotion, relatedGems, { gemstonePrices }, trustBarMessages, wishlistedIds, originContent] = await Promise.all([
+  const [promotion, relatedGems, { gemstonePrices }, trustBarMessages, wishlistedIds, originContent, bundles] = await Promise.all([
     getActivePromotion({ gemstoneId: gem.id }, market),
     getRelatedGemstones(gem, 4, market),
     getActivePromotionMaps(market),
     getTrustBarMessages(),
     getWishlistedIds(session?.user?.id),
     getOriginContent(gem.originId),
+    getBundlesForItem(gem.id, market),
   ]);
 
   const dimensions = [gem.lengthMm, gem.widthMm, gem.depthMm].filter(Boolean).join(" x ");
@@ -177,6 +180,10 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
               />
             </div>
           </div>
+
+          {bundles.map((bundle) => (
+            <CompleteTheLookPanel key={bundle.id} bundle={bundle} currency={MARKETS[market].currency} isAuthenticated={!!session?.user} />
+          ))}
 
           <TrustBar messages={trustBarMessages} variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
         </Reveal>

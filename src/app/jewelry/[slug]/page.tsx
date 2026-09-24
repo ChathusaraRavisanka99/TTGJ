@@ -11,7 +11,9 @@ import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { ProductPrice } from "@/components/catalog/ProductPrice";
 import { AddToCartButton } from "@/components/catalog/AddToCartButton";
 import { WishlistButton } from "@/components/catalog/WishlistButton";
+import { CompleteTheLookPanel } from "@/components/catalog/CompleteTheLookPanel";
 import { getWishlistedIds } from "@/lib/wishlist";
+import { getBundlesForItem } from "@/lib/bundles";
 import { JewelryVariantPicker } from "@/components/catalog/JewelryVariantPicker";
 import { JewelryCard } from "@/components/catalog/JewelryCard";
 import { Button } from "@/components/ui/Button";
@@ -49,12 +51,13 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 
   if (!piece || !piece.isPublished) notFound();
 
-  const [promotion, relatedJewelry, { jewelryPrices }, trustBarMessages, wishlistedIds] = await Promise.all([
+  const [promotion, relatedJewelry, { jewelryPrices }, trustBarMessages, wishlistedIds, bundles] = await Promise.all([
     getActivePromotion({ jewelryId: piece.id }, market),
     getRelatedJewelry(piece, 4, market),
     getActivePromotionMaps(market),
     getTrustBarMessages(),
     getWishlistedIds(session?.user?.id),
+    getBundlesForItem(piece.id, market),
   ]);
 
   const pieceTypeLabel = piece.pieceType.charAt(0) + piece.pieceType.slice(1).toLowerCase();
@@ -158,6 +161,10 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
               <QuoteRequestPanel isAuthenticated={!!session?.user} jewelryId={piece.id} productLabel={piece.name} />
             </div>
           </div>
+
+          {bundles.map((bundle) => (
+            <CompleteTheLookPanel key={bundle.id} bundle={bundle} currency={MARKETS[market].currency} isAuthenticated={!!session?.user} />
+          ))}
 
           <TrustBar messages={trustBarMessages} variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
         </Reveal>

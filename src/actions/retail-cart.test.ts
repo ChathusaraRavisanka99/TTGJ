@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { applyRetailDiscountCode, addToRetailCart } from "@/actions/retail-cart";
+import { applyRetailDiscountCode, addToRetailCart, addBundleToCart } from "@/actions/retail-cart";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getMarket } from "@/lib/market";
 
@@ -122,5 +122,66 @@ describe("addToRetailCart", () => {
     expect(prismaMock.retailCartItem.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ create: expect.objectContaining({ unitPrice: 500 }) }),
     );
+  });
+});
+
+describe("addBundleToCart", () => {
+  beforeEach(() => {
+    vi.mocked(getMarket).mockResolvedValue("intl");
+    prismaMock.retailCart.findUnique.mockResolvedValue(cartFixture as never);
+  });
+
+  it("rejects a bundle that doesn't exist", async () => {
+    prismaMock.bundle.findUnique.mockResolvedValue(null);
+    const result = await addBundleToCart("bundle-1");
+    expect(result).toEqual({ ok: false, error: "This bundle is no longer available." });
+  });
+
+  it("rejects an inactive bundle", async () => {
+    prismaMock.bundle.findUnique.mockResolvedValue({ id: "bundle-1", market: "intl", active: false, items: [] } as never);
+    const result = await addBundleToCart("bundle-1");
+    expect(result).toEqual({ ok: false, error: "This bundle is no longer available." });
+  });
+
+  it("rejects a bundle from the other store", async () => {
+    prismaMock.bundle.findUnique.mockResolvedValue({ id: "bundle-1", market: "lk", active: true, items: [] } as never);
+    const result = await addBundleToCart("bundle-1");
+    expect(result).toEqual({ ok: false, error: "This bundle is no longer available." });
+  });
+
+  it("adds every item in the bundle to the cart", async () => {
+    prismaMock.bundle.findUnique.mockResolvedValue({
+      id: "bundle-1", market: "intl", active: true,
+      items: [{ gemstoneId: "gem-1", jewelryId: null }, { gemstoneId: "gem-2", jewelryId: null }],
+    } as never);
+    prismaMock.gemstone.findUnique.mockImplementation(((args: { where: { id: string } }) =>
+      Promise.resolve(
+        args.where.id === "gem-1"
+          ? { id: "gem-1", market: "intl", retailPrice: 500, lkrRetailPrice: null, stockStatus: "AVAILABLE" }
+          : { id: "gem-2", market: "intl", retailPrice: 350, lkrRetailPrice: null, stockStatus: "AVAILABLE" },
+      )) as never);
+    prismaMock.retailCartItem.upsert.mockResolvedValue({ id: "item-1" } as never);
+
+    const result = await addBundleToCart("bundle-1");
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.retailCartItem.upsert).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops and surfaces the error if one item in the bundle can't be added", async () => {
+    prismaMock.bundle.findUnique.mockResolvedValue({
+      id: "bundle-1", market: "intl", active: true,
+      items: [{ gemstoneId: "gem-1", jewelryId: null }, { gemstoneId: "gem-2", jewelryId: null }],
+    } as never);
+    prismaMock.gemstone.findUnique.mockImplementation(((args: { where: { id: string } }) =>
+      Promise.resolve(
+        args.where.id === "gem-1"
+          ? { id: "gem-1", market: "intl", retailPrice: 500, lkrRetailPrice: null, stockStatus: "SOLD" }
+          : { id: "gem-2", market: "intl", retailPrice: 350, lkrRetailPrice: null, stockStatus: "AVAILABLE" },
+      )) as never);
+
+    const result = await addBundleToCart("bundle-1");
+
+    expect(result).toEqual({ ok: false, error: "This item is no longer available." });
   });
 });

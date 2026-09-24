@@ -69,6 +69,7 @@ export default async function CheckoutPage() {
           <div className="mt-2 space-y-1 text-sm text-charcoal/75">
             {breakdown.codeDiscount > 0 && <SummaryRow label={t("summary.discount")} value={`−${formatPrice(breakdown.codeDiscount, currency)}`} />}
             {breakdown.birthdayDiscount > 0 && <SummaryRow label={t("summary.birthday")} value={`−${formatPrice(breakdown.birthdayDiscount, currency)}`} />}
+            {breakdown.bundleDiscount > 0 && <SummaryRow label={t("summary.bundle")} value={`−${formatPrice(breakdown.bundleDiscount, currency)}`} />}
             {breakdown.pointsDiscount > 0 && <SummaryRow label={t("summary.points")} value={`−${formatPrice(breakdown.pointsDiscount, currency)}`} />}
             {breakdown.tax > 0 && <SummaryRow label={t("summary.tax")} value={formatPrice(breakdown.tax, currency)} />}
             <SummaryRow label={t("summary.shipping")} value={formatPrice(breakdown.shipping, currency)} />

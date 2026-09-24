@@ -46,6 +46,9 @@ export interface CheckoutBreakdown {
   birthdayDiscount: number;
   birthdayEligible: boolean;
   codeDiscount: number;
+  /** Sum of every matching Bundle's discount — see Bundle's own schema
+   * comment for how a bundle "applies" (no new cart/order line type). */
+  bundleDiscount: number;
   pointsRedeemed: number;
   pointsDiscount: number;
   tax: number;
@@ -182,7 +185,43 @@ export async function buildCheckoutBreakdown(input: {
   // A code only counts on /lk if the admin gave it a rupee value.
   const discountCode = cart.discountCode && (!lk || cart.discountCode.amountOffLkr != null) ? cart.discountCode : null;
   const codeDiscount = lk ? (discountCode?.amountOffLkr ?? 0) : (discountCode?.amountOff ?? 0);
-  const afterCodeDiscounts = Math.max(0, subtotal - birthdayDiscount - codeDiscount);
+
+  // Bundle discounts: any active Bundle whose every member item is present
+  // in this cart gets a discount equal to what those items would cost
+  // individually minus the bundle's own combined price — applied as a
+  // straight discount, the same mechanism as a discount code, not a new
+  // cart/order line type (see Bundle's own schema comment). Sorted by
+  // sortOrder so an item claimed by one matching bundle can't also count
+  // toward a second, overlapping one — admin curation is trusted not to
+  // build genuinely overlapping bundles, the same trust level this schema
+  // already gives other admin-only exclusivity rules (e.g.
+  // shippingWeightTierId/quoteShipping above).
+  const activeBundles = await prisma.bundle.findMany({
+    where: { market, active: true },
+    orderBy: { sortOrder: "asc" },
+    include: { items: true },
+  });
+  let bundleDiscount = 0;
+  const claimedItemIds = new Set<string>();
+  for (const bundle of activeBundles) {
+    const memberIds = bundle.items.map((i) => i.gemstoneId ?? i.jewelryId).filter((id): id is string => !!id);
+    if (memberIds.length < 2) continue; // malformed — never discount for free
+    const eligible = memberIds.every(
+      (id) => items.some((li) => li.gemstoneId === id || li.jewelryId === id) && !claimedItemIds.has(id),
+    );
+    if (!eligible) continue;
+    // One unit's worth per member item, even if the cart holds more than
+    // one of something — a bundle discounts the combo itself, not extra
+    // quantity bought alongside it.
+    const combinedPrice = memberIds.reduce((sum, id) => {
+      const line = items.find((li) => li.gemstoneId === id || li.jewelryId === id)!;
+      return sum + line.unitPrice;
+    }, 0);
+    bundleDiscount += Math.max(0, combinedPrice - bundle.price);
+    for (const id of memberIds) claimedItemIds.add(id);
+  }
+
+  const afterCodeDiscounts = Math.max(0, subtotal - birthdayDiscount - codeDiscount - bundleDiscount);
 
   // Rewards points staged on the cart, re-clamped against the live
   // balance and the order's own cap — never trusted as still affordable
@@ -257,6 +296,7 @@ export async function buildCheckoutBreakdown(input: {
     birthdayDiscount,
     birthdayEligible,
     codeDiscount,
+    bundleDiscount,
     pointsRedeemed,
     pointsDiscount,
     tax,

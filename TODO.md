@@ -399,11 +399,30 @@ unless noted.*
   they persisted, then confirmed the customer-facing nudge correctly
   showed "Add $50 more" below the threshold and "You've unlocked free
   shipping!" once the cart cleared it.
-- **Bundle pricing on curated collections** — extend the existing
-  `PromotionItem`/collections system with an optional bundle price when a
-  customer buys the whole curated set, instead of only single-item
-  promotions. Cited as the most reliable AOV lever in the category
-  ("wear it three ways" sets, gifting bundles beat single-item upsells).
+- ~~**Bundle pricing on curated collections**~~ — done. Confirmed the
+  mechanics with you first: a curated set + auto-applied discount, not a
+  new single-line-item cart/order type. New `Bundle`/`BundleItem` models
+  (admin picks 2+ existing gemstones/jewelry pieces + a combined price,
+  `/admin/bundles`) — each item still checks out as its own ordinary
+  `OrderItem`, so inventory reservation, profit tracking, and refunds are
+  completely untouched; the discount is computed in
+  `buildCheckoutBreakdown` purely from what's already in the cart, the
+  same mechanism a discount code uses (an item claimed by one matching
+  bundle can't double-count toward a second, overlapping one — first
+  match by `sortOrder` wins). A "Complete the Look" panel now shows on a
+  bundle member's own product page with the other piece(s), the
+  individual-vs-bundled price, and an "Add All to Cart" button. New
+  `Order.bundleDiscountAmount` snapshots it for the customer/admin order
+  views. 24 new tests (`lib/checkout.test.ts`'s bundle-discount block,
+  `lib/bundles.test.ts`, `actions/bundles.test.ts`,
+  `actions/retail-cart.test.ts`'s `addBundleToCart` block); live-verified
+  end-to-end via Playwright on the real Sri Lanka store — created a real
+  bundle (Ceylon Sapphire Trilogy Ring + Moonstone Drop Earrings, Rs
+  485,000 individually → Rs 420,000 bundled) through the actual admin UI,
+  confirmed the "Complete the Look" panel and Add All to Cart on the
+  ring's real product page, confirmed both items landed in the cart, and
+  confirmed the checkout page showed the exact "Bundle discount −Rs
+  65,000" line.
 - **"Book a live video call" CTA on quote/sourcing chats** — a lightweight
   scheduling prompt on an existing quote/sourcing chat thread, formalizing
   the ad hoc "ask about this stone over chat" flow into an explicit

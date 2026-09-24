@@ -391,6 +391,7 @@ model Gemstone {
   retailCartItems      RetailCartItem[]
   orderItems           OrderItem[]
   wishlistItems        WishlistItem[]
+  bundleItems          BundleItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -485,6 +486,7 @@ model JewelryPiece {
   retailCartItems      RetailCartItem[]
   orderItems           OrderItem[]
   wishlistItems        WishlistItem[]
+  bundleItems          BundleItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1347,6 +1349,51 @@ model PromotionItem {
   @@index([theme])
 }
 
+// An admin-curated set of 2+ existing catalog items ("Sapphire Ring +
+// Matching Studs") sold at a combined price lower than buying each
+// separately — the discount applies automatically once every item in the
+// set is in the same cart, the same mechanism a DiscountCode applies (see
+// lib/checkout.ts's buildCheckoutBreakdown), not a new cart/order line
+// type. Each item still checks out as its own ordinary OrderItem, so
+// inventory reservation, profit tracking, and refunds all keep working
+// completely unchanged — this is a pricing rule layered on top, not a new
+// kind of product.
+model Bundle {
+  id    String @id @default(cuid())
+  name  String
+
+  // Fixed per row, same convention as Gemstone/JewelryPiece.market — a
+  // bundle only ever discounts its own storefront's cart, and `price`
+  // below is in that market's own currency (no cross-market conversion).
+  market  String @default("intl")
+  price   Float
+  active  Boolean @default(true)
+  sortOrder Int @default(0)
+
+  items BundleItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([market, active])
+}
+
+model BundleItem {
+  id       String @id @default(cuid())
+  bundleId String
+  bundle   Bundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+
+  // Exactly one of these two, same convention as OrderItem/RetailCartItem.
+  gemstoneId String?
+  gemstone   Gemstone?     @relation(fields: [gemstoneId], references: [id], onDelete: Cascade)
+  jewelryId  String?
+  jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
+
+  @@index([bundleId])
+  @@index([gemstoneId])
+  @@index([jewelryId])
+}
+
 // ---------- Alternative (subculture) collections ----------
 //
 // Hidden-by-default landing pages at /collections/[slug] targeting
@@ -1507,6 +1554,11 @@ model Order {
   subtotal               Float
   discountAmount         Float @default(0)
   birthdayDiscountAmount Float @default(0)
+  // Sum of every matching Bundle's discount on this order — see Bundle's
+  // own schema comment. A snapshot like discountAmount/birthdayDiscountAmount
+  // above, not a link to which Bundle(s) applied (a cart could in
+  // principle match more than one).
+  bundleDiscountAmount   Float @default(0)
   taxAmount              Float @default(0)
   shippingAmount         Float @default(0)
   handlingFeeAmount      Float @default(0)

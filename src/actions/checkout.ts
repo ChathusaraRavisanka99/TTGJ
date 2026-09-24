@@ -88,6 +88,7 @@ export async function initiateRetailCheckout(formData: FormData): Promise<Initia
       subtotal: breakdown.subtotal,
       discountAmount: breakdown.codeDiscount,
       birthdayDiscountAmount: breakdown.birthdayDiscount,
+      bundleDiscountAmount: breakdown.bundleDiscount,
       taxAmount: breakdown.tax,
       shippingAmount: breakdown.shipping,
       handlingFeeAmount: breakdown.handlingFee,

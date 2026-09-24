@@ -85,6 +85,29 @@ export async function addToRetailCart(input: { gemstoneId?: string; jewelryId?: 
   return { ok: true };
 }
 
+// Adds every item in an active Bundle to the cart in one click — each
+// still becomes its own ordinary RetailCartItem (reusing addToRetailCart's
+// own per-item availability checks), so the combined-price discount is
+// purely a checkout-time calculation (see buildCheckoutBreakdown), not a
+// new kind of cart row. A jewelry piece with variants can't be added this
+// way (BundleItem has no way to say which variant) — surfaces
+// addToRetailCart's own "Please choose an option" error in that case
+// rather than silently skipping it.
+export async function addBundleToCart(bundleId: string): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user) return { ok: false, error: "Sign in required." };
+
+  const market = await getMarket();
+  const bundle = await prisma.bundle.findUnique({ where: { id: bundleId }, include: { items: true } });
+  if (!bundle || !bundle.active || bundle.market !== market) return { ok: false, error: "This bundle is no longer available." };
+
+  for (const item of bundle.items) {
+    const result = await addToRetailCart({ gemstoneId: item.gemstoneId ?? undefined, jewelryId: item.jewelryId ?? undefined });
+    if (!result.ok) return result;
+  }
+  return { ok: true };
+}
+
 export async function removeRetailCartItem(itemId: string): Promise<ActionResult> {
   const session = await auth();
   if (!session?.user) return { ok: false, error: "Sign in required." };

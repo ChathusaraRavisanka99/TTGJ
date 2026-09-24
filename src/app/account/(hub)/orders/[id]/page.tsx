@@ -91,6 +91,7 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
     });
   }
   if (order.birthdayDiscountAmount > 0) summaryRows.push({ label: t("detail.birthday"), value: `−${formatPrice(order.birthdayDiscountAmount, currency)}` });
+  if (order.bundleDiscountAmount > 0) summaryRows.push({ label: t("detail.bundle"), value: `−${formatPrice(order.bundleDiscountAmount, currency)}` });
   if (order.pointsDiscountAmount > 0) summaryRows.push({ label: `${t("detail.points")} (${order.pointsRedeemed})`, value: `−${formatPrice(order.pointsDiscountAmount, currency)}` });
   if (order.taxAmount > 0) summaryRows.push({ label: t("detail.tax"), value: formatPrice(order.taxAmount, currency) });
   summaryRows.push({ label: t("detail.shipping"), value: formatPrice(order.shippingAmount, currency) });

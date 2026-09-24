@@ -454,12 +454,17 @@ unless noted.*
   end-to-end via Playwright against a real quote request — customer
   requested a call, saw the correct callout on their own side, and the
   admin saw the identical callout on the quote's admin detail page.
-- **BNPL at checkout** *(flagged, needs research before scoping)* — a
-  named cart-abandonment fix in every benchmark (jewelry cart abandonment
-  runs ~81%), but needs checking whether PayHere (the Sri Lanka gateway)
-  or an alternative offers installment/BNPL for the international USD
-  store — may not fit the LK market at all. Don't build until that's
-  confirmed.
+- ~~**BNPL at checkout**~~ — investigated, shelved (your call, 2026-09-24).
+  PayHere (the current gateway) has no installment/BNPL product at all.
+  Stripe has excellent native Klarna/Afterpay/Affirm/Sezzle integration,
+  but Stripe doesn't support Sri Lanka-domiciled merchants — Ratnavue
+  would need to incorporate a US/UK business entity first, which is a
+  real legal/operational undertaking, not a payments integration.
+  Standalone BNPL providers (outside Stripe) carry the same constraint —
+  they're built around US/UK/EU/AU merchants. Blocked on something well
+  outside this app until/unless a foreign entity is ever on the table for
+  other reasons — revisit then, with the specific entity's country in
+  hand so the actual Stripe/provider integration can be scoped for real.
 - **AR virtual try-on** *(flagged, bigger lift)* — a Brilliant-Earth-style
   photo-upload ring preview. Needs real image-compositing work or a
   third-party AR SDK, not a small feature — worth its own scoping pass

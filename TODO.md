@@ -423,12 +423,22 @@ unless noted.*
   ring's real product page, confirmed both items landed in the cart, and
   confirmed the checkout page showed the exact "Bundle discount −Rs
   65,000" line.
-- **"Book a live video call" CTA on quote/sourcing chats** — a lightweight
-  scheduling prompt on an existing quote/sourcing chat thread, formalizing
-  the ad hoc "ask about this stone over chat" flow into an explicit
-  inspection-call feature, the way James Allen's on-demand diamond
-  inspection works. Fits naturally on top of the chat threads that already
-  exist for every quote/sourcing request.
+- ~~**"Book a live video call" CTA on quote/sourcing chats**~~ — done. New
+  `ChatMessage.isVideoCallRequest` flag, same "tag" mechanism the chat
+  system already uses for gemstone/jewelry/cart attachments (a new
+  `videoCallRequest` `ChatTag` variant) — either side picks "Request a
+  video call" from the existing attachment dropdown, same UX as tagging a
+  cart, and the message renders with a distinct gold-bordered "Video call
+  requested" callout instead of reading as a plain text message. No
+  actual video-calling infrastructure built — the two sides still
+  coordinate a time/link through the thread itself, matching the
+  "lightweight" scope of this item. Available on quote/sourcing threads
+  only (customer + admin detail pages, and the admin unified inbox) — not
+  order/support threads, where inspecting a specific piece before buying
+  doesn't apply. 3 new tests (`actions/chat.test.ts`); live-verified
+  end-to-end via Playwright against a real quote request — customer
+  requested a call, saw the correct callout on their own side, and the
+  admin saw the identical callout on the quote's admin detail page.
 - **BNPL at checkout** *(flagged, needs research before scoping)* — a
   named cart-abandonment fix in every benchmark (jewelry cart abandonment
   runs ~81%), but needs checking whether PayHere (the Sri Lanka gateway)

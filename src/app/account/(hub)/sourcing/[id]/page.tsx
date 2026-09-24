@@ -67,6 +67,7 @@ export default async function AccountSourcingDetailPage({ params }: PageProps<"/
           currentUserId={session.user.id}
           initialMessages={initialMessages}
           hasOpenCart={!!openCart && openCart.items.length > 0}
+          allowVideoCallRequest
         />
       </div>
     </div>

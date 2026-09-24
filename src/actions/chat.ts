@@ -16,7 +16,7 @@ import {
 import { createNotification } from "@/lib/notifications";
 import type { ActionResult } from "./auth";
 
-export type ChatTag = { type: "gemstone" | "jewelry"; id: string } | { type: "cart" };
+export type ChatTag = { type: "gemstone" | "jewelry"; id: string } | { type: "cart" } | { type: "videoCallRequest" };
 
 function requestPaths(requestType: ChatRequestType, requestId: string): string[] {
   if (requestType === "quote") return [`/admin/quotes/${requestId}`, `/account/quotes/${requestId}`];
@@ -57,6 +57,7 @@ export async function sendChatMessage(input: {
   let taggedGemstoneId: string | undefined;
   let taggedJewelryId: string | undefined;
   let taggedCartSnapshot: object | undefined;
+  let isVideoCallRequest = false;
 
   if (input.tag?.type === "gemstone") {
     const gem = await prisma.gemstone.findUnique({ where: { id: input.tag.id }, select: { id: true } });
@@ -70,6 +71,8 @@ export async function sendChatMessage(input: {
     const snapshot = await snapshotOpenCart(context.customerId);
     if (!snapshot) return { ok: false, error: "There's no open cart with items to attach." };
     taggedCartSnapshot = snapshot;
+  } else if (input.tag?.type === "videoCallRequest") {
+    isVideoCallRequest = true;
   }
 
   const threadId = context.threadId ?? (await getOrCreateChatThread(input.requestType, input.requestId));
@@ -83,6 +86,7 @@ export async function sendChatMessage(input: {
       taggedGemstoneId,
       taggedJewelryId,
       taggedCartSnapshot,
+      isVideoCallRequest,
     },
   });
 
@@ -163,6 +167,7 @@ export async function pollChatMessages(requestType: ChatRequestType, requestId: 
       ? { name: m.taggedJewelry.name, slug: m.taggedJewelry.slug, price: lk ? m.taggedJewelry.lkrPrice : m.taggedJewelry.price, showPrice: m.taggedJewelry.showPrice, imageUrl: m.taggedJewelry.media[0]?.url }
       : null,
     taggedCartSnapshot: m.taggedCartSnapshot as { items: { label: string; amount: number }[]; total: number } | null,
+    isVideoCallRequest: m.isVideoCallRequest,
   }));
 }
 

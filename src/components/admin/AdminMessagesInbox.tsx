@@ -149,6 +149,7 @@ export function AdminMessagesInbox({ rows: initialRows, currentAdminId }: { rows
                   currentUserId={currentAdminId}
                   initialMessages={panelMessages}
                   hasOpenCart={panelHasOpenCart}
+                  allowVideoCallRequest={selected.requestType === "quote" || selected.requestType === "sourcing"}
                 />
               </div>
             )}

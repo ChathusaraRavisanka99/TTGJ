@@ -84,6 +84,7 @@ export default async function AccountQuoteDetailPage({ params }: PageProps<"/acc
           currentUserId={session.user.id}
           initialMessages={initialMessages}
           hasOpenCart={!!openCart && openCart.items.length > 0}
+          allowVideoCallRequest
         />
       </div>
     </div>

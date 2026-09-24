@@ -121,6 +121,7 @@ export default async function AdminQuoteDetailPage({ params }: PageProps<"/admin
               currentUserId={session.user.id}
               initialMessages={initialMessages}
               hasOpenCart={!!openCart && openCart.items.length > 0}
+              allowVideoCallRequest
             />
           )}
         </div>

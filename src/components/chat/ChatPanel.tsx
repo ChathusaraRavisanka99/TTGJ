@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "@/components/ui/MarketLink";
 import Image from "next/image";
-import { Gem, Paperclip, X } from "lucide-react";
+import { Gem, Paperclip, Video, X } from "lucide-react";
 import { sendChatMessage, markChatRead, pollChatMessages, getChatTagOptions, type ChatMessageView } from "@/actions/chat";
 import type { ChatRequestType } from "@/lib/chat";
 import { Textarea, Select, FieldError } from "@/components/ui/Field";
@@ -24,6 +24,7 @@ export function ChatPanel({
   currentUserId,
   initialMessages,
   hasOpenCart,
+  allowVideoCallRequest = false,
 }: {
   requestType: ChatRequestType;
   requestId: string;
@@ -33,10 +34,14 @@ export function ChatPanel({
    * items — the "tag cart" option only makes sense to offer when
    * there's actually something to attach. */
   hasOpenCart: boolean;
+  /** Offers a "Request a video call" option — a quote/sourcing thread is
+   * usually still about a specific piece worth inspecting live before
+   * committing; an order or general support thread isn't. */
+  allowVideoCallRequest?: boolean;
 }) {
   const [messages, setMessages] = useState(initialMessages);
   const [body, setBody] = useState("");
-  const [tagType, setTagType] = useState<"none" | "gemstone" | "jewelry" | "cart">("none");
+  const [tagType, setTagType] = useState<"none" | "gemstone" | "jewelry" | "cart" | "videoCall">("none");
   const [tagId, setTagId] = useState("");
   const [gemstones, setGemstones] = useState<TagOption[]>([]);
   const [jewelry, setJewelry] = useState<TagOption[]>([]);
@@ -104,7 +109,7 @@ export function ChatPanel({
     ? false
     : body.trim().length > 0
       ? true
-      : tagType === "cart"
+      : tagType === "cart" || tagType === "videoCall"
         ? true
         : (tagType === "gemstone" || tagType === "jewelry") && !!tagId;
 
@@ -112,7 +117,7 @@ export function ChatPanel({
     if (!canSend) return;
     setError(null);
     const tag: Parameters<typeof sendChatMessage>[0]["tag"] =
-      tagType === "cart" ? { type: "cart" } : tagType === "none" ? undefined : { type: tagType, id: tagId };
+      tagType === "cart" ? { type: "cart" } : tagType === "videoCall" ? { type: "videoCallRequest" } : tagType === "none" ? undefined : { type: tagType, id: tagId };
     startTransition(async () => {
       const result = await sendChatMessage({ requestType, requestId, body: body.trim(), tag });
       if (!result.ok) {
@@ -161,6 +166,7 @@ export function ChatPanel({
               <option value="gemstone">Tag a gemstone</option>
               <option value="jewelry">Tag a jewelry piece</option>
               {hasOpenCart && <option value="cart">Tag the cart</option>}
+              {allowVideoCallRequest && <option value="videoCall">Request a video call</option>}
             </Select>
             {(tagType === "gemstone" || tagType === "jewelry") && (
               <Select value={tagId} onChange={(e) => setTagId(e.target.value)} className="w-48 py-1.5 text-xs">
@@ -173,6 +179,14 @@ export function ChatPanel({
             {tagType === "cart" && (
               <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2.5 py-1 text-xs text-charcoal/70">
                 <Paperclip size={11} /> Cart contents
+                <button type="button" onClick={() => setTagType("none")} className="ml-0.5 text-charcoal/65 hover:text-charcoal">
+                  <X size={11} />
+                </button>
+              </span>
+            )}
+            {tagType === "videoCall" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2.5 py-1 text-xs text-charcoal/70">
+                <Video size={11} /> Video call request
                 <button type="button" onClick={() => setTagType("none")} className="ml-0.5 text-charcoal/65 hover:text-charcoal">
                   <X size={11} />
                 </button>
@@ -198,6 +212,11 @@ function ChatBubble({ message, isMine }: { message: ChatMessageView; isMine: boo
           {isMine ? "You" : message.senderName} · {time}
         </p>
         {message.body && <p className="mt-1 whitespace-pre-wrap text-charcoal">{message.body}</p>}
+        {message.isVideoCallRequest && (
+          <p className="mt-2 flex items-center gap-1.5 rounded-lg border border-gold/40 bg-surface px-2.5 py-1.5 text-xs font-medium text-gold-deep">
+            <Video size={13} /> Video call requested
+          </p>
+        )}
         {message.taggedGemstone && <TaggedItemCard href={`/gems/${message.taggedGemstone.slug}`} item={message.taggedGemstone} />}
         {message.taggedJewelry && <TaggedItemCard href={`/jewelry/${message.taggedJewelry.slug}`} item={message.taggedJewelry} />}
         {message.taggedCartSnapshot && <TaggedCartCard snapshot={message.taggedCartSnapshot} />}

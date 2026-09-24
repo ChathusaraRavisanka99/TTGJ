@@ -808,6 +808,13 @@ model ChatMessage {
   taggedJewelry      JewelryPiece? @relation(fields: [taggedJewelryId], references: [id], onDelete: SetNull)
   // { items: [{ label: string, amount: number }], total: number }
   taggedCartSnapshot Json?
+  // A formal "let's get on a call about this" request, same tag mechanism
+  // as the three above (see ChatTag's "videoCallRequest" variant in
+  // actions/chat.ts) — gets its own distinct bubble treatment rather than
+  // reading as a plain text message, the way James Allen's on-demand
+  // inspection call works, but without building actual video calling:
+  // the two sides still coordinate a time/link through the thread itself.
+  isVideoCallRequest Boolean @default(false)
 
   createdAt DateTime @default(now())
 

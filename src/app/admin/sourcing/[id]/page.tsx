@@ -71,6 +71,7 @@ export default async function AdminSourcingDetailPage({ params }: PageProps<"/ad
               currentUserId={session.user.id}
               initialMessages={initialMessages}
               hasOpenCart={!!openCart && openCart.items.length > 0}
+              allowVideoCallRequest
             />
           )}
         </div>

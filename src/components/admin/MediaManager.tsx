@@ -127,6 +127,8 @@ export function MediaManager({ media, gemstoneId, jewelryId }: { media: MediaIte
       </div>
       <p className="mt-2 text-xs text-charcoal/50">
         Select one or several photos and videos at once. Photos are resized automatically; videos can be up to 50MB (MP4, WEBM or MOV).
+        For a video, a slow, steady rotation of the actual piece works best — customers use it to check color and
+        inclusions match the photos, the same way it plays on the product page.
       </p>
       {status && <p className="mt-2 text-xs text-charcoal/70">{status}</p>}
       {error && <p className="mt-2 text-xs text-red-700">{error}</p>}

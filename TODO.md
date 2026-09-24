@@ -333,13 +333,22 @@ unless noted.*
   as a filled heart back on the `/gems` grid, then removed it from the
   wishlist page and confirmed the card disappeared live (via
   `router.refresh()`) without a manual reload.
-- **360°-style product video + zoom** — video upload already exists
-  (`MediaAsset`/`MediaType.VIDEO`, rendered via `<video controls>` in
-  `MediaGallery.tsx`), but it's a static admin-uploaded clip, not the
-  looping-rotation-plus-magnify view James Allen/Angara use to reassure
-  buyers the physical stone matches its photos. Add a zoom/magnify overlay
-  on both photos and video frames; no new upload infra needed, just admin
-  guidance to shoot a slow rotation instead of an arbitrary clip.
+- ~~**360°-style product video + zoom**~~ — done. `MediaGallery.tsx`'s main
+  photo now tracks the cursor and scales to 2.2x on hover (desktop) — a
+  buyer can check color/inclusions against the listing the way James
+  Allen's 40x diamond inspection lets theirs — plus a "Click to zoom" cue
+  that opens a full-screen lightbox (close via the X, backdrop click, or
+  Escape) for a closer look on any device, video already has its own
+  native playback controls so only stills get the zoom affordance.
+  Applies to both the gem and jewelry detail pages, which already share
+  this one component. Admin media upload now also carries a hint to shoot
+  a slow, steady rotation clip rather than an arbitrary one, since that's
+  the format this actually reassures buyers with. No new upload infra —
+  pure front-end addition on top of the existing `MediaAsset`/
+  `MediaType.VIDEO` pipeline. Live-verified via Playwright against a real
+  published gem's photo: confirmed the hover scale transform applies,
+  the lightbox opens on click, and closes both via its own button and
+  the Escape key.
 - ~~**"One of one" scarcity messaging"**~~ — investigated: already fully
   built. Both `gems/[slug]/page.tsx` and `jewelry/[slug]/page.tsx` already
   show a "the only one" note (Sparkles icon, `t("onlyOne")`/

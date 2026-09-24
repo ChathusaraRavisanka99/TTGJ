@@ -19,6 +19,7 @@ const NAV = [
   { href: "/admin/carts", label: "Submitted Carts" },
   { href: "/admin/discount-codes", label: "Discount Codes" },
   { href: "/admin/bundles", label: "Bundles" },
+  { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/auctions", label: "Auctions" },
   { href: "/admin/invoices", label: "Invoices" },
   { href: "/admin/customers", label: "Customers" },

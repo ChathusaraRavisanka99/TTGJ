@@ -24,6 +24,8 @@ import { CardSlider } from "@/components/ui/CardSlider";
 import { HeritageSideArt } from "@/components/catalog/HeritageSideArt";
 import { StickyBuyBar } from "@/components/catalog/StickyBuyBar";
 import { getTrustBarMessages } from "@/lib/i18n-messages";
+import { getApprovedReviewsForItem } from "@/lib/reviews";
+import { RatingSummaryLine, ReviewsSection } from "@/components/catalog/ReviewsSection";
 import { formatPrice } from "@/lib/utils";
 import { getMarket } from "@/lib/market";
 import { getTranslations } from "next-intl/server";
@@ -51,13 +53,14 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
 
   if (!piece || !piece.isPublished) notFound();
 
-  const [promotion, relatedJewelry, { jewelryPrices }, trustBarMessages, wishlistedIds, bundles] = await Promise.all([
+  const [promotion, relatedJewelry, { jewelryPrices }, trustBarMessages, wishlistedIds, bundles, reviewSummary] = await Promise.all([
     getActivePromotion({ jewelryId: piece.id }, market),
     getRelatedJewelry(piece, 4, market),
     getActivePromotionMaps(market),
     getTrustBarMessages(),
     getWishlistedIds(session?.user?.id),
     getBundlesForItem(piece.id, market),
+    getApprovedReviewsForItem({ jewelryId: piece.id }),
   ]);
 
   const pieceTypeLabel = piece.pieceType.charAt(0) + piece.pieceType.slice(1).toLowerCase();
@@ -93,6 +96,7 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
             <h1 className="font-serif text-4xl text-charcoal">{piece.name}</h1>
             <WishlistButton jewelryId={piece.id} initialSaved={wishlistedIds.has(piece.id)} isAuthenticated={!!session?.user} className="mt-1 shrink-0 bg-ivory-soft" />
           </div>
+          <div className="mt-1"><RatingSummaryLine summary={reviewSummary} /></div>
           <ProductPrice price={piece.price} showPrice={piece.showPrice} retailPrice={piece.retailPrice} promotion={promotion} />
           {piece.description && <p className="mt-4 leading-relaxed text-charcoal/70">{piece.description}</p>}
 
@@ -165,6 +169,8 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
           {bundles.map((bundle) => (
             <CompleteTheLookPanel key={bundle.id} bundle={bundle} currency={MARKETS[market].currency} isAuthenticated={!!session?.user} />
           ))}
+
+          <ReviewsSection summary={reviewSummary} />
 
           <TrustBar messages={trustBarMessages} variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
         </Reveal>

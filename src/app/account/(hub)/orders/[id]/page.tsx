@@ -17,6 +17,8 @@ import { formatPrice } from "@/lib/utils";
 import { withMarket, type Market } from "@/lib/market-shared";
 import { isRefundEligible } from "@/lib/refunds";
 import { isGemDigEligible } from "@/lib/gem-dig";
+import { getReviewableItems } from "@/lib/reviews";
+import { ReviewForm } from "@/components/account/ReviewForm";
 
 export const metadata: Metadata = { title: "Order Details" };
 
@@ -76,7 +78,11 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
   if (!order || order.userId !== session.user.id) notFound();
 
   await markNotificationsReadForRequest("order", order.id, session.user.id);
-  const initialMessages = await pollChatMessages("order", order.id);
+  const [initialMessages, reviewableItems] = await Promise.all([
+    pollChatMessages("order", order.id),
+    getReviewableItems(order.id, session.user.id),
+  ]);
+  const reviewableIds = new Set(reviewableItems.map((i) => i.id));
 
   const currency = order.currency === "LKR" ? "LKR" : "USD";
   const market = (order.market === "lk" ? "lk" : "intl") as Market;
@@ -148,23 +154,31 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
                 const product = item.gemstone ?? item.jewelry;
                 const href = product ? withMarket(`/${item.gemstone ? "gems" : "jewelry"}/${product.slug}`, market) : null;
                 const image = product?.media[0]?.url;
+                const canReview = !!product && reviewableIds.has(item.gemstoneId ?? item.jewelryId ?? "");
                 const thumb = (
                   <span className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-ivory-soft">
                     {image ? <Image src={image} alt="" fill sizes="64px" className="object-cover" /> : <Gem size={22} strokeWidth={1} className="text-charcoal/25" />}
                   </span>
                 );
                 return (
-                  <div key={item.id} className="flex items-center gap-4 py-4">
-                    {href ? <NextLink href={href}>{thumb}</NextLink> : thumb}
-                    <div className="min-w-0 flex-1">
-                      {href ? (
-                        <NextLink href={href} className="text-sm font-medium text-charcoal hover:text-gold-deep">{item.label}</NextLink>
-                      ) : (
-                        <p className="text-sm font-medium text-charcoal">{item.label}</p>
-                      )}
-                      <p className="mt-0.5 text-xs text-charcoal/60">{formatPrice(item.unitPrice, currency)} × {item.quantity}</p>
+                  <div key={item.id} className="py-4">
+                    <div className="flex items-center gap-4">
+                      {href ? <NextLink href={href}>{thumb}</NextLink> : thumb}
+                      <div className="min-w-0 flex-1">
+                        {href ? (
+                          <NextLink href={href} className="text-sm font-medium text-charcoal hover:text-gold-deep">{item.label}</NextLink>
+                        ) : (
+                          <p className="text-sm font-medium text-charcoal">{item.label}</p>
+                        )}
+                        <p className="mt-0.5 text-xs text-charcoal/60">{formatPrice(item.unitPrice, currency)} × {item.quantity}</p>
+                      </div>
+                      <p className="shrink-0 text-sm text-charcoal">{formatPrice(item.lineTotal, currency)}</p>
                     </div>
-                    <p className="shrink-0 text-sm text-charcoal">{formatPrice(item.lineTotal, currency)}</p>
+                    {canReview && (
+                      <div className="ml-20 mt-2">
+                        <ReviewForm gemstoneId={item.gemstoneId ?? undefined} jewelryId={item.jewelryId ?? undefined} itemName={item.label} />
+                      </div>
+                    )}
                   </div>
                 );
               })}

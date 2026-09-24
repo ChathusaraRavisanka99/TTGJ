@@ -26,6 +26,8 @@ import { HeritageSideArt } from "@/components/catalog/HeritageSideArt";
 import { StickyBuyBar } from "@/components/catalog/StickyBuyBar";
 import { getTrustBarMessages } from "@/lib/i18n-messages";
 import { getOriginContent } from "@/lib/origin-content";
+import { getApprovedReviewsForItem } from "@/lib/reviews";
+import { RatingSummaryLine, ReviewsSection } from "@/components/catalog/ReviewsSection";
 import { formatPrice } from "@/lib/utils";
 import { getMarket } from "@/lib/market";
 import { getTranslations } from "next-intl/server";
@@ -48,7 +50,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
 
   if (!gem || !gem.isPublished) notFound();
 
-  const [promotion, relatedGems, { gemstonePrices }, trustBarMessages, wishlistedIds, originContent, bundles] = await Promise.all([
+  const [promotion, relatedGems, { gemstonePrices }, trustBarMessages, wishlistedIds, originContent, bundles, reviewSummary] = await Promise.all([
     getActivePromotion({ gemstoneId: gem.id }, market),
     getRelatedGemstones(gem, 4, market),
     getActivePromotionMaps(market),
@@ -56,6 +58,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
     getWishlistedIds(session?.user?.id),
     getOriginContent(gem.originId),
     getBundlesForItem(gem.id, market),
+    getApprovedReviewsForItem({ gemstoneId: gem.id }),
   ]);
 
   const dimensions = [gem.lengthMm, gem.widthMm, gem.depthMm].filter(Boolean).join(" x ");
@@ -103,6 +106,7 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
             <h1 className="font-serif text-4xl text-charcoal">{gem.name}</h1>
             <WishlistButton gemstoneId={gem.id} initialSaved={wishlistedIds.has(gem.id)} isAuthenticated={!!session?.user} className="mt-1 shrink-0 bg-ivory-soft" />
           </div>
+          <div className="mt-1"><RatingSummaryLine summary={reviewSummary} /></div>
           <ProductPrice price={gem.price} showPrice={gem.showPrice} retailPrice={gem.retailPrice} promotion={promotion} />
           {gem.description && <p className="mt-4 leading-relaxed text-charcoal/70">{gem.description}</p>}
 
@@ -184,6 +188,8 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
           {bundles.map((bundle) => (
             <CompleteTheLookPanel key={bundle.id} bundle={bundle} currency={MARKETS[market].currency} isAuthenticated={!!session?.user} />
           ))}
+
+          <ReviewsSection summary={reviewSummary} />
 
           <TrustBar messages={trustBarMessages} variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
         </Reveal>

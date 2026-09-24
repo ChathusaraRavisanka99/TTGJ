@@ -126,6 +126,7 @@ model User {
   ownedBusinessAccount BusinessAccount?    @relation("BusinessAccountOwner")
   passwordResetTokens  PasswordResetToken[]
   wishlistItems        WishlistItem[]
+  reviews              Review[]
 
   @@index([businessAccountId])
 }
@@ -392,6 +393,7 @@ model Gemstone {
   orderItems           OrderItem[]
   wishlistItems        WishlistItem[]
   bundleItems          BundleItem[]
+  reviews              Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -487,6 +489,7 @@ model JewelryPiece {
   orderItems           OrderItem[]
   wishlistItems        WishlistItem[]
   bundleItems          BundleItem[]
+  reviews              Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -922,6 +925,50 @@ model WishlistItem {
   @@index([userId])
   @@index([gemstoneId])
   @@index([jewelryId])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// A real, verified-purchase review — never fabricated, matching this
+// app's standing rule. Eligibility is checked live in submitReview (lib/
+// reviews.ts): the reviewer must have an Order containing this exact
+// item that's reached at least PAID, re-verified at submission time
+// rather than trusted from whatever prompted it. Admin-moderated (starts
+// PENDING) before it's ever shown on the item's own product page. One
+// review per (user, item) — same "exactly one of these two" convention
+// as WishlistItem above — so a repeat purchase of the same listing
+// doesn't let someone post a second review of it.
+model Review {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  gemstoneId String?
+  gemstone   Gemstone?     @relation(fields: [gemstoneId], references: [id], onDelete: Cascade)
+  jewelryId  String?
+  jewelry    JewelryPiece? @relation(fields: [jewelryId], references: [id], onDelete: Cascade)
+
+  rating Int // 1-5
+  body   String? @db.Text
+
+  status     ReviewStatus @default(PENDING)
+  // Admin's own note on why a review was rejected, or anything else
+  // worth recording — never shown to the customer, purely an internal
+  // paper trail.
+  adminNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, gemstoneId])
+  @@unique([userId, jewelryId])
+  @@index([gemstoneId, status])
+  @@index([jewelryId, status])
+  @@index([status])
 }
 
 enum ReferralStatus {

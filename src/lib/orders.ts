@@ -12,6 +12,7 @@ import { withMarket, type Market } from "@/lib/market-shared";
 import { quoteItemLabel } from "@/lib/cart";
 import { getOrCreateChatThread } from "@/lib/chat";
 import { notifyGemDigAvailable } from "@/lib/gem-dig";
+import { notifyReviewPromptAvailable } from "@/lib/reviews";
 
 // Order lifecycle steps shared by every way an order gets settled: PayHere's
 // notify webhook (card) and an admin confirming a bank transfer landed
@@ -167,6 +168,11 @@ export async function finalizePaidOrder(orderId: string, payment: { gatewayPayme
   // skipped when the order has no real profit to draw the bonus from
   // (see isGemDigEligible in lib/gem-dig.ts).
   await notifyGemDigAvailable({ id: order.id, userId: order.userId });
+
+  // Best-effort — a paid order with nothing reviewable yet (e.g. every
+  // item already reviewed from an earlier partial payment path) is
+  // silently skipped rather than prompting for an empty list.
+  await notifyReviewPromptAvailable({ id: order.id, userId: order.userId });
 
   // Best-effort, same as every other email send in this app — a customer
   // who isn't currently signed in and checking the bell still learns their

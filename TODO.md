@@ -300,17 +300,32 @@ Ceylon Gem Hub), and jewelry-ecommerce UX benchmarks (Baymard, Branvas).
 Ordered roughly by impact/effort, not dependency — each is independent
 unless noted.*
 
-- **Product reviews (verified purchasers only)** — new `Review` model tied
-  to a specific `OrderItem` (only someone who actually bought that exact
-  piece can review it), a post-purchase "leave a review" prompt (in-app now,
-  email once the Phase 3 transactional-email work lands), admin moderation
-  before anything publishes, star rating + optional photos shown on the
-  gem/jewelry product page. Never fabricated — matches the standing
-  "real reviews only" rule. Largest item here; treat as its own sub-plan
-  rather than a quick add-on. Overlaps with the existing roadmap plan's
-  Phase 5 reviews item — this is the same feature, just re-confirmed as
-  high-priority by the research (reviews-with-photos is the single
-  most-cited trust signal in every jewelry-ecommerce benchmark found).
+- ~~**Product reviews (verified purchasers only)**~~ — done. Confirmed
+  scope with you first: eligible from `PAID` onward (not `DELIVERED` —
+  matches every other post-purchase feature already in this app, and
+  doesn't depend on delivery status being tracked consistently), v1 is
+  rating + text on product pages only (no photos, no catalog-card rating
+  badges — flagged as a larger follow-up if wanted later). New `Review`
+  model — never trusted from wherever the prompt was shown: `submitReview`
+  re-verifies live that the reviewer has a `PAID`/`SHIPPED`/`DELIVERED`
+  order containing that exact item, the same "hard recheck at the point
+  of action" discipline `resolvePointsRedemption` already follows. Starts
+  `PENDING`; only ever shown once an admin approves it from the new
+  `/admin/reviews` moderation queue. A "Leave a Review" prompt appears
+  inline on the order detail page for each purchased, not-yet-reviewed
+  item, triggered by a new in-app notification hooked into
+  `finalizePaidOrder` alongside the existing gem-dig/payment
+  notifications (no email — Phase 3's transactional email isn't built
+  yet). A gem/jewelry product page shows a "★★★★☆ 4.2 (8 reviews)"
+  summary near the title plus the full written reviews further down,
+  both omitted entirely when there's nothing approved yet rather than
+  showing a hollow "0 reviews" line. 21 new tests
+  (`lib/reviews.test.ts`, `actions/reviews.test.ts`); live-verified
+  end-to-end via Playwright against a real seeded `PAID` order — left a
+  5-star review, confirmed the "awaiting approval" message, confirmed it
+  showed `PENDING` in the admin queue, approved it, then confirmed both
+  the rating summary and the written review appeared correctly on the
+  real product page.
 - ~~**Wishlist / favorites**~~ — done. New `WishlistItem` model (exclusive
   gemstone/jewelry FK pair, same convention as `OrderItem` — not a DB
   uniqueness constraint, since a toggle button has no financial stakes if

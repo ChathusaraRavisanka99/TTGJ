@@ -348,12 +348,23 @@ unless noted.*
   with several variants can have more than one unit available at once, so
   the claim wouldn't be true there). Nothing left to build here — this
   entry was stale before it was even written.
-- **Origin/provenance content blocks** — a short "About this origin"
-  marketing block per Sri Lankan mining region, reusing the existing
-  `PageContent`/subculture-content system, surfaced on a gemstone's product
-  page based on its `Origin`. Plays to Ratnavue's actual authenticity
-  advantage (real Ceylon provenance) the way Brilliant Earth's traceability
-  storytelling does for lab/recycled sourcing.
+- ~~**Origin/provenance content blocks**~~ — done. New `lib/origin-content.ts`,
+  same `PageContent` row-per-key convention `subculture-content.ts` already
+  established (`origin:<id>` here instead of `collection:<key>`) — an
+  origin with nothing written yet (blank headline) simply shows no block,
+  same graceful-empty convention as the collection pages' optional
+  images. Admin edits it from a new `/admin/master-data/origins/[id]`
+  page (an "Edit content" link on each origins-list row), reusing the
+  existing `saveUploadedMedia` single-image pattern. Shown as a full-width
+  "About this origin" section on a gemstone's product page, between the
+  main details and the related-items slider, whenever that gem's origin
+  has a headline written. 11 new tests (`lib/origin-content.test.ts`,
+  `actions/origin-content.test.ts`); live-verified end-to-end via
+  Playwright against the real Ceylon origin row — confirmed no block
+  shows before content exists, wrote a headline/body through the real
+  admin form, confirmed it appeared correctly on a real published gem's
+  product page, then cleared it and confirmed the block disappeared
+  again.
 - ~~**Ring/jewelry size guide**~~ — done. New static `/size-guide` page
   (ring US/UK/EU/circumference table, necklace length reference, bracelet
   measuring instructions — plain reference data, no admin editing needed,

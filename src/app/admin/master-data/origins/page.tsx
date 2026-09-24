@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { createOrigin, toggleOriginActive } from "@/actions/master-data";
 import { CreateSimpleForm } from "@/components/admin/CreateSimpleForm";
@@ -39,7 +40,12 @@ export default async function AdminOriginsPage() {
                 <td className="px-4 py-3 text-charcoal/70">{o.isCeylon ? "Yes" : "No"}</td>
                 <td className="px-4 py-3 text-charcoal/70">{o.active ? "Active" : "Inactive"}</td>
                 <td className="px-4 py-3">
-                  <ToggleActiveButton active={o.active} onToggle={toggleOriginActive.bind(null, o.id)} />
+                  <div className="flex items-center gap-3">
+                    <ToggleActiveButton active={o.active} onToggle={toggleOriginActive.bind(null, o.id)} />
+                    <Link href={`/admin/master-data/origins/${o.id}`} className="text-xs text-charcoal/60 underline-offset-2 hover:text-charcoal hover:underline">
+                      Edit content
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}

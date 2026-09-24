@@ -23,6 +23,7 @@ import { CardSlider } from "@/components/ui/CardSlider";
 import { HeritageSideArt } from "@/components/catalog/HeritageSideArt";
 import { StickyBuyBar } from "@/components/catalog/StickyBuyBar";
 import { getTrustBarMessages } from "@/lib/i18n-messages";
+import { getOriginContent } from "@/lib/origin-content";
 import { formatPrice } from "@/lib/utils";
 import { getMarket } from "@/lib/market";
 import { getTranslations } from "next-intl/server";
@@ -45,12 +46,13 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
 
   if (!gem || !gem.isPublished) notFound();
 
-  const [promotion, relatedGems, { gemstonePrices }, trustBarMessages, wishlistedIds] = await Promise.all([
+  const [promotion, relatedGems, { gemstonePrices }, trustBarMessages, wishlistedIds, originContent] = await Promise.all([
     getActivePromotion({ gemstoneId: gem.id }, market),
     getRelatedGemstones(gem, 4, market),
     getActivePromotionMaps(market),
     getTrustBarMessages(),
     getWishlistedIds(session?.user?.id),
+    getOriginContent(gem.originId),
   ]);
 
   const dimensions = [gem.lengthMm, gem.widthMm, gem.depthMm].filter(Boolean).join(" x ");
@@ -179,6 +181,23 @@ export default async function GemDetailPage({ params }: PageProps<"/gems/[slug]"
           <TrustBar messages={trustBarMessages} variant="compact" className="mt-8 border-t border-border-subtle pt-6" />
         </Reveal>
       </div>
+
+      {originContent.headline && (
+        <Reveal className="mt-20 border-t border-border-subtle pt-14 sm:mt-28 sm:pt-16">
+          <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.2fr]">
+            {originContent.image && (
+              <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
+                <Image src={originContent.image} alt={originContent.imageAlt} fill sizes="(min-width: 1024px) 40vw, 90vw" className="object-cover" />
+              </div>
+            )}
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gold-deep">{t("spec.origin")}</p>
+              <h2 className="mt-2 font-serif text-3xl text-charcoal sm:text-4xl">{originContent.headline}</h2>
+              {originContent.body && <p className="mt-4 max-w-2xl leading-relaxed text-charcoal/70">{originContent.body}</p>}
+            </div>
+          </div>
+        </Reveal>
+      )}
 
       {relatedGems.length > 0 && (
         <Reveal className="mt-20 border-t border-border-subtle pt-14 sm:mt-28 sm:pt-16">

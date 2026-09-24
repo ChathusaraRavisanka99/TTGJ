@@ -191,10 +191,14 @@ shipped (`lib/analytics.ts`, `computeProfit`).*
 - **Admin approval gate** — if a customer's points redemption would cover
   more than the order's actual profit, admin must review and explicitly
   approve ("thumbs up") before the order can be processed.
-- **Customer point history on admin order/customer views** — from an
-  order or customer detail page, see that customer's past orders with
-  amount paid and points used per order, plus their current point
-  balance.
+- ~~**Customer point history on admin order/customer views**~~ — done.
+  `/admin/customers/[id]` gained an Orders list (order number, date, total,
+  status, and points used on it when any) alongside the rewards-points
+  panel that was already there. `/admin/orders/[id]` gained a Customer
+  panel (name/email, current points balance, a link to their customer
+  page) plus a "Points used" row in the order's own Total breakdown when
+  applicable. Pure display, no schema/actions needed — live-verified via
+  Playwright against a seeded order.
 
 ## Storefront UX
 

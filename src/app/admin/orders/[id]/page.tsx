@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { pollChatMessages } from "@/actions/chat";
@@ -35,7 +36,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
     prisma.order.findUnique({
       where: { id },
       include: {
-        user: { select: { email: true, name: true } },
+        user: { select: { id: true, email: true, name: true, pointsBalance: true } },
         items: {
           include: {
             gemstone: { select: { name: true, slug: true, media: { orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } } } },
@@ -58,7 +59,12 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-mono text-2xl text-charcoal">{order.orderNumber}</h1>
-          <p className="mt-1 text-sm text-charcoal/60">{order.user.name ?? order.user.email} · {order.user.email}</p>
+          <p className="mt-1 text-sm text-charcoal/60">
+            <Link href={`/admin/customers/${order.user.id}`} className="hover:text-gold-deep hover:underline">
+              {order.user.name ?? order.user.email}
+            </Link>{" "}
+            · {order.user.email}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {order.manualSale && (
@@ -132,6 +138,12 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
                 <dt className="text-charcoal/60">Payment method</dt>
                 <dd className="text-charcoal">{METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod}</dd>
               </div>
+              {order.pointsRedeemed > 0 && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-charcoal/60">Points used</dt>
+                  <dd className="text-charcoal">{order.pointsRedeemed.toLocaleString()} (−{formatPrice(order.pointsDiscountAmount, currency)})</dd>
+                </div>
+              )}
               {order.carrier && (
                 <div className="flex justify-between gap-3">
                   <dt className="text-charcoal/60">Carrier</dt>
@@ -155,6 +167,18 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
                 </div>
               )}
             </dl>
+          </div>
+
+          <div className="rounded-xl border border-border-subtle bg-surface p-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Customer</p>
+            <p className="mt-2 text-sm text-charcoal">{order.user.name ?? order.user.email}</p>
+            <p className="text-xs text-charcoal/60">{order.user.email}</p>
+            <p className="mt-2 text-sm text-charcoal/70">
+              Rewards balance: <span className="font-medium text-charcoal">{order.user.pointsBalance.toLocaleString()}</span> points
+            </p>
+            <Link href={`/admin/customers/${order.user.id}`} className="mt-1 inline-block text-xs text-gold underline">
+              View customer history
+            </Link>
           </div>
 
           <div className="rounded-xl border border-border-subtle bg-surface p-5">

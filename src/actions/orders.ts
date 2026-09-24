@@ -38,8 +38,14 @@ export async function markOrderPaid(orderId: string): Promise<ActionResult> {
 // their mind) and puts its held items back on sale.
 export async function cancelOrderAsAdmin(orderId: string): Promise<ActionResult> {
   await requireAdmin();
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { auctionId: true } });
   const { cancelled } = await cancelPendingOrder(orderId);
   if (!cancelled) return { ok: false, error: "This order isn't awaiting payment." };
+  if (order?.auctionId) {
+    await prisma.auction.updateMany({ where: { id: order.auctionId, status: "WON" }, data: { status: "EXPIRED" } });
+    revalidatePath("/admin/auctions");
+    revalidatePath("/auction");
+  }
   revalidateOrders();
   return { ok: true };
 }

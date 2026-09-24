@@ -1318,9 +1318,9 @@ enum AuctionStatus {
   ACTIVE
   CANCELLED
   WON
-  // The winner didn't pay within the 24-hour window after confirmation —
-  // set by the api/cron/auction-payment-deadline route, which also
-  // cancels the unpaid order and releases the item back to AVAILABLE.
+  // The winner missed the 24-hour payment window — set when an admin
+  // cancels the still-unpaid order of a WON auction (cancelOrderAsAdmin),
+  // which also releases the item back to AVAILABLE.
   // Distinct from CANCELLED (an admin's own decision, any time).
   EXPIRED
 }
@@ -1723,9 +1723,9 @@ model Order {
   // Set when this order was created from a confirmed auction win (see
   // ensureOrderForAuctionWin in lib/orders.ts) — same idea, fed by the
   // winning bid instead of a quoted price. A 24-hour payment window starts
-  // at Auction.wonAt; the cron job at api/cron/auction-payment-deadline
-  // cancels this order (and releases the item) if it's still
-  // PENDING_PAYMENT once that window passes.
+  // at Auction.wonAt; nothing enforces it automatically — an admin cancels
+  // this order (releasing the item) if it is still unpaid, which also
+  // marks the auction EXPIRED.
   auctionId String? @unique
   auction   Auction? @relation(fields: [auctionId], references: [id])
   // True from creation until the customer fills in shipCountry/shipCity/etc

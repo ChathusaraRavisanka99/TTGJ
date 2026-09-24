@@ -206,8 +206,8 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
               {!isStaff && order.shippingToBeArranged && <ClearShippingToBeArrangedButton orderId={order.id} />}
               {!isStaff && order.needsPointsApproval && <ClearPointsApprovalButton orderId={order.id} />}
               {order.needsShippingDetails && <p className="text-xs text-charcoal/60">Awaiting customer&apos;s shipping details.</p>}
-              {!order.needsShippingDetails && order.status === "PENDING_PAYMENT" && order.paymentMethod === "WIRE_TRANSFER" && (
-                <OrderActions orderId={order.id} orderNumber={order.orderNumber} canCancel={!isStaff} />
+              {order.status === "PENDING_PAYMENT" && order.paymentMethod === "WIRE_TRANSFER" && (!order.needsShippingDetails || !isStaff) && (
+                <OrderActions orderId={order.id} orderNumber={order.orderNumber} canCancel={!isStaff} canMarkPaid={!order.needsShippingDetails} />
               )}
               {!order.needsShippingDetails && order.status === "PAID" && <ShipOrderForm orderId={order.id} orderNumber={order.orderNumber} />}
               {order.status === "PAID" && <RevertToUnpaidForm orderId={order.id} orderNumber={order.orderNumber} />}

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { markOrderShippedByAdmin, markOrderDeliveredByAdmin, markOrderPaid, revertOrderToUnpaidAction, clearPointsApproval, clearShippingToBeArranged } from "@/actions/orders";
-import { markOrderShipped, markOrderDelivered, finalizePaidOrder, revertOrderToUnpaid } from "@/lib/orders";
+import { cancelOrderAsAdmin, markOrderShippedByAdmin, markOrderDeliveredByAdmin, markOrderPaid, revertOrderToUnpaidAction, clearPointsApproval, clearShippingToBeArranged } from "@/actions/orders";
+import { markOrderShipped, markOrderDelivered, finalizePaidOrder, revertOrderToUnpaid, cancelPendingOrder } from "@/lib/orders";
 import { requireOrderMarketAccess } from "@/lib/rbac";
 
 vi.mock("@/lib/rbac", () => ({
@@ -15,7 +15,7 @@ vi.mock("@/lib/rbac", () => ({
 vi.mock("@/lib/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/orders", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/orders")>();
-  return { ...actual, markOrderShipped: vi.fn(), markOrderDelivered: vi.fn(), finalizePaidOrder: vi.fn(), revertOrderToUnpaid: vi.fn() };
+  return { ...actual, markOrderShipped: vi.fn(), markOrderDelivered: vi.fn(), finalizePaidOrder: vi.fn(), revertOrderToUnpaid: vi.fn(), cancelPendingOrder: vi.fn() };
 });
 
 function formData(fields: Record<string, string>): FormData {
@@ -161,5 +161,38 @@ describe("revertOrderToUnpaidAction", () => {
     const result = await revertOrderToUnpaidAction("order-1", formData({ reason: "Mistake" }));
 
     expect(result).toEqual({ ok: false, error: "Only a paid order can be reverted to unpaid." });
+  });
+});
+
+describe("cancelOrderAsAdmin", () => {
+  it("marks a WON auction EXPIRED when cancelling its unpaid order", async () => {
+    prismaMock.order.findUnique.mockResolvedValue({ auctionId: "auction-1" } as never);
+    vi.mocked(cancelPendingOrder).mockResolvedValue({ cancelled: true });
+    prismaMock.auction.updateMany.mockResolvedValue({ count: 1 } as never);
+
+    const result = await cancelOrderAsAdmin("order-1");
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.auction.updateMany).toHaveBeenCalledWith({ where: { id: "auction-1", status: "WON" }, data: { status: "EXPIRED" } });
+  });
+
+  it("leaves auctions alone for an ordinary order", async () => {
+    prismaMock.order.findUnique.mockResolvedValue({ auctionId: null } as never);
+    vi.mocked(cancelPendingOrder).mockResolvedValue({ cancelled: true });
+
+    const result = await cancelOrderAsAdmin("order-1");
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.auction.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("doesn't touch the auction when the order wasn't cancellable", async () => {
+    prismaMock.order.findUnique.mockResolvedValue({ auctionId: "auction-1" } as never);
+    vi.mocked(cancelPendingOrder).mockResolvedValue({ cancelled: false });
+
+    const result = await cancelOrderAsAdmin("order-1");
+
+    expect(result.ok).toBe(false);
+    expect(prismaMock.auction.updateMany).not.toHaveBeenCalled();
   });
 });

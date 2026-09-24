@@ -175,7 +175,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                 <td className="px-4 py-3"><Badge className={STATUS_STYLES[o.status] ?? ""}>{o.status.replaceAll("_", " ")}</Badge></td>
                 <td className="px-4 py-3">
                   {o.needsShippingDetails && <p className="text-xs text-charcoal/60">Awaiting customer&apos;s shipping details</p>}
-                  {!o.needsShippingDetails && o.status === "PENDING_PAYMENT" && o.paymentMethod === "WIRE_TRANSFER" && <OrderActions orderId={o.id} orderNumber={o.orderNumber} canCancel={!isStaff} />}
+                  {o.status === "PENDING_PAYMENT" && o.paymentMethod === "WIRE_TRANSFER" && (!o.needsShippingDetails || !isStaff) && <OrderActions orderId={o.id} orderNumber={o.orderNumber} canCancel={!isStaff} canMarkPaid={!o.needsShippingDetails} />}
                   {!o.needsShippingDetails && o.status === "PAID" && <ShipOrderForm orderId={o.id} orderNumber={o.orderNumber} />}
                   {!isStaff && o.status === "SHIPPED" && (
                     <div className="space-y-1">

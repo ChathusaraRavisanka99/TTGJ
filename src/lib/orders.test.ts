@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails, recomputeJewelryAvailability, createManualSaleOrder, createOrderFromSourcing, ensureOrderForAuctionWin, expireUnpaidAuctionWins, revertOrderToUnpaid } from "@/lib/orders";
+import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails, recomputeJewelryAvailability, createManualSaleOrder, createOrderFromSourcing, ensureOrderForAuctionWin, revertOrderToUnpaid } from "@/lib/orders";
 import { sendEmail } from "@/lib/email";
 import { registerTracking } from "@/lib/track17";
 
@@ -741,41 +741,6 @@ describe("ensureOrderForAuctionWin", () => {
     const result = await ensureOrderForAuctionWin("auction-1");
 
     expect(result).toEqual({ ok: false, error: "That item is no longer available to sell — it may have already been sold or reserved elsewhere." });
-  });
-});
-
-describe("expireUnpaidAuctionWins", () => {
-  it("releases and expires only a WON auction whose order is still unpaid past the 24h deadline", async () => {
-    prismaMock.auction.findMany.mockResolvedValue([
-      { id: "auction-1", order: { id: "order-1", status: "PENDING_PAYMENT" } },
-    ] as never);
-    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, id: "order-1", status: "PENDING_PAYMENT", items: [] } as never);
-    prismaMock.order.update.mockResolvedValue({} as never);
-    prismaMock.notification.create.mockResolvedValue({} as never);
-    prismaMock.auction.update.mockResolvedValue({} as never);
-
-    const result = await expireUnpaidAuctionWins();
-
-    expect(result).toEqual({ expired: 1 });
-    expect(prismaMock.order.update).toHaveBeenCalledWith({ where: { id: "order-1" }, data: { status: "CANCELLED" } });
-    expect(prismaMock.auction.update).toHaveBeenCalledWith({ where: { id: "auction-1" }, data: { status: "EXPIRED" } });
-  });
-
-  it("queries only WON auctions past the deadline with a still-unpaid order", async () => {
-    prismaMock.auction.findMany.mockResolvedValue([]);
-
-    await expireUnpaidAuctionWins();
-
-    expect(prismaMock.auction.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { status: "WON", wonAt: { lte: expect.any(Date) }, order: { status: "PENDING_PAYMENT" } } }),
-    );
-  });
-
-  it("does nothing when there are no candidates", async () => {
-    prismaMock.auction.findMany.mockResolvedValue([]);
-    const result = await expireUnpaidAuctionWins();
-    expect(result).toEqual({ expired: 0 });
-    expect(prismaMock.order.update).not.toHaveBeenCalled();
   });
 });
 

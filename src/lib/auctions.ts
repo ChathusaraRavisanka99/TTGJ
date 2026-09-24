@@ -58,8 +58,8 @@ export const AUCTION_STATE_LABELS: Record<AuctionDisplayState, string> = {
   AWAITING_CONFIRMATION: "Closed — Awaiting Confirmation",
   WON: "Won",
   CANCELLED: "Cancelled",
-  // The confirmed winner didn't pay within the 24-hour window — see
-  // expireUnpaidAuctionWins in lib/orders.ts.
+  // The confirmed winner didn't pay within the 24-hour window — set when an
+  // admin cancels the unpaid auction order (cancelOrderAsAdmin).
   EXPIRED: "Expired — Unpaid",
 };
 

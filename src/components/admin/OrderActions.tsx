@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 // defaults true (every existing admin caller) — staff-facing callers pass
 // false, since cancelling (releasing the held item back to sale) wasn't
 // part of what staff was granted, only marking paid.
-export function OrderActions({ orderId, orderNumber, canCancel = true }: { orderId: string; orderNumber: string; canCancel?: boolean }) {
+export function OrderActions({ orderId, orderNumber, canCancel = true, canMarkPaid = true }: { orderId: string; orderNumber: string; canCancel?: boolean; canMarkPaid?: boolean }) {
   const router = useRouter();
   const { pending, error, run } = useAdminAction();
   const confirm = useConfirm();
@@ -23,15 +23,17 @@ export function OrderActions({ orderId, orderNumber, canCancel = true }: { order
   return (
     <div className="flex flex-col items-start gap-1">
       <div className="flex gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="gold"
-          disabled={pending}
-          onClick={() => handleClick(markOrderPaid, `Confirm the bank transfer for ${orderNumber} has arrived? The items will be marked sold.`)}
-        >
-          Mark paid
-        </Button>
+        {canMarkPaid && (
+          <Button
+            type="button"
+            size="sm"
+            variant="gold"
+            disabled={pending}
+            onClick={() => handleClick(markOrderPaid, `Confirm the bank transfer for ${orderNumber} has arrived? The items will be marked sold.`)}
+          >
+            Mark paid
+          </Button>
+        )}
         {canCancel && (
           <Button
             type="button"

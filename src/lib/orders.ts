@@ -740,33 +740,6 @@ export async function ensureOrderForAuctionWin(auctionId: string): Promise<Ensur
 }
 
 /**
- * Called by the scheduled cron job (api/cron/auction-payment-deadline) —
- * a WON auction whose winner hasn't paid within 24 hours of confirmation
- * loses its hold: the order is cancelled (releasing the item back to
- * AVAILABLE, same as any other cancelled wire-transfer order) and the
- * auction is marked EXPIRED rather than staying WON with a dead order
- * forever. Only touches auctions actually past the deadline with a
- * still-unpaid order — safe to call as often as the cron likes.
- */
-export async function expireUnpaidAuctionWins(): Promise<{ expired: number }> {
-  const deadline = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const candidates = await prisma.auction.findMany({
-    where: { status: "WON", wonAt: { lte: deadline }, order: { status: "PENDING_PAYMENT" } },
-    include: { order: true },
-  });
-
-  let expired = 0;
-  for (const auction of candidates) {
-    if (!auction.order) continue;
-    const { cancelled } = await cancelPendingOrder(auction.order.id);
-    if (!cancelled) continue;
-    await prisma.auction.update({ where: { id: auction.id }, data: { status: "EXPIRED" } });
-    expired += 1;
-  }
-  return { expired };
-}
-
-/**
  * Called by the customer to fill in the shipping address an accepted
  * quote/sourcing order was created without (see ensureOrderForQuote/
  * ensureOrderForSourcing) — the one time an Order's shipping fields are

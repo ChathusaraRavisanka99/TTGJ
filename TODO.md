@@ -226,6 +226,13 @@ against the shared prod DB before shipping dependent code, then
   reservation/notification, then simulated the deadline passing and
   confirmed the cron logic correctly cancelled the order and released the
   item back to stock.
+  **Update:** the hourly cron was later removed (no scheduled jobs remain,
+  so the app no longer depends on Vercel Cron). Expiry is now manual: an
+  admin cancels the unpaid auction order from `/admin/orders`, and
+  `cancelOrderAsAdmin` releases the item and marks the auction `EXPIRED`.
+  The admin Cancel button now also shows on orders still awaiting the
+  customer's shipping details (auction orders start in that state), with
+  Mark paid hidden until the address is in.
 - ~~**Countdown for a scheduled auction**~~ — done. `AuctionCountdown.tsx`
   on the public auction detail page — ticks every second (days/hours/
   minutes/seconds, animated digit transitions via `motion/react`) once an

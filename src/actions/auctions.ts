@@ -130,8 +130,9 @@ export async function cancelAuction(id: string): Promise<ActionResult> {
  * automatically win anything until an admin reviews the bid history here
  * and confirms. Confirming creates an unpaid Order for the winner (see
  * ensureOrderForAuctionWin) with a 24-hour payment window starting now
- * (wonAt) — the api/cron/auction-payment-deadline job releases the item
- * back to stock if that window passes unpaid.
+ * (wonAt). Nothing enforces the window automatically: if the winner
+ * doesn't pay, an admin cancels the order from /admin/orders, which
+ * releases the item and marks the auction EXPIRED (cancelOrderAsAdmin).
  */
 export async function confirmAuctionWinner(id: string): Promise<ActionResult> {
   await requireAdmin();

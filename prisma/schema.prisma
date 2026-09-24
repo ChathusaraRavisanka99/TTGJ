@@ -16,6 +16,16 @@ datasource db {
 enum UserRole {
   CUSTOMER
   ADMIN
+  // A restricted back-office account — see User.staffMarketScope and
+  // lib/rbac.ts's requireStaffOrAdmin. Deliberately a strict allow-list,
+  // not "ADMIN minus a few things": every admin page/action keeps its
+  // existing requireAdmin() check completely unchanged (catalog,
+  // discount codes, settings, customers, etc. all stay ADMIN-only), and
+  // STAFF is only ever additionally allowed on the specific
+  // order-management actions/pages that explicitly check for it. Adding
+  // a new admin capability never implicitly grants it to STAFF — each one
+  // has to opt in by name.
+  STAFF
 }
 
 // Orthogonal to UserRole (which only governs ADMIN vs CUSTOMER access) —
@@ -47,6 +57,13 @@ model User {
   phone         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  // Meaningful only for STAFF accounts (null otherwise) — which
+  // storefront's orders this staff member can see/act on: "intl", "lk",
+  // or "both". Set by an admin when creating/editing the staff account
+  // (actions/staff.ts). Checked on every staff-permitted order action,
+  // never just trusted from what the UI happened to show.
+  staffMarketScope String?
 
   customerType    CustomerType     @default(RETAIL)
   // Null for RETAIL accounts (approval is a wholesale-only concept).
@@ -127,6 +144,9 @@ model User {
   passwordResetTokens  PasswordResetToken[]
   wishlistItems        WishlistItem[]
   reviews              Review[]
+  // Orders this user (a staff/admin account) reverted from PAID back to
+  // unpaid — see Order.paymentReversedBy.
+  ordersReverted       Order[]              @relation("OrderPaymentReversedBy")
 
   @@index([businessAccountId])
 }
@@ -1577,6 +1597,18 @@ enum OrderStatus {
   // an order straight to DELIVERED; otherwise an admin marks it by hand.
   SHIPPED
   DELIVERED
+  // A staff/admin correction: this order was marked PAID by mistake, or
+  // the payment didn't actually land (e.g. a wire transfer bounced after
+  // being confirmed) — see lib/orders.ts's revertOrderToUnpaid. Distinct
+  // from PENDING_PAYMENT on purpose: a customer here should never see the
+  // normal "complete payment" prompt, since none of what already happened
+  // (item marked sold, points earned, discount code redeemed) is
+  // automatically undone — that's a deliberate "flag for admin review,
+  // don't auto-reverse" choice, the same one shippingToBeArranged/
+  // needsPointsApproval already make elsewhere on this model, since
+  // clawing back points a customer may have already spent could push
+  // their balance negative.
+  PAYMENT_REVERSED
 }
 
 enum PaymentMethod {
@@ -1661,6 +1693,20 @@ model Order {
   trackingUrl    String?
   shippedAt      DateTime?
   deliveredAt    DateTime?
+
+  // Set only by revertOrderToUnpaid (lib/orders.ts) — see
+  // OrderStatus.PAYMENT_REVERSED's own comment for why this is a flag,
+  // not an automatic reversal of everything finalizePaidOrder did.
+  // paymentReversedById is SetNull (not Cascade) so this audit trail
+  // survives a staff account later being deleted.
+  paymentReversedAt     DateTime?
+  paymentReversedById   String?
+  paymentReversedBy     User?     @relation("OrderPaymentReversedBy", fields: [paymentReversedById], references: [id], onDelete: SetNull)
+  // The required message a staff/admin gives when reverting — shown as a
+  // banner on the customer's own order page (see the account order detail
+  // page) and also posted into the order's chat thread, so the
+  // conversation about it naturally continues from there.
+  paymentReversedReason String?
 
   discountCodeId String?
   discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id])

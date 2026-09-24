@@ -23,6 +23,7 @@ const NAV = [
   { href: "/admin/auctions", label: "Auctions" },
   { href: "/admin/invoices", label: "Invoices" },
   { href: "/admin/customers", label: "Customers" },
+  { href: "/admin/staff", label: "Staff Accounts" },
   { href: "/admin/wholesale-applications", label: "Wholesale Applications" },
   { href: "/admin/orders", label: "Retail Orders" },
   { href: "/admin/commerce-settings", label: "Commerce Settings" },
@@ -51,9 +52,14 @@ const REWARDS = [
   { href: "/admin/business-accounts", label: "Business Accounts" },
 ];
 
+// Every STAFF account's entire admin surface — see proxy.ts/admin/layout.tsx
+// for the matching server-side enforcement; this is just what they're shown,
+// not what actually protects those other pages.
+const STAFF_NAV = [{ href: "/admin/orders", label: "Orders" }];
+
 // Shared by both the always-visible desktop sidebar and the mobile
 // full-screen drawer, so the two link lists can't drift apart.
-function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+function NavLinks({ pathname, onNavigate, role }: { pathname: string; onNavigate?: () => void; role: string }) {
   const isActive = (href: string, exact?: boolean) => (exact ? pathname === href : pathname.startsWith(href));
 
   function section(items: typeof NAV) {
@@ -70,6 +76,22 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
         {item.label}
       </Link>
     ));
+  }
+
+  if (role === "STAFF") {
+    return (
+      <>
+        <div className="space-y-1">{section(STAFF_NAV)}</div>
+        <Link href="/" onClick={onNavigate} className="mt-8 block px-3 text-xs text-ivory/40 hover:text-ivory/70">
+          ← Back to storefront
+        </Link>
+        <form action={signOutAction} className="mt-2">
+          <button type="submit" className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-ivory/40 transition-colors hover:text-ivory/70">
+            <LogOut size={13} /> Sign Out
+          </button>
+        </form>
+      </>
+    );
   }
 
   return (
@@ -111,7 +133,7 @@ function Logo({ children }: { children: ReactNode }) {
   );
 }
 
-export function AdminSidebar() {
+export function AdminSidebar({ role }: { role: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -170,7 +192,7 @@ export function AdminSidebar() {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-8">
-            <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} />
+            <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} role={role} />
           </div>
         </div>
       )}
@@ -180,7 +202,7 @@ export function AdminSidebar() {
       <nav className="hidden w-60 shrink-0 border-r border-white/10 bg-charcoal px-4 py-8 text-ivory/80 print:hidden lg:block">
         <Logo>Ratnavue Admin</Logo>
         <div className="mt-8">
-          <NavLinks pathname={pathname} />
+          <NavLinks pathname={pathname} role={role} />
         </div>
       </nav>
     </>

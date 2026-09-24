@@ -1,0 +1,101 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { prismaMock } from "@/test/prisma-mock";
+import { createStaffAccount, updateStaffMarketScope, revokeStaffAccess } from "@/actions/staff";
+import { createNotification } from "@/lib/notifications";
+import { sendEmail } from "@/lib/email";
+
+vi.mock("@/lib/rbac", () => ({ requireAdmin: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN" }) }));
+vi.mock("@/lib/notifications", () => ({ createNotification: vi.fn() }));
+vi.mock("@/lib/email", () => ({ sendEmail: vi.fn() }));
+
+function formData(fields: Record<string, string>): FormData {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(fields)) fd.set(k, v);
+  return fd;
+}
+
+const validFields = { name: "Priya Staff", email: "priya@ratnavue.example", temporaryPassword: "TempPass123", marketScope: "intl" };
+
+beforeEach(() => {
+  vi.mocked(createNotification).mockResolvedValue(undefined);
+  vi.mocked(sendEmail).mockResolvedValue({ ok: true });
+});
+
+describe("createStaffAccount", () => {
+  it("refuses an email that's already registered", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ id: "existing-user" } as never);
+    const result = await createStaffAccount(formData(validFields));
+    expect(result).toEqual({ ok: false, error: "An account with this email already exists." });
+    expect(prismaMock.user.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid market scope before touching the database", async () => {
+    const result = await createStaffAccount(formData({ ...validFields, marketScope: "everywhere" }));
+    expect(result.ok).toBe(false);
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("rejects a short temporary password", async () => {
+    const result = await createStaffAccount(formData({ ...validFields, temporaryPassword: "short" }));
+    expect(result.ok).toBe(false);
+  });
+
+  it("creates the account with role STAFF, the chosen scope, and mustChangePassword true", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({ id: "staff-1" } as never);
+
+    const result = await createStaffAccount(formData(validFields));
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ role: "STAFF", staffMarketScope: "intl", mustChangePassword: true, email: "priya@ratnavue.example" }),
+    });
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "priya@ratnavue.example" }));
+  });
+
+  it("still succeeds even if the email fails to send (best-effort)", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({ id: "staff-1" } as never);
+    vi.mocked(sendEmail).mockResolvedValue({ ok: false, error: "not configured" });
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await createStaffAccount(formData(validFields));
+
+    expect(result).toEqual({ ok: true });
+    warnSpy.mockRestore();
+  });
+});
+
+describe("updateStaffMarketScope", () => {
+  it("refuses to touch a non-staff account", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ role: "CUSTOMER" } as never);
+    const result = await updateStaffMarketScope("user-1", "both");
+    expect(result).toEqual({ ok: false, error: "Not a staff account." });
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it("updates the scope for a real staff account", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ role: "STAFF" } as never);
+    prismaMock.user.update.mockResolvedValue({} as never);
+    const result = await updateStaffMarketScope("staff-1", "both");
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.user.update).toHaveBeenCalledWith({ where: { id: "staff-1" }, data: { staffMarketScope: "both" } });
+  });
+});
+
+describe("revokeStaffAccess", () => {
+  it("refuses to touch a non-staff account", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ role: "ADMIN" } as never);
+    const result = await revokeStaffAccess("user-1");
+    expect(result).toEqual({ ok: false, error: "Not a staff account." });
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it("demotes a real staff account back to CUSTOMER and clears its scope", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ role: "STAFF" } as never);
+    prismaMock.user.update.mockResolvedValue({} as never);
+    const result = await revokeStaffAccess("staff-1");
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.user.update).toHaveBeenCalledWith({ where: { id: "staff-1" }, data: { role: "CUSTOMER", staffMarketScope: null } });
+  });
+});

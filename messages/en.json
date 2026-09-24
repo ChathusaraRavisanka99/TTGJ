@@ -255,8 +255,10 @@
       "SHIPPED": "Shipped",
       "DELIVERED": "Delivered",
       "PAYMENT_FAILED": "Payment failed",
-      "CANCELLED": "Cancelled"
+      "CANCELLED": "Cancelled",
+      "PAYMENT_REVERSED": "Needs attention"
     },
+    "paymentReversedBanner": "This order needs attention",
     "items": "{count, plural, one {# item} other {# items}}",
     "paymentInstructions": "Payment instructions",
     "checkStatus": "Check status",

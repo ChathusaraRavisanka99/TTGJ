@@ -106,7 +106,22 @@ export default auth(async (req) => {
 
   if (pathname.startsWith("/admin")) {
     if (!req.auth) return loginRedirect();
-    if (role !== "ADMIN") {
+    // STAFF is a strict allow-list, not "admin minus a few things" — every
+    // admin page NOT explicitly listed here stays ADMIN-only, the exact
+    // same protection every other admin page has always had. A new admin
+    // page never accidentally opens up to STAFF just by existing; it has
+    // to be added here by name. See lib/rbac.ts's requireStaffOrAdmin for
+    // the matching per-action check, and requireOrderMarketAccess for the
+    // per-order market scoping on top of this path-level gate.
+    const STAFF_ALLOWED_PATHS = ["/admin/orders"];
+    const staffAllowed = role === "STAFF" && STAFF_ALLOWED_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+    if (role === "STAFF" && pathname === "/admin") {
+      // No dashboard for staff (it surfaces business-wide analytics they
+      // shouldn't see) — straight to the one thing they're actually here
+      // for.
+      return NextResponse.redirect(new URL("/admin/orders", req.nextUrl.origin));
+    }
+    if (role !== "ADMIN" && !staffAllowed) {
       return NextResponse.redirect(new URL("/unauthorized", req.nextUrl.origin));
     }
   }

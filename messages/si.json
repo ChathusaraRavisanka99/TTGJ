@@ -252,8 +252,10 @@
       "PENDING_PAYMENT": "ගෙවීම බලාපොරොත්තුවෙන්",
       "PAID": "ගෙවා ඇත",
       "PAYMENT_FAILED": "ගෙවීම අසාර්ථකයි",
-      "CANCELLED": "අවලංගු කර ඇත"
+      "CANCELLED": "අවලංගු කර ඇත",
+      "PAYMENT_REVERSED": "අවධානය අවශ්‍යයි"
     },
+    "paymentReversedBanner": "මෙම ඇණවුමට අවධානය අවශ්‍යයි",
     "items": "අයිතම {count}",
     "paymentInstructions": "ගෙවීමේ උපදෙස්",
     "checkStatus": "තත්ත්වය පරීක්ෂා කරන්න",

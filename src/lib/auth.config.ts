@@ -31,13 +31,15 @@ export default {
       if (user) {
         token.role = (user as { role?: string }).role ?? "CUSTOMER";
         token.id = user.id;
+        token.staffMarketScope = (user as { staffMarketScope?: string | null }).staffMarketScope ?? null;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = (token.role as "CUSTOMER" | "ADMIN") ?? "CUSTOMER";
+        session.user.role = (token.role as "CUSTOMER" | "ADMIN" | "STAFF") ?? "CUSTOMER";
+        session.user.staffMarketScope = (token.staffMarketScope as "intl" | "lk" | "both" | null) ?? null;
       }
       return session;
     },

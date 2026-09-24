@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails, recomputeJewelryAvailability, createManualSaleOrder, createOrderFromSourcing, ensureOrderForAuctionWin, expireUnpaidAuctionWins } from "@/lib/orders";
+import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, ensureOrderForQuote, ensureOrderForSourcing, submitOrderShippingDetails, recomputeJewelryAvailability, createManualSaleOrder, createOrderFromSourcing, ensureOrderForAuctionWin, expireUnpaidAuctionWins, revertOrderToUnpaid } from "@/lib/orders";
 import { sendEmail } from "@/lib/email";
 import { registerTracking } from "@/lib/track17";
 
@@ -384,6 +384,71 @@ describe("markOrderShipped", () => {
       expect.objectContaining({ data: expect.objectContaining({ userId: "user-1", requestType: "order", requestId: "order-1" }) }),
     );
     expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "customer@example.com", subject: expect.stringContaining("shipped") }));
+  });
+});
+
+describe("revertOrderToUnpaid", () => {
+  beforeEach(() => {
+    prismaMock.order.update.mockResolvedValue({} as never);
+    prismaMock.notification.create.mockResolvedValue({} as never);
+    prismaMock.chatThread.findFirst.mockResolvedValue({ id: "thread-1" } as never);
+    prismaMock.chatMessage.create.mockResolvedValue({} as never);
+  });
+
+  it("refuses to revert an order that isn't PAID", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PENDING_PAYMENT" } as never);
+
+    const result = await revertOrderToUnpaid("order-1", { byUserId: "admin-1", byUserRole: "ADMIN", reason: "Mistake" });
+
+    expect(result).toEqual({ ok: false, error: "Only a paid order can be reverted to unpaid." });
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
+  });
+
+  it("requires a non-blank reason", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PAID" } as never);
+
+    const result = await revertOrderToUnpaid("order-1", { byUserId: "admin-1", byUserRole: "ADMIN", reason: "   " });
+
+    expect(result).toEqual({ ok: false, error: "A reason is required." });
+    expect(prismaMock.order.update).not.toHaveBeenCalled();
+  });
+
+  it("sets status PAYMENT_REVERSED with the reason and who did it, but touches nothing else", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PAID" } as never);
+
+    const result = await revertOrderToUnpaid("order-1", { byUserId: "staff-1", byUserRole: "STAFF", reason: "Bank transfer bounced" });
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.order.update).toHaveBeenCalledWith({
+      where: { id: "order-1" },
+      data: { status: "PAYMENT_REVERSED", paymentReversedAt: expect.any(Date), paymentReversedById: "staff-1", paymentReversedReason: "Bank transfer bounced" },
+    });
+    // Nothing about stock/points/discount/referral is touched — no other
+    // prisma write happens beyond the order update, the chat message, and
+    // the notification.
+    expect(prismaMock.gemstone.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.jewelryPiece.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it("posts the reason into the order's own chat thread as the acting user", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PAID" } as never);
+
+    await revertOrderToUnpaid("order-1", { byUserId: "staff-1", byUserRole: "STAFF", reason: "Bank transfer bounced" });
+
+    expect(prismaMock.chatMessage.create).toHaveBeenCalledWith({
+      data: { threadId: "thread-1", senderId: "staff-1", senderRole: "STAFF", body: "Bank transfer bounced" },
+    });
+  });
+
+  it("notifies the customer", async () => {
+    prismaMock.order.findUniqueOrThrow.mockResolvedValue({ ...baseOrder, status: "PAID" } as never);
+
+    await revertOrderToUnpaid("order-1", { byUserId: "admin-1", byUserRole: "ADMIN", reason: "Mistake" });
+
+    expect(prismaMock.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ userId: "user-1", requestType: "order", requestId: "order-1" }) }),
+    );
   });
 });
 

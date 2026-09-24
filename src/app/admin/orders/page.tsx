@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
@@ -13,7 +14,7 @@ import { getPageContent, DEFAULT_LK_PAYMENTS_CONTENT, LK_PAYMENTS_KEY } from "@/
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
-const STATUSES = ["PENDING_PAYMENT", "PAID", "SHIPPED", "DELIVERED", "PAYMENT_FAILED", "CANCELLED"];
+const STATUSES = ["PENDING_PAYMENT", "PAID", "SHIPPED", "DELIVERED", "PAYMENT_FAILED", "CANCELLED", "PAYMENT_REVERSED"];
 const PAGE_SIZE = 20;
 const METHOD_LABELS: Record<string, string> = { PAYHERE_CARD: "Card (PayHere)", WIRE_TRANSFER: "Bank transfer", COD: "Cash on delivery", CASH: "Cash" };
 
@@ -24,6 +25,7 @@ const STATUS_STYLES: Record<string, string> = {
   DELIVERED: "bg-gold-soft/25 text-charcoal border-gold/40",
   PAYMENT_FAILED: "bg-red-50 text-red-700 border-red-200",
   CANCELLED: "bg-charcoal/5 text-charcoal/60 border-charcoal/15",
+  PAYMENT_REVERSED: "bg-red-50 text-red-700 border-red-200",
 };
 
 export default async function AdminOrdersPage({ searchParams }: PageProps<"/admin/orders">) {
@@ -31,7 +33,18 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
   const status = typeof sp.status === "string" ? sp.status : undefined;
   const page = Math.max(1, Number(sp.page) || 1);
 
-  const market = sp.market === "lk" ? "lk" : sp.market === "intl" ? "intl" : undefined;
+  const session = await auth();
+  const isStaff = session?.user?.role === "STAFF";
+  const staffScope = session?.user?.staffMarketScope ?? null;
+
+  let market = sp.market === "lk" ? "lk" : sp.market === "intl" ? "intl" : undefined;
+  // A staff member never sees an order outside their own scope, regardless
+  // of what the query string asks for — re-checked here, not just hidden
+  // in the UI (see requireOrderMarketAccess for the matching per-action
+  // check on every staff-permitted mutation).
+  if (isStaff && staffScope !== "both") {
+    market = (staffScope as "intl" | "lk" | undefined) ?? "intl";
+  }
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const where = {
     ...(status ? { status: status as never } : {}),
@@ -53,28 +66,34 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
 
   return (
     <div>
-      <BackLink href="/admin" label="Back to Dashboard" />
+      {!isStaff && <BackLink href="/admin" label="Back to Dashboard" />}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-serif text-3xl text-charcoal">Retail Orders</h1>
+          <h1 className="font-serif text-3xl text-charcoal">{isStaff ? "Orders" : "Retail Orders"}</h1>
           <p className="mt-1 text-sm text-charcoal/60">
-            Direct-purchase orders: card payments settle automatically through PayHere; Sri Lanka store bank transfers
-            stay pending (their items held) until you mark them paid once the money arrives.
+            {isStaff
+              ? "Orders you're able to manage — add tracking, mark bank transfers paid, or revert a payment if something's wrong."
+              : "Direct-purchase orders: card payments settle automatically through PayHere; Sri Lanka store bank transfers stay pending (their items held) until you mark them paid once the money arrives."}
           </p>
         </div>
-        <Link href="/admin/orders/manual/new" className="shrink-0">
-          <Button type="button" variant="outline" size="sm">Record Manual Sale</Button>
-        </Link>
+        {!isStaff && (
+          <Link href="/admin/orders/manual/new" className="shrink-0">
+            <Button type="button" variant="outline" size="sm">Record Manual Sale</Button>
+          </Link>
+        )}
       </div>
 
-      <div className="mt-6">
-        <CartContentForm variant="lk" initialInstructions={lkPayments.wireTransferInstructions} />
-      </div>
+      {!isStaff && (
+        <div className="mt-6">
+          <CartContentForm variant="lk" initialInstructions={lkPayments.wireTransferInstructions} />
+        </div>
+      )}
 
       <div className="mt-6">
         <AdminSearchBox placeholder="Search by order number or email..." />
       </div>
 
+      {(!isStaff || staffScope === "both") && (
       <div className="mt-4 flex flex-wrap gap-2">
         {([["All stores", undefined], ["International", "intl"], ["Sri Lanka", "lk"]] as const).map(([label, value]) => (
           <Link
@@ -86,6 +105,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
           </Link>
         ))}
       </div>
+      )}
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Link
@@ -155,16 +175,24 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                 <td className="px-4 py-3"><Badge className={STATUS_STYLES[o.status] ?? ""}>{o.status.replaceAll("_", " ")}</Badge></td>
                 <td className="px-4 py-3">
                   {o.needsShippingDetails && <p className="text-xs text-charcoal/60">Awaiting customer&apos;s shipping details</p>}
-                  {!o.needsShippingDetails && o.status === "PENDING_PAYMENT" && o.paymentMethod === "WIRE_TRANSFER" && <OrderActions orderId={o.id} orderNumber={o.orderNumber} />}
+                  {!o.needsShippingDetails && o.status === "PENDING_PAYMENT" && o.paymentMethod === "WIRE_TRANSFER" && <OrderActions orderId={o.id} orderNumber={o.orderNumber} canCancel={!isStaff} />}
                   {!o.needsShippingDetails && o.status === "PAID" && <ShipOrderForm orderId={o.id} orderNumber={o.orderNumber} />}
-                  {o.status === "SHIPPED" && (
+                  {!isStaff && o.status === "SHIPPED" && (
                     <div className="space-y-1">
                       <p className="text-xs text-charcoal/60">{o.carrier} · {o.trackingNumber}</p>
                       <MarkDeliveredButton orderId={o.id} orderNumber={o.orderNumber} />
                     </div>
                   )}
+                  {isStaff && o.status === "SHIPPED" && (
+                    <p className="text-xs text-charcoal/60">{o.carrier} · {o.trackingNumber}</p>
+                  )}
                   {o.status === "DELIVERED" && o.deliveredAt && (
                     <p className="text-xs text-charcoal/60">Delivered {o.deliveredAt.toLocaleDateString()}</p>
+                  )}
+                  {o.status === "PAID" && (
+                    <p className="mt-1 text-xs">
+                      <Link href={`/admin/orders/${o.id}`} className="text-red-700 underline">Revert to unpaid</Link>
+                    </p>
                   )}
                 </td>
               </tr>

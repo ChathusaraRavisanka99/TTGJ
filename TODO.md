@@ -66,6 +66,71 @@ against the shared prod DB before shipping dependent code, then
 
 ## Orders & admin workflow
 
+- ~~**STAFF role for order management + communications**~~ — done. New
+  `UserRole.STAFF`, deliberately built as a strict allow-list (never
+  "ADMIN minus a few things") so a new admin capability can never
+  accidentally become available to staff just by existing — every
+  pre-existing `requireAdmin()`-gated action/page was left untouched;
+  staff was only ever additionally permitted on the small set of
+  functions explicitly switched to a new `requireStaffOrAdmin()`. Two
+  scoping decisions confirmed with you before building: a reverted
+  payment only flags the order (`Order.status = PAYMENT_REVERSED`, a
+  distinct status so the customer never sees a normal "complete payment"
+  CTA) rather than auto-undoing anything `finalizePaidOrder` already did
+  (stock sold, points earned, discount redeemed, referral paid — clawing
+  those back risks a negative points balance if already spent); nothing
+  from a reversal auto-reverses, an admin follows up by hand if truly
+  needed. One further scoping call made on my own initiative, stated but
+  not gated behind a question: staff's "communications" is order-chat
+  only (not quotes/sourcing/general support — `Order` is the only
+  request type with a clean `market` field to scope by), and the entire
+  staff admin surface is a market-filtered `/admin/orders` (list +
+  detail) only — discovered every other admin page relies purely on the
+  `proxy.ts` middleware gate with no page-level re-check, so broadly
+  admitting STAFF to `/admin/*` would have leaked read access to every
+  other admin page.
+  Admin grants access from a new `/admin/staff` page
+  (`CreateStaffAccountForm`, `StaffAccountRow`) — scoped to International,
+  Sri Lanka, or both, changeable or revocable at any time (takes effect
+  once the staff member's session naturally refreshes, the same
+  pre-existing trade-off role changes generally have in this JWT-session
+  app). Staff can mark a bank-transfer order paid, add tracking, and
+  revert a PAID order back to unpaid with a required reason
+  (`RevertToUnpaidForm` — the reason is stored on the order and also
+  posted into the order's own chat thread as a real message, so the
+  conversation naturally continues from there) — all strictly within
+  their assigned market, re-checked against the specific order's own
+  market inside every action (`requireOrderMarketAccess`), never trusted
+  from whichever list/page the request came from. Defense in depth: the
+  `proxy.ts` middleware allow-lists exactly `/admin/orders` for staff, a
+  matching re-check sits in `admin/layout.tsx`, and every staff-permitted
+  action re-verifies role + market independently.
+  Found and fixed a real bug surfaced only by live end-to-end testing
+  (never previously exercised): `RevertToUnpaidForm` originally called
+  `useConfirm()`'s dialog from inside a `<form action={handleSubmit}>`
+  callback — React 19 treats that whole call as an implicit transition,
+  and the confirm dialog's own state update never committed to the DOM
+  because it was queued inside that same pending transition, which
+  couldn't itself resolve until a dialog that never rendered was clicked.
+  A real deadlock. Fixed by switching to a plain `onClick` handler
+  building its own `FormData`, matching the pattern every other
+  `useConfirm()` call site in the codebase already uses (this same
+  `<form action>` + confirm() combination may exist elsewhere in
+  pre-existing admin components — not audited/fixed here, out of scope
+  for this item, but worth flagging if a similar confirm-dialog-never-
+  opens report comes in elsewhere).
+  9 new rbac tests, 5 new `revertOrderToUnpaid` tests, 9 new
+  `markOrderPaid`/`revertOrderToUnpaidAction` tests, 9 new staff-action
+  tests, 5 new chat market-scoping tests — 610 tests passing total.
+  Live-verified end-to-end via Playwright against the real shared DB,
+  explicitly proving the negative cases as rigorously as the positive
+  ones: staff correctly redirected to `/admin/orders` on login, sidebar
+  correctly cut down, blocked from `/admin/discount-codes` and
+  `/admin/customers`, an out-of-scope market's order absent from the
+  list and 404s on direct URL; then, within scope, marked an order paid,
+  added tracking (SHIPPED), reverted a different PAID order to unpaid
+  with a reason, replied in its chat, and confirmed the customer sees
+  both the payment-reversed banner and the reason.
 - ~~**Manual/offline sale registration**~~ — done. New `/admin/orders/manual/new`
   (`ManualSaleForm.tsx`): admin looks up an existing customer by email,
   searches AVAILABLE gems/jewelry (variant-aware) to add as line items

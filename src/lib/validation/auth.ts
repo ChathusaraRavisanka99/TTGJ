@@ -60,3 +60,14 @@ export const createWholesaleAccountSchema = z.object({
   businessName: z.string().min(1, "Business name is required").max(150),
   businessRegNo: z.string().min(1, "Business registration number is required").max(100),
 });
+
+// An admin creating a restricted back-office (STAFF) account — same
+// predefined-password/mustChangePassword convention as the wholesale
+// account above. marketScope decides which store's orders they can see
+// and act on (see User.staffMarketScope's own schema comment).
+export const createStaffAccountSchema = z.object({
+  name: z.string().min(2, "Please enter a full name").max(100),
+  email: z.string().email("Enter a valid email address"),
+  temporaryPassword: z.string().min(8, "Password must be at least 8 characters"),
+  marketScope: z.enum(["intl", "lk", "both"]),
+});

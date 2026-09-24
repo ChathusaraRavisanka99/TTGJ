@@ -252,8 +252,10 @@
       "PENDING_PAYMENT": "கட்டணம் நிலுவை",
       "PAID": "செலுத்தப்பட்டது",
       "PAYMENT_FAILED": "கட்டணம் தோல்வி",
-      "CANCELLED": "ரத்துசெய்யப்பட்டது"
+      "CANCELLED": "ரத்துசெய்யப்பட்டது",
+      "PAYMENT_REVERSED": "கவனம் தேவை"
     },
+    "paymentReversedBanner": "இந்த ஆர்டருக்கு கவனம் தேவை",
     "items": "{count} பொருட்கள்",
     "paymentInstructions": "கட்டண வழிமுறைகள்",
     "checkStatus": "நிலையைச் சரிபார்",

@@ -29,6 +29,7 @@ const STATUS_STYLES: Record<string, string> = {
   DELIVERED: "bg-gold-soft/25 text-charcoal border-gold/40",
   PAYMENT_FAILED: "bg-red-50 text-red-700 border-red-200",
   CANCELLED: "bg-charcoal/5 text-charcoal/60 border-charcoal/15",
+  PAYMENT_REVERSED: "bg-red-50 text-red-700 border-red-200",
 };
 
 const METHOD_LABELS: Record<string, string> = {
@@ -119,6 +120,13 @@ export default async function AccountOrderDetailPage({ params }: PageProps<"/acc
       {order.needsShippingDetails && (
         <div className="mt-4 rounded-xl border border-gold/40 bg-gold/10 p-5">
           <OrderShippingDetailsForm orderId={order.id} />
+        </div>
+      )}
+
+      {order.status === "PAYMENT_REVERSED" && (
+        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
+          <p className="text-sm font-medium text-red-800">{t("paymentReversedBanner")}</p>
+          {order.paymentReversedReason && <p className="mt-1 text-sm text-red-700">{order.paymentReversedReason}</p>}
         </div>
       )}
 

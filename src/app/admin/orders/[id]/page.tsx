@@ -12,6 +12,7 @@ import { MarkDeliveredButton } from "@/components/admin/MarkDeliveredButton";
 import { ClearShippingToBeArrangedButton } from "@/components/admin/ClearShippingToBeArrangedButton";
 import { ClearPointsApprovalButton } from "@/components/admin/ClearPointsApprovalButton";
 import { RefundResolutionPanel } from "@/components/admin/RefundResolutionPanel";
+import { RevertToUnpaidForm } from "@/components/admin/RevertToUnpaidForm";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { formatPrice } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const STATUS_STYLES: Record<string, string> = {
   DELIVERED: "bg-gold-soft/25 text-charcoal border-gold/40",
   PAYMENT_FAILED: "bg-red-50 text-red-700 border-red-200",
   CANCELLED: "bg-charcoal/5 text-charcoal/60 border-charcoal/15",
+  PAYMENT_REVERSED: "bg-red-50 text-red-700 border-red-200",
 };
 
 const METHOD_LABELS: Record<string, string> = {
@@ -50,6 +52,17 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
     auth(),
   ]);
   if (!order) notFound();
+
+  // Same "not found" whether the id is wrong or just out of this staff
+  // member's assigned market — never confirms an order exists but is out
+  // of scope. requireOrderMarketAccess (used by every staff-permitted
+  // action on this page) makes the same check again server-side; this is
+  // just what decides whether the page renders at all.
+  const isStaff = session?.user?.role === "STAFF";
+  if (isStaff) {
+    const scope = session!.user.staffMarketScope;
+    if (scope !== "both" && scope !== order.market) notFound();
+  }
 
   const initialMessages = await pollChatMessages("order", id);
   const currency = order.currency === "LKR" ? "LKR" : "USD";
@@ -180,26 +193,36 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
             <p className="mt-2 text-sm text-charcoal/70">
               Rewards balance: <span className="font-medium text-charcoal">{order.user.pointsBalance.toLocaleString()}</span> points
             </p>
-            <Link href={`/admin/customers/${order.user.id}`} className="mt-1 inline-block text-xs text-gold underline">
-              View customer history
-            </Link>
+            {!isStaff && (
+              <Link href={`/admin/customers/${order.user.id}`} className="mt-1 inline-block text-xs text-gold underline">
+                View customer history
+              </Link>
+            )}
           </div>
 
           <div className="rounded-xl border border-border-subtle bg-surface p-5">
             <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Actions</p>
             <div className="mt-3 space-y-3">
-              {order.shippingToBeArranged && <ClearShippingToBeArrangedButton orderId={order.id} />}
-              {order.needsPointsApproval && <ClearPointsApprovalButton orderId={order.id} />}
+              {!isStaff && order.shippingToBeArranged && <ClearShippingToBeArrangedButton orderId={order.id} />}
+              {!isStaff && order.needsPointsApproval && <ClearPointsApprovalButton orderId={order.id} />}
               {order.needsShippingDetails && <p className="text-xs text-charcoal/60">Awaiting customer&apos;s shipping details.</p>}
               {!order.needsShippingDetails && order.status === "PENDING_PAYMENT" && order.paymentMethod === "WIRE_TRANSFER" && (
-                <OrderActions orderId={order.id} orderNumber={order.orderNumber} />
+                <OrderActions orderId={order.id} orderNumber={order.orderNumber} canCancel={!isStaff} />
               )}
               {!order.needsShippingDetails && order.status === "PAID" && <ShipOrderForm orderId={order.id} orderNumber={order.orderNumber} />}
-              {order.status === "SHIPPED" && <MarkDeliveredButton orderId={order.id} orderNumber={order.orderNumber} />}
+              {order.status === "PAID" && <RevertToUnpaidForm orderId={order.id} orderNumber={order.orderNumber} />}
+              {!isStaff && order.status === "SHIPPED" && <MarkDeliveredButton orderId={order.id} orderNumber={order.orderNumber} />}
+              {order.status === "PAYMENT_REVERSED" && order.paymentReversedReason && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                  <p className="font-medium">Reverted to unpaid</p>
+                  <p className="mt-1">{order.paymentReversedReason}</p>
+                  {order.paymentReversedAt && <p className="mt-1 text-red-700/70">{order.paymentReversedAt.toLocaleString()}</p>}
+                </div>
+              )}
             </div>
           </div>
 
-          {order.refundRequest && (
+          {!isStaff && order.refundRequest && (
             <RefundResolutionPanel orderId={order.id} refund={order.refundRequest} currency={order.currency === "LKR" ? "LKR" : "USD"} />
           )}
         </div>

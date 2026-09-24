@@ -45,6 +45,7 @@ providers.push(
           email: user.email,
           image: user.image,
           role: user.role,
+          staffMarketScope: user.staffMarketScope as "intl" | "lk" | "both" | null,
         };
       },
   })
@@ -73,9 +74,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = (user as { role?: string }).role ?? "CUSTOMER";
         token.id = user.id;
+        token.staffMarketScope = (user as { staffMarketScope?: string | null }).staffMarketScope ?? null;
       } else if (token.id && !token.role) {
         const dbUser = await prisma.user.findUnique({ where: { id: token.id as string } });
         token.role = dbUser?.role ?? "CUSTOMER";
+        token.staffMarketScope = dbUser?.staffMarketScope ?? null;
       }
       return token;
     },

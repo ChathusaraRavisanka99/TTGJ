@@ -187,7 +187,7 @@ export async function initiateRetailCheckout(formData: FormData): Promise<Initia
 }
 
 export interface PublicOrderStatus {
-  status: "PENDING_PAYMENT" | "PAID" | "SHIPPED" | "DELIVERED" | "PAYMENT_FAILED" | "CANCELLED";
+  status: "PENDING_PAYMENT" | "PAID" | "SHIPPED" | "DELIVERED" | "PAYMENT_FAILED" | "CANCELLED" | "PAYMENT_REVERSED";
   orderNumber: string;
 }
 

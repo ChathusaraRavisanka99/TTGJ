@@ -18,6 +18,19 @@ import type { ActionResult } from "./auth";
 
 export type ChatTag = { type: "gemstone" | "jewelry"; id: string } | { type: "cart" } | { type: "videoCallRequest" };
 
+/** True when this session may act on the "admin side" of a conversation —
+ * a real ADMIN always, or a STAFF user whose staffMarketScope covers this
+ * specific order's market. STAFF's only allowed requestType is "order"
+ * (the only one with a clean market to check against — see the market-
+ * scoping design this whole feature is built around); every other request
+ * type stays admin-only. */
+async function isChatAdminSide(user: { role: string; staffMarketScope: string | null }, requestType: ChatRequestType, requestId: string): Promise<boolean> {
+  if (user.role === "ADMIN") return true;
+  if (user.role !== "STAFF" || requestType !== "order") return false;
+  const order = await prisma.order.findUnique({ where: { id: requestId }, select: { market: true } });
+  return !!order && (user.staffMarketScope === "both" || user.staffMarketScope === order.market);
+}
+
 function requestPaths(requestType: ChatRequestType, requestId: string): string[] {
   if (requestType === "quote") return [`/admin/quotes/${requestId}`, `/account/quotes/${requestId}`];
   if (requestType === "sourcing") return [`/admin/sourcing/${requestId}`, `/account/sourcing/${requestId}`];
@@ -47,8 +60,8 @@ export async function sendChatMessage(input: {
   const context = await getChatContext(input.requestType, input.requestId);
   if (!context) return { ok: false, error: "Request not found." };
 
-  const isAdmin = session.user.role === "ADMIN";
-  if (!isAdmin && session.user.id !== context.customerId) return { ok: false, error: "Request not found." };
+  const isAdminSide = await isChatAdminSide(session.user, input.requestType, input.requestId);
+  if (!isAdminSide && session.user.id !== context.customerId) return { ok: false, error: "Request not found." };
 
   const body = input.body.trim();
   if (!body && !input.tag) return { ok: false, error: "Write a message or attach something first." };
@@ -81,7 +94,7 @@ export async function sendChatMessage(input: {
     data: {
       threadId,
       senderId: session.user.id,
-      senderRole: isAdmin ? "ADMIN" : "CUSTOMER",
+      senderRole: isAdminSide ? session.user.role : "CUSTOMER",
       body: body || undefined,
       taggedGemstoneId,
       taggedJewelryId,
@@ -96,7 +109,7 @@ export async function sendChatMessage(input: {
   // need to be told about their own message, and the admin's equivalent
   // (an unread badge) is already covered by getUnreadCount in the
   // /admin/messages inbox.
-  if (isAdmin) {
+  if (isAdminSide) {
     const message =
       input.requestType === "quote"
         ? "You have a new reply on your quote request."
@@ -122,13 +135,13 @@ export async function markChatRead(requestType: ChatRequestType, requestId: stri
   const context = await getChatContext(requestType, requestId);
   if (!context) return { ok: false, error: "Request not found." };
 
-  const isAdmin = session.user.role === "ADMIN";
-  if (!isAdmin && session.user.id !== context.customerId) return { ok: false, error: "Request not found." };
+  const isAdminSide = await isChatAdminSide(session.user, requestType, requestId);
+  if (!isAdminSide && session.user.id !== context.customerId) return { ok: false, error: "Request not found." };
   if (!context.threadId) return { ok: true }; // nothing sent yet
 
   await prisma.chatThread.update({
     where: { id: context.threadId },
-    data: isAdmin ? { lastReadByAdminAt: new Date() } : { lastReadByCustomerAt: new Date() },
+    data: isAdminSide ? { lastReadByAdminAt: new Date() } : { lastReadByCustomerAt: new Date() },
   });
   return { ok: true };
 }
@@ -147,8 +160,8 @@ export async function pollChatMessages(requestType: ChatRequestType, requestId: 
   const context = await getChatContext(requestType, requestId);
   if (!context) return [];
 
-  const isAdmin = session.user.role === "ADMIN";
-  if (!isAdmin && session.user.id !== context.customerId) return [];
+  const isAdminSide = await isChatAdminSide(session.user, requestType, requestId);
+  if (!isAdminSide && session.user.id !== context.customerId) return [];
 
   const messages = await getChatMessages(context.threadId);
   // A tagged item's price is shown in the viewer's own storefront currency.
@@ -185,8 +198,8 @@ export async function getHasOpenCartForRequest(requestType: ChatRequestType, req
   const context = await getChatContext(requestType, requestId);
   if (!context) return false;
 
-  const isAdmin = session.user.role === "ADMIN";
-  if (!isAdmin && session.user.id !== context.customerId) return false;
+  const isAdminSide = await isChatAdminSide(session.user, requestType, requestId);
+  if (!isAdminSide && session.user.id !== context.customerId) return false;
 
   const cart = await prisma.cart.findFirst({ where: { userId: context.customerId, status: "OPEN" }, include: { items: true } });
   return !!cart && cart.items.length > 0;

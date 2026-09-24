@@ -310,6 +310,56 @@ export async function markOrderDelivered(orderId: string, options: { source: "ad
   return { ok: true };
 }
 
+/**
+ * A staff/admin correction: this order was marked PAID by mistake, or the
+ * payment didn't actually land (e.g. a wire transfer bounced after being
+ * confirmed). Deliberately a flag, not an automatic reversal — see
+ * OrderStatus.PAYMENT_REVERSED's own schema comment for why nothing that
+ * finalizePaidOrder already did (item marked sold, points earned, discount
+ * code redeemed, referral bonus paid) is undone here. Only reachable from
+ * PAID; a SHIPPED/DELIVERED order needs the refund flow instead
+ * (lib/refunds.ts), and an already-PAYMENT_REVERSED order can't be
+ * reverted twice. The required reason is stored on the order itself (for
+ * the customer-facing banner) and also posted into the order's own chat
+ * thread as the acting user, so the conversation about it naturally
+ * continues from there.
+ */
+export async function revertOrderToUnpaid(
+  orderId: string,
+  input: { byUserId: string; byUserRole: "ADMIN" | "STAFF"; reason: string },
+): Promise<{ ok: boolean; error?: string }> {
+  const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+  if (order.status !== "PAID") return { ok: false, error: "Only a paid order can be reverted to unpaid." };
+
+  const reason = input.reason.trim();
+  if (!reason) return { ok: false, error: "A reason is required." };
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      status: "PAYMENT_REVERSED",
+      paymentReversedAt: new Date(),
+      paymentReversedById: input.byUserId,
+      paymentReversedReason: reason,
+    },
+  });
+
+  const threadId = await getOrCreateChatThread("order", order.id);
+  await prisma.chatMessage.create({
+    data: { threadId, senderId: input.byUserId, senderRole: input.byUserRole, body: reason },
+  });
+
+  await createNotification({
+    userId: order.userId,
+    type: "STATUS_CHANGE",
+    message: `Order ${order.orderNumber} needs your attention — please check your order for details.`,
+    requestType: "order",
+    requestId: order.id,
+  });
+
+  return { ok: true };
+}
+
 // ---------- Orders created from an accepted quote/sourcing request ----------
 //
 // Replaces the old accept-time CartItem (see the schema comment on

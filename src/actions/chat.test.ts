@@ -45,3 +45,64 @@ describe("sendChatMessage — video call request tag", () => {
     expect(result).toEqual({ ok: true });
   });
 });
+
+describe("sendChatMessage — STAFF market scoping", () => {
+  beforeEach(() => {
+    // A different customer than the staff member sending — makes sure a
+    // pass here is really coming from the admin-side branch, not the
+    // "you own this request" one.
+    vi.mocked(getChatContext).mockResolvedValue({ threadId: "thread-1", customerId: "some-customer" } as never);
+  });
+
+  it("lets a STAFF member message an order within their own market scope", async () => {
+    vi.mocked(auth).mockResolvedValue({ user: { id: "staff-1", role: "STAFF", staffMarketScope: "intl" } } as never);
+    prismaMock.order.findUnique.mockResolvedValue({ market: "intl" } as never);
+
+    const result = await sendChatMessage({ requestType: "order", requestId: "order-1", body: "On its way!" });
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.chatMessage.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ senderId: "staff-1", senderRole: "STAFF" }),
+    });
+  });
+
+  it("lets a STAFF member scoped to 'both' message any market's order", async () => {
+    vi.mocked(auth).mockResolvedValue({ user: { id: "staff-1", role: "STAFF", staffMarketScope: "both" } } as never);
+    prismaMock.order.findUnique.mockResolvedValue({ market: "lk" } as never);
+
+    const result = await sendChatMessage({ requestType: "order", requestId: "order-1", body: "On its way!" });
+
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("refuses a STAFF member messaging an order outside their scope", async () => {
+    vi.mocked(auth).mockResolvedValue({ user: { id: "staff-1", role: "STAFF", staffMarketScope: "intl" } } as never);
+    prismaMock.order.findUnique.mockResolvedValue({ market: "lk" } as never);
+
+    const result = await sendChatMessage({ requestType: "order", requestId: "order-1", body: "On its way!" });
+
+    expect(result).toEqual({ ok: false, error: "Request not found." });
+    expect(prismaMock.chatMessage.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses a STAFF member on a quote thread — communications is order-only", async () => {
+    vi.mocked(auth).mockResolvedValue({ user: { id: "staff-1", role: "STAFF", staffMarketScope: "both" } } as never);
+
+    const result = await sendChatMessage({ requestType: "quote", requestId: "quote-1", body: "Hello" });
+
+    expect(result).toEqual({ ok: false, error: "Request not found." });
+    expect(prismaMock.order.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("sends the customer a CHAT_REPLY notification the same as an admin reply would", async () => {
+    vi.mocked(auth).mockResolvedValue({ user: { id: "staff-1", role: "STAFF", staffMarketScope: "both" } } as never);
+    prismaMock.order.findUnique.mockResolvedValue({ market: "intl" } as never);
+    const { createNotification } = await import("@/lib/notifications");
+
+    await sendChatMessage({ requestType: "order", requestId: "order-1", body: "On its way!" });
+
+    expect(createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "some-customer", type: "CHAT_REPLY", requestType: "order", requestId: "order-1" }),
+    );
+  });
+});

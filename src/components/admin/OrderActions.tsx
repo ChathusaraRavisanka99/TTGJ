@@ -6,8 +6,11 @@ import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Button } from "@/components/ui/Button";
 
-// Shown only for a bank-transfer order still awaiting payment.
-export function OrderActions({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {
+// Shown only for a bank-transfer order still awaiting payment. canCancel
+// defaults true (every existing admin caller) — staff-facing callers pass
+// false, since cancelling (releasing the held item back to sale) wasn't
+// part of what staff was granted, only marking paid.
+export function OrderActions({ orderId, orderNumber, canCancel = true }: { orderId: string; orderNumber: string; canCancel?: boolean }) {
   const router = useRouter();
   const { pending, error, run } = useAdminAction();
   const confirm = useConfirm();
@@ -29,15 +32,17 @@ export function OrderActions({ orderId, orderNumber }: { orderId: string; orderN
         >
           Mark paid
         </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={pending}
-          onClick={() => handleClick(cancelOrderAsAdmin, `Cancel ${orderNumber}? Its held items go back on sale.`)}
-        >
-          Cancel
-        </Button>
+        {canCancel && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={pending}
+            onClick={() => handleClick(cancelOrderAsAdmin, `Cancel ${orderNumber}? Its held items go back on sale.`)}
+          >
+            Cancel
+          </Button>
+        )}
       </div>
       {error && <p className="text-xs text-red-700">{error}</p>}
     </div>

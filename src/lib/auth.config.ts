@@ -32,6 +32,7 @@ export default {
         token.role = (user as { role?: string }).role ?? "CUSTOMER";
         token.id = user.id;
         token.staffMarketScope = (user as { staffMarketScope?: string | null }).staffMarketScope ?? null;
+        token.staffPermissions = (user as { staffPermissions?: string[] }).staffPermissions ?? [];
       }
       return token;
     },
@@ -40,6 +41,7 @@ export default {
         session.user.id = token.id as string;
         session.user.role = (token.role as "CUSTOMER" | "ADMIN" | "STAFF") ?? "CUSTOMER";
         session.user.staffMarketScope = (token.staffMarketScope as "intl" | "lk" | "both" | null) ?? null;
+        session.user.staffPermissions = (token.staffPermissions as string[] | undefined) ?? [];
       }
       return session;
     },

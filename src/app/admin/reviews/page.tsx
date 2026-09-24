@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { marketFilterFor } from "@/lib/rbac";
 import type { ReviewStatus } from "@prisma/client";
 import { ReviewModerationRow } from "@/components/admin/ReviewModerationRow";
 import { Badge } from "@/components/ui/Badge";
@@ -23,8 +25,15 @@ export default async function AdminReviewsPage({ searchParams }: PageProps<"/adm
   const tab = (typeof sp.status === "string" ? sp.status : "PENDING") as ReviewStatus | "ALL";
   const status = TABS.some((t) => t.value === tab) ? tab : "PENDING";
 
+  // A STAFF member scoped to one store only sees reviews of that store's items.
+  const session = await auth();
+  const market = session?.user ? marketFilterFor(session.user) : undefined;
+
   const reviews = await prisma.review.findMany({
-    where: status === "ALL" ? {} : { status },
+    where: {
+      ...(status === "ALL" ? {} : { status }),
+      ...(market ? { OR: [{ gemstone: { market } }, { jewelry: { market } }] } : {}),
+    },
     orderBy: { createdAt: "desc" },
     include: {
       user: { select: { name: true, email: true } },

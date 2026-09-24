@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
-import { createStaffAccount, updateStaffMarketScope, revokeStaffAccess } from "@/actions/staff";
+import { createStaffAccount, updateStaffMarketScope, updateStaffPermissions, revokeStaffAccess } from "@/actions/staff";
 import { createNotification } from "@/lib/notifications";
 import { sendEmail } from "@/lib/email";
 
@@ -14,7 +14,7 @@ function formData(fields: Record<string, string>): FormData {
   return fd;
 }
 
-const validFields = { name: "Priya Staff", email: "priya@ratnavue.example", temporaryPassword: "TempPass123", marketScope: "intl" };
+const validFields = { name: "Priya Staff", email: "priya@ratnavue.example", temporaryPassword: "TempPass123", marketScope: "intl", permissions: "orders" };
 
 beforeEach(() => {
   vi.mocked(createNotification).mockResolvedValue(undefined);
@@ -48,9 +48,32 @@ describe("createStaffAccount", () => {
 
     expect(result).toEqual({ ok: true });
     expect(prismaMock.user.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ role: "STAFF", staffMarketScope: "intl", mustChangePassword: true, email: "priya@ratnavue.example" }),
+      data: expect.objectContaining({ role: "STAFF", staffMarketScope: "intl", staffPermissions: ["orders"], mustChangePassword: true, email: "priya@ratnavue.example" }),
     });
     expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "priya@ratnavue.example" }));
+  });
+
+  it("requires at least one area to be switched on", async () => {
+    const fields = { ...validFields } as Record<string, string>;
+    delete fields.permissions;
+    const result = await createStaffAccount(formData(fields));
+    expect(result.ok).toBe(false);
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("drops an area name that isn't real rather than storing it", async () => {
+    const result = await createStaffAccount(formData({ ...validFields, permissions: "superuser" }));
+    expect(result.ok).toBe(false);
+    expect(prismaMock.user.create).not.toHaveBeenCalled();
+  });
+
+  it("stores several areas when several are checked", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({ id: "staff-1" } as never);
+    const fd = formData(validFields);
+    fd.append("permissions", "catalog");
+    await createStaffAccount(fd);
+    expect(prismaMock.user.create).toHaveBeenCalledWith({ data: expect.objectContaining({ staffPermissions: ["orders", "catalog"] }) });
   });
 
   it("still succeeds even if the email fails to send (best-effort)", async () => {
@@ -83,6 +106,23 @@ describe("updateStaffMarketScope", () => {
   });
 });
 
+describe("updateStaffPermissions", () => {
+  it("refuses to touch a non-staff account", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ role: "CUSTOMER" } as never);
+    const result = await updateStaffPermissions("user-1", ["orders"]);
+    expect(result).toEqual({ ok: false, error: "Not a staff account." });
+    expect(prismaMock.user.update).not.toHaveBeenCalled();
+  });
+
+  it("saves only real areas, in canonical order", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ role: "STAFF" } as never);
+    prismaMock.user.update.mockResolvedValue({} as never);
+    const result = await updateStaffPermissions("staff-1", ["reviews", "bogus", "orders"]);
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.user.update).toHaveBeenCalledWith({ where: { id: "staff-1" }, data: { staffPermissions: ["orders", "reviews"] } });
+  });
+});
+
 describe("revokeStaffAccess", () => {
   it("refuses to touch a non-staff account", async () => {
     prismaMock.user.findUnique.mockResolvedValue({ role: "ADMIN" } as never);
@@ -96,6 +136,6 @@ describe("revokeStaffAccess", () => {
     prismaMock.user.update.mockResolvedValue({} as never);
     const result = await revokeStaffAccess("staff-1");
     expect(result).toEqual({ ok: true });
-    expect(prismaMock.user.update).toHaveBeenCalledWith({ where: { id: "staff-1" }, data: { role: "CUSTOMER", staffMarketScope: null } });
+    expect(prismaMock.user.update).toHaveBeenCalledWith({ where: { id: "staff-1" }, data: { role: "CUSTOMER", staffMarketScope: null, staffPermissions: [] } });
   });
 });

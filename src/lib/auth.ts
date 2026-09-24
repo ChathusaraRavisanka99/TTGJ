@@ -46,6 +46,7 @@ providers.push(
           image: user.image,
           role: user.role,
           staffMarketScope: user.staffMarketScope as "intl" | "lk" | "both" | null,
+          staffPermissions: user.staffPermissions,
         };
       },
   })
@@ -75,10 +76,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as { role?: string }).role ?? "CUSTOMER";
         token.id = user.id;
         token.staffMarketScope = (user as { staffMarketScope?: string | null }).staffMarketScope ?? null;
-      } else if (token.id && !token.role) {
-        const dbUser = await prisma.user.findUnique({ where: { id: token.id as string } });
+        token.staffPermissions = (user as { staffPermissions?: string[] }).staffPermissions ?? [];
+      } else if (token.id && (!token.role || token.role === "STAFF")) {
+        // A STAFF token is re-read from the database every time, so an
+        // admin changing their permissions or market scope, or revoking
+        // them, takes effect on their very next request rather than
+        // whenever the token happens to be reissued. Only STAFF pays this
+        // lookup; the edge proxy still sees the sign-in copy, which is why
+        // the layout and every action re-check.
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true, staffMarketScope: true, staffPermissions: true },
+        });
         token.role = dbUser?.role ?? "CUSTOMER";
         token.staffMarketScope = dbUser?.staffMarketScope ?? null;
+        token.staffPermissions = dbUser?.staffPermissions ?? [];
       }
       return token;
     },

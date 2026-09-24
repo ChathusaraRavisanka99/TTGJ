@@ -68,7 +68,7 @@ export function Navbar({
   promotionsThemeIsDark,
   locale,
 }: {
-  user: { name?: string | null; email?: string | null } | null;
+  user: { name?: string | null; email?: string | null; hasAdminAccess?: boolean } | null;
   /** True when the seasonal promotions page is Coming Soon or Live (see
    * PageVisibility, key "seasonal") — Hidden means no link at all,
    * matching the page itself not existing publicly. */

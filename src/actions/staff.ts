@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
+import { parseStaffPermissions } from "@/lib/staff-permissions";
 import { createStaffAccountSchema } from "@/lib/validation/auth";
 import { createNotification } from "@/lib/notifications";
 import { sendEmail } from "@/lib/email";
@@ -27,16 +28,17 @@ export async function createStaffAccount(formData: FormData): Promise<ActionResu
     email: String(formData.get("email") ?? "").trim(),
     temporaryPassword: String(formData.get("temporaryPassword") ?? ""),
     marketScope: formData.get("marketScope"),
+    permissions: parseStaffPermissions(formData.getAll("permissions")),
   });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Check the details you entered." };
-  const { name, email, temporaryPassword, marketScope } = parsed.data;
+  const { name, email, temporaryPassword, marketScope, permissions } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return { ok: false, error: "An account with this email already exists." };
 
   const passwordHash = await bcrypt.hash(temporaryPassword, 12);
   const user = await prisma.user.create({
-    data: { name, email, passwordHash, role: "STAFF", staffMarketScope: marketScope, mustChangePassword: true },
+    data: { name, email, passwordHash, role: "STAFF", staffMarketScope: marketScope, staffPermissions: permissions, mustChangePassword: true },
   });
 
   const changePasswordUrl = `${process.env.AUTH_URL ?? "http://localhost:3000"}${withMarket("/account/change-password", "intl")}`;
@@ -67,6 +69,18 @@ export async function updateStaffMarketScope(userId: string, marketScope: "intl"
   return { ok: true };
 }
 
+export async function updateStaffPermissions(userId: string, permissions: string[]): Promise<ActionResult> {
+  await requireAdmin();
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  if (!user || user.role !== "STAFF") return { ok: false, error: "Not a staff account." };
+
+  // parseStaffPermissions drops anything that isn't a real area, so a
+  // tampered request can't store an arbitrary value.
+  await prisma.user.update({ where: { id: userId }, data: { staffPermissions: parseStaffPermissions(permissions) } });
+  revalidatePath("/admin/staff");
+  return { ok: true };
+}
+
 // Revokes back-office access entirely by demoting back to a normal
 // customer account, rather than deleting it — their order-chat history
 // (senderRole STAFF on past messages) and any paymentReversedBy audit
@@ -78,7 +92,7 @@ export async function revokeStaffAccess(userId: string): Promise<ActionResult> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
   if (!user || user.role !== "STAFF") return { ok: false, error: "Not a staff account." };
 
-  await prisma.user.update({ where: { id: userId }, data: { role: "CUSTOMER", staffMarketScope: null } });
+  await prisma.user.update({ where: { id: userId }, data: { role: "CUSTOMER", staffMarketScope: null, staffPermissions: [] } });
   revalidatePath("/admin/staff");
   return { ok: true };
 }

@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
 import { cancelOrderAsAdmin, markOrderShippedByAdmin, markOrderDeliveredByAdmin, markOrderPaid, revertOrderToUnpaidAction, clearPointsApproval, clearShippingToBeArranged } from "@/actions/orders";
 import { markOrderShipped, markOrderDelivered, finalizePaidOrder, revertOrderToUnpaid, cancelPendingOrder } from "@/lib/orders";
-import { requireOrderMarketAccess } from "@/lib/rbac";
+import { requireMarketAccess } from "@/lib/rbac";
 
 vi.mock("@/lib/rbac", () => ({
   requireAdmin: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN" }),
-  requireStaffOrAdmin: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN", staffMarketScope: null }),
-  requireOrderMarketAccess: vi.fn().mockResolvedValue(undefined),
+  requireStaffArea: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN", staffMarketScope: null }),
+  requireMarketAccess: vi.fn().mockResolvedValue(undefined),
 }));
 // src/actions/orders.ts also imports `auth` from "@/lib/auth" (used by
 // cancelMyWireOrder, not the functions under test here) — mocked so this
@@ -93,15 +93,15 @@ describe("markOrderPaid", () => {
     prismaMock.order.findUnique.mockResolvedValue(null);
     const result = await markOrderPaid("order-1");
     expect(result).toEqual({ ok: false, error: "Order not found." });
-    expect(requireOrderMarketAccess).not.toHaveBeenCalled();
+    expect(requireMarketAccess).not.toHaveBeenCalled();
   });
 
   it("re-checks market access against the order's own market before doing anything else", async () => {
     prismaMock.order.findUnique.mockResolvedValue({ status: "PENDING_PAYMENT", paymentMethod: "WIRE_TRANSFER", needsShippingDetails: false, market: "lk" } as never);
-    vi.mocked(requireOrderMarketAccess).mockRejectedValueOnce(new Error("FORBIDDEN"));
+    vi.mocked(requireMarketAccess).mockRejectedValueOnce(new Error("FORBIDDEN"));
 
     await expect(markOrderPaid("order-1")).rejects.toThrow("FORBIDDEN");
-    expect(requireOrderMarketAccess).toHaveBeenCalledWith({ id: "admin-1", role: "ADMIN", staffMarketScope: null }, "lk");
+    expect(requireMarketAccess).toHaveBeenCalledWith({ id: "admin-1", role: "ADMIN", staffMarketScope: null }, "lk");
     expect(finalizePaidOrder).not.toHaveBeenCalled();
   });
 
@@ -131,10 +131,10 @@ describe("revertOrderToUnpaidAction", () => {
 
   it("re-checks market access against the order's own market", async () => {
     prismaMock.order.findUnique.mockResolvedValue({ market: "lk" } as never);
-    vi.mocked(requireOrderMarketAccess).mockRejectedValueOnce(new Error("FORBIDDEN"));
+    vi.mocked(requireMarketAccess).mockRejectedValueOnce(new Error("FORBIDDEN"));
 
     await expect(revertOrderToUnpaidAction("order-1", formData({ reason: "Mistake" }))).rejects.toThrow("FORBIDDEN");
-    expect(requireOrderMarketAccess).toHaveBeenCalledWith({ id: "admin-1", role: "ADMIN", staffMarketScope: null }, "lk");
+    expect(requireMarketAccess).toHaveBeenCalledWith({ id: "admin-1", role: "ADMIN", staffMarketScope: null }, "lk");
   });
 
   it("rejects a blank reason before calling the lifecycle function", async () => {

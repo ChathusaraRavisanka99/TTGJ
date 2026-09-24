@@ -13,6 +13,7 @@ import { SiteChrome } from "@/components/layout/SiteChrome";
 import { MainWrapper } from "@/components/layout/MainWrapper";
 import { getFooterMessages, getTrustBarMessages } from "@/lib/i18n-messages";
 import { getMarket } from "@/lib/market";
+import { hasAdminPortalAccess } from "@/lib/admin-access";
 import { APP_PATH_HEADER, withMarket } from "@/lib/market-shared";
 import { MarketProvider } from "@/components/providers/MarketProvider";
 import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
@@ -115,7 +116,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <NextIntlClientProvider>
           <ConfirmProvider>
             <SiteChrome
-              user={session?.user ?? null}
+              user={session?.user ? { name: session.user.name, email: session.user.email, hasAdminAccess: hasAdminPortalAccess(session.user) } : null}
               footerMessages={footerMessages}
               trustBarMessages={trustBarMessages}
               showPromotions={visibilities[seasonalKey] !== "HIDDEN"}

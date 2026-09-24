@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/rbac";
+import { requireAdmin, requireStaffArea, requireMarketAccess } from "@/lib/rbac";
 import { deleteUploadedFile, createDirectUpload, inspectDirectUpload } from "@/lib/media";
 import type { ActionResult } from "./auth";
 
@@ -14,7 +14,7 @@ export async function requestProductMediaUpload(input: {
   contentType: string;
   size: number;
 }): Promise<{ ok: true; key: string; uploadUrl: string } | { ok: false; error: string }> {
-  await requireAdmin();
+  await requireStaffArea("catalog");
   try {
     const { key, uploadUrl } = await createDirectUpload(input.contentType, input.size);
     return { ok: true, key, uploadUrl };
@@ -31,11 +31,17 @@ export async function registerProductMedia(input: {
   jewelryId?: string;
   altText?: string;
 }): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("catalog");
 
   const { gemstoneId, jewelryId } = input;
   const altText = (input.altText ?? "").slice(0, 200);
   if (!gemstoneId && !jewelryId) return { ok: false, error: "Missing product reference." };
+
+  const target = gemstoneId
+    ? await prisma.gemstone.findUnique({ where: { id: gemstoneId }, select: { market: true } })
+    : await prisma.jewelryPiece.findUnique({ where: { id: jewelryId! }, select: { market: true } });
+  if (!target) return { ok: false, error: "Product not found." };
+  await requireMarketAccess(user, target.market);
 
   try {
     const saved = await inspectDirectUpload(input.key);
@@ -83,10 +89,16 @@ export async function deleteProductMedia(mediaId: string): Promise<ActionResult>
 }
 
 export async function setPrimaryMedia(mediaId: string): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("catalog");
 
-  const media = await prisma.mediaAsset.findUnique({ where: { id: mediaId } });
+  const media = await prisma.mediaAsset.findUnique({
+    where: { id: mediaId },
+    include: { gemstone: { select: { market: true } }, jewelry: { select: { market: true } } },
+  });
   if (!media) return { ok: false, error: "Media not found." };
+  const market = media.gemstone?.market ?? media.jewelry?.market;
+  if (!market) return { ok: false, error: "Media not found." };
+  await requireMarketAccess(user, market);
 
   await prisma.$transaction([
     prisma.mediaAsset.updateMany({

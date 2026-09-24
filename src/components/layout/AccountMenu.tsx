@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "@/components/ui/MarketLink";
+import PlainLink from "next/link";
 import { useAppPathname } from "@/components/providers/MarketProvider";
 import { User, ChevronDown } from "lucide-react";
 import { signOutAction } from "@/actions/auth";
@@ -27,7 +28,7 @@ export function AccountMenu({
   transparent,
   compact = false,
 }: {
-  user: { name?: string | null };
+  user: { name?: string | null; hasAdminAccess?: boolean };
   transparent: boolean;
   /** Icon only, no name/chevron — for the mobile icon row, which is
    * already packing cart/bell/store/language/hamburger into one line
@@ -98,6 +99,17 @@ export function AccountMenu({
               </Link>
             );
           })}
+          {user.hasAdminAccess && (
+            // Admin isn't part of either storefront, so this is a plain
+            // (non-market-prefixed) link.
+            <PlainLink
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="mt-1 block border-t border-border-subtle px-4 py-2 pt-3 text-sm font-medium text-charcoal hover:bg-ivory-soft"
+            >
+              Admin Portal
+            </PlainLink>
+          )}
           <form action={signOutAction} className="border-t border-border-subtle mt-1 pt-1">
             <button type="submit" className="block w-full px-4 py-2 text-left text-sm text-charcoal/60 hover:bg-ivory-soft hover:text-charcoal">
               Sign Out

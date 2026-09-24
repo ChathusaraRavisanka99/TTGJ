@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 import authConfig from "@/lib/auth.config";
+import { staffAreaForPath } from "@/lib/staff-permissions";
 import { APP_PATH_HEADER, LK_PREFIX, MARKET_HEADER, isLkPath, stripMarket } from "@/lib/market-shared";
 
 // Deliberately NOT `import { auth } from "@/lib/auth"` — that config pulls in
@@ -106,21 +107,15 @@ export default auth(async (req) => {
 
   if (pathname.startsWith("/admin")) {
     if (!req.auth) return loginRedirect();
-    // STAFF is a strict allow-list, not "admin minus a few things" — every
-    // admin page NOT explicitly listed here stays ADMIN-only, the exact
-    // same protection every other admin page has always had. A new admin
-    // page never accidentally opens up to STAFF just by existing; it has
-    // to be added here by name. See lib/rbac.ts's requireStaffOrAdmin for
-    // the matching per-action check, and requireOrderMarketAccess for the
-    // per-order market scoping on top of this path-level gate.
-    const STAFF_ALLOWED_PATHS = ["/admin/orders"];
-    const staffAllowed = role === "STAFF" && STAFF_ALLOWED_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
-    if (role === "STAFF" && pathname === "/admin") {
-      // No dashboard for staff (it surfaces business-wide analytics they
-      // shouldn't see) — straight to the one thing they're actually here
-      // for.
-      return NextResponse.redirect(new URL("/admin/orders", req.nextUrl.origin));
-    }
+    // STAFF is a strict allow-list, not "admin minus a few things" — only
+    // pages that belong to one of the per-account areas in
+    // lib/staff-permissions.ts are ever reachable, and every other admin
+    // page stays ADMIN-only, the exact same protection it has always had.
+    // This edge check only sees the permissions copied into the token at
+    // sign-in (which can be stale), so it just gates "could this ever be a
+    // staff page"; the precise per-account check happens in
+    // admin/layout.tsx and again in every action, against fresh data.
+    const staffAllowed = role === "STAFF" && (pathname === "/admin" || staffAreaForPath(pathname) !== null);
     if (role !== "ADMIN" && !staffAllowed) {
       return NextResponse.redirect(new URL("/unauthorized", req.nextUrl.origin));
     }

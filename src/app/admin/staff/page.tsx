@@ -7,7 +7,7 @@ export default async function AdminStaffPage() {
   const staff = await prisma.user.findMany({
     where: { role: "STAFF" },
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, email: true, staffMarketScope: true, createdAt: true },
+    select: { id: true, name: true, email: true, staffMarketScope: true, staffPermissions: true, createdAt: true },
   });
 
   return (
@@ -17,10 +17,10 @@ export default async function AdminStaffPage() {
         <div>
           <h1 className="font-serif text-3xl text-charcoal">Staff Accounts</h1>
           <p className="mt-1 text-sm text-charcoal/60">
-            A staff account is restricted to order management only — communications on an order&apos;s own chat
-            thread, adding tracking, marking bank transfers paid, and reverting a mistaken payment. Nothing else in
-            the admin area (catalog, discount codes, settings, customers, other requests) is ever available to a
-            staff account, regardless of store access.
+            Choose exactly which parts of the back office each staff member gets. Orders, gems, jewelry and
+            reviews are also limited to the store(s) you pick. Nothing outside the areas you switch on
+            (discount codes, settings, customers, analytics, deleting items, cost prices…) is ever available to a
+            staff account. Changes apply on their next page load.
           </p>
         </div>
         <div className="shrink-0"><CreateStaffAccountForm /></div>
@@ -33,7 +33,7 @@ export default async function AdminStaffPage() {
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Created</th>
-              <th className="px-4 py-3">Store Access</th>
+              <th className="px-4 py-3">Access</th>
             </tr>
           </thead>
           <tbody>
@@ -43,7 +43,7 @@ export default async function AdminStaffPage() {
                 <td className="px-4 py-3 text-charcoal/70">{s.email}</td>
                 <td className="px-4 py-3 text-charcoal/70">{s.createdAt.toLocaleDateString()}</td>
                 <td className="px-4 py-3">
-                  <StaffAccountRow userId={s.id} marketScope={s.staffMarketScope ?? "intl"} name={s.name ?? s.email} />
+                  <StaffAccountRow userId={s.id} marketScope={s.staffMarketScope ?? "intl"} permissions={s.staffPermissions} name={s.name ?? s.email} />
                 </td>
               </tr>
             ))}

@@ -6,10 +6,11 @@ import { createStaffAccount } from "@/actions/staff";
 import { Input, Label, Select, FieldError, FieldHint } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { STAFF_AREAS, STAFF_AREA_LABELS } from "@/lib/staff-permissions";
 
 /** Registers a restricted back-office (STAFF) account directly with a
  * predefined password — same pattern as CreateWholesaleAccountForm.
- * marketScope decides which store's orders they'll be able to see/act on
+ * The permission checkboxes pick which areas they get; marketScope decides which store
  * (see User.staffMarketScope's own schema comment); nothing else in the
  * admin back office is ever available to a STAFF account, regardless of
  * scope. */
@@ -57,8 +58,22 @@ export function CreateStaffAccountForm() {
               <option value="lk">Sri Lanka only</option>
               <option value="both">Both stores</option>
             </Select>
-            <FieldHint>Which store&apos;s orders they can see and act on — nothing else in the admin area is ever available to a staff account.</FieldHint>
+            <FieldHint>Which store&apos;s orders, gems, jewelry and reviews they can see and change.</FieldHint>
           </div>
+          <fieldset>
+            <legend className="mb-1 text-sm font-medium text-charcoal">What they can manage</legend>
+            <div className="space-y-2">
+              {STAFF_AREAS.map((area) => (
+                <label key={area} className="flex items-start gap-2 text-sm text-charcoal/80">
+                  <input type="checkbox" name="permissions" value={area} defaultChecked={area === "orders"} className="mt-1 accent-gold" />
+                  <span>
+                    <span className="font-medium text-charcoal">{STAFF_AREA_LABELS[area].label}</span>
+                    <span className="block text-xs text-charcoal/55">{STAFF_AREA_LABELS[area].description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <div>
             <Label htmlFor="sa-temporaryPassword">Temporary password</Label>
             <Input id="sa-temporaryPassword" name="temporaryPassword" minLength={8} required />

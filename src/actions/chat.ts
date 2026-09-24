@@ -19,14 +19,15 @@ import type { ActionResult } from "./auth";
 export type ChatTag = { type: "gemstone" | "jewelry"; id: string } | { type: "cart" } | { type: "videoCallRequest" };
 
 /** True when this session may act on the "admin side" of a conversation —
- * a real ADMIN always, or a STAFF user whose staffMarketScope covers this
- * specific order's market. STAFF's only allowed requestType is "order"
- * (the only one with a clean market to check against — see the market-
- * scoping design this whole feature is built around); every other request
- * type stays admin-only. */
-async function isChatAdminSide(user: { role: string; staffMarketScope: string | null }, requestType: ChatRequestType, requestId: string): Promise<boolean> {
+ * a real ADMIN always. A STAFF user needs the matching area switched on:
+ * "orders" for an order thread (and then only within their market scope,
+ * since an order has a store), "requests" for quote, sourcing and general
+ * support threads (which have no store, so no market check applies). */
+async function isChatAdminSide(user: { role: string; staffMarketScope: string | null; staffPermissions: string[] }, requestType: ChatRequestType, requestId: string): Promise<boolean> {
   if (user.role === "ADMIN") return true;
-  if (user.role !== "STAFF" || requestType !== "order") return false;
+  if (user.role !== "STAFF") return false;
+  if (requestType !== "order") return user.staffPermissions.includes("requests");
+  if (!user.staffPermissions.includes("orders")) return false;
   const order = await prisma.order.findUnique({ where: { id: requestId }, select: { market: true } });
   return !!order && (user.staffMarketScope === "both" || user.staffMarketScope === order.market);
 }

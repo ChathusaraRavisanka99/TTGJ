@@ -8,7 +8,11 @@ function formData(fields: Record<string, string>): FormData {
   return fd;
 }
 
-vi.mock("@/lib/rbac", () => ({ requireAdmin: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN" }) }));
+vi.mock("@/lib/rbac", () => ({
+  requireAdmin: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN" }),
+  requireStaffArea: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN", staffMarketScope: null }),
+  requireMarketAccess: vi.fn().mockResolvedValue(undefined),
+}));
 
 describe("deleteGemstone", () => {
   it("refuses to delete a gemstone with paid order history", async () => {
@@ -85,6 +89,7 @@ describe("bulkSetCatalogPublished", () => {
   });
 
   it("hides a batch of gemstones from the storefront", async () => {
+    prismaMock.gemstone.findMany.mockResolvedValue([{ market: "intl" }, { market: "intl" }] as never);
     prismaMock.gemstone.updateMany.mockResolvedValue({ count: 2 });
 
     const result = await bulkSetCatalogPublished("gemstone", ["gem-1", "gem-2"], false);
@@ -95,6 +100,7 @@ describe("bulkSetCatalogPublished", () => {
   });
 
   it("publishes a batch of jewelry pieces", async () => {
+    prismaMock.jewelryPiece.findMany.mockResolvedValue([{ market: "intl" }, { market: "intl" }, { market: "intl" }] as never);
     prismaMock.jewelryPiece.updateMany.mockResolvedValue({ count: 3 });
 
     const result = await bulkSetCatalogPublished("jewelry", ["jew-1", "jew-2", "jew-3"], true);
@@ -155,7 +161,7 @@ describe("createJewelryVariant", () => {
 
 describe("updateJewelryVariant", () => {
   it("clears a previously-set price override when the field is submitted blank", async () => {
-    prismaMock.jewelryPiece.findUnique.mockResolvedValue({ market: "intl" } as never);
+    prismaMock.jewelryVariant.findUnique.mockResolvedValue({ jewelry: { id: "jew-1", market: "intl" } } as never);
     prismaMock.jewelryVariant.update.mockResolvedValue({} as never);
     prismaMock.jewelryVariant.count.mockResolvedValue(1);
     prismaMock.jewelryPiece.update.mockResolvedValue({} as never);
@@ -170,7 +176,7 @@ describe("updateJewelryVariant", () => {
   });
 
   it("recomputes the parent piece's availability after a stock-status edit", async () => {
-    prismaMock.jewelryPiece.findUnique.mockResolvedValue({ market: "intl" } as never);
+    prismaMock.jewelryVariant.findUnique.mockResolvedValue({ jewelry: { id: "jew-1", market: "intl" } } as never);
     prismaMock.jewelryVariant.update.mockResolvedValue({} as never);
     prismaMock.jewelryVariant.count.mockResolvedValue(0);
     prismaMock.jewelryPiece.update.mockResolvedValue({} as never);

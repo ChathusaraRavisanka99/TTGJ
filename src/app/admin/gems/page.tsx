@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { hasStaffArea, marketFilterFor } from "@/lib/rbac";
 import { toggleGemstoneFeatured } from "@/actions/catalog-admin";
 import { StockBadge, Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +19,14 @@ const PAGE_SIZE = 20;
 export default async function AdminGemsPage({ searchParams }: PageProps<"/admin/gems">) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
-  const store = parseStoreFilter(sp.market);
+  const session = await auth();
+  const user = session?.user;
+  if (!user || !hasStaffArea(user, "catalog")) notFound();
+  const staff = user.role === "STAFF";
+  // A STAFF member scoped to one store only ever sees that store's items,
+  // whatever the query string asks for.
+  const scopedMarket = marketFilterFor(user);
+  const store = scopedMarket ?? parseStoreFilter(sp.market);
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const where = {
     ...(store === "all" ? {} : { market: store }),
@@ -37,16 +47,20 @@ export default async function AdminGemsPage({ searchParams }: PageProps<"/admin/
 
   return (
     <div>
-      <BackLink href="/admin" label="Back to Dashboard" />
+      {!staff && <BackLink href="/admin" label="Back to Dashboard" />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-3xl text-charcoal">Gemstones</h1>
         <div className="flex gap-2">
-          <Link href="/admin/gems/new">
-            <Button variant="gold">Add International Gemstone</Button>
-          </Link>
-          <Link href="/admin/gems/new?market=lk">
-            <Button variant="outline">Add Sri Lanka Gemstone</Button>
-          </Link>
+          {(!scopedMarket || scopedMarket === "intl") && (
+            <Link href="/admin/gems/new">
+              <Button variant="gold">Add International Gemstone</Button>
+            </Link>
+          )}
+          {(!scopedMarket || scopedMarket === "lk") && (
+            <Link href="/admin/gems/new?market=lk">
+              <Button variant="outline">Add Sri Lanka Gemstone</Button>
+            </Link>
+          )}
         </div>
       </div>
       <p className="mt-1 text-sm text-charcoal/60">
@@ -61,7 +75,7 @@ export default async function AdminGemsPage({ searchParams }: PageProps<"/admin/
         <AdminSearchBox placeholder="Search gemstones by name..." />
       </div>
 
-      <StoreFilterTabs basePath="/admin/gems" current={store} q={q} />
+      {!scopedMarket && <StoreFilterTabs basePath="/admin/gems" current={store} q={q} />}
 
       <CatalogBulkSelectionProvider>
         <CatalogBulkToolbar kind="gemstone" />
@@ -92,11 +106,13 @@ export default async function AdminGemsPage({ searchParams }: PageProps<"/admin/
                     <CatalogRowCheckbox id={gem.id} />
                   </td>
                   <td className="px-4 py-3">
-                    <ToggleFeaturedButton
-                      featured={gem.isFeatured}
-                      store={gem.market === "lk" ? "Sri Lanka home page" : "homepage"}
-                      onToggle={toggleGemstoneFeatured.bind(null, gem.id)}
-                    />
+                    {!staff && (
+                      <ToggleFeaturedButton
+                        featured={gem.isFeatured}
+                        store={gem.market === "lk" ? "Sri Lanka home page" : "homepage"}
+                        onToggle={toggleGemstoneFeatured.bind(null, gem.id)}
+                      />
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <Link href={`/admin/gems/${gem.id}`} className="text-charcoal hover:text-gold">{gem.name}</Link>

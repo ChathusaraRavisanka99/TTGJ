@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
-import { requireAdmin } from "@/lib/rbac";
+import { requireStaffArea, requireMarketAccess } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { submitReview } from "@/lib/reviews";
 import type { ActionResult } from "./auth";
@@ -23,8 +23,24 @@ export async function submitReviewAction(input: { gemstoneId?: string; jewelryId
   return { ok: true };
 }
 
+// A review belongs to a gem or jewelry piece, and so to that piece's store;
+// STAFF may only moderate reviews of items in their own market scope.
+async function requireReviewAccess(id: string) {
+  const user = await requireStaffArea("reviews");
+  const review = await prisma.review.findUnique({
+    where: { id },
+    select: { gemstone: { select: { market: true } }, jewelry: { select: { market: true } } },
+  });
+  if (!review) return { ok: false as const, error: "Review not found." };
+  const market = review.gemstone?.market ?? review.jewelry?.market;
+  if (!market) return { ok: false as const, error: "Review not found." };
+  await requireMarketAccess(user, market);
+  return { ok: true as const };
+}
+
 export async function approveReview(id: string): Promise<ActionResult> {
-  await requireAdmin();
+  const access = await requireReviewAccess(id);
+  if (!access.ok) return access;
   const review = await prisma.review.update({ where: { id }, data: { status: "APPROVED" } });
   revalidatePath("/admin/reviews");
   if (review.gemstoneId) revalidatePath("/gems", "layout");
@@ -33,7 +49,8 @@ export async function approveReview(id: string): Promise<ActionResult> {
 }
 
 export async function rejectReview(id: string, adminNotes: string): Promise<ActionResult> {
-  await requireAdmin();
+  const access = await requireReviewAccess(id);
+  if (!access.ok) return access;
   await prisma.review.update({ where: { id }, data: { status: "REJECTED", adminNotes: adminNotes.trim() || null } });
   revalidatePath("/admin/reviews");
   return { ok: true };

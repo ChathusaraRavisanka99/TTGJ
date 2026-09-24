@@ -13,6 +13,7 @@ import type { FooterMessages, TrustBarMessages } from "@/lib/i18n-messages";
 interface SiteChromeUser {
   name?: string | null;
   email?: string | null;
+  hasAdminAccess?: boolean;
 }
 
 /**

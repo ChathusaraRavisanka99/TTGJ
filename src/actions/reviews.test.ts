@@ -4,7 +4,10 @@ import { submitReviewAction, approveReview, rejectReview } from "@/actions/revie
 import { submitReview } from "@/lib/reviews";
 
 vi.mock("@/lib/auth", () => ({ auth: vi.fn() }));
-vi.mock("@/lib/rbac", () => ({ requireAdmin: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN" }) }));
+vi.mock("@/lib/rbac", () => ({
+  requireStaffArea: vi.fn().mockResolvedValue({ id: "admin-1", role: "ADMIN", staffMarketScope: null }),
+  requireMarketAccess: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("@/lib/reviews", () => ({ submitReview: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
@@ -46,6 +49,7 @@ describe("submitReviewAction", () => {
 
 describe("approveReview", () => {
   it("sets the review's status to APPROVED", async () => {
+    prismaMock.review.findUnique.mockResolvedValue({ gemstone: { market: "intl" }, jewelry: null } as never);
     prismaMock.review.update.mockResolvedValue({ id: "review-1", gemstoneId: "gem-1", jewelryId: null } as never);
     const result = await approveReview("review-1");
     expect(result).toEqual({ ok: true });
@@ -55,6 +59,7 @@ describe("approveReview", () => {
 
 describe("rejectReview", () => {
   it("sets the review's status to REJECTED with the admin's notes", async () => {
+    prismaMock.review.findUnique.mockResolvedValue({ gemstone: { market: "intl" }, jewelry: null } as never);
     prismaMock.review.update.mockResolvedValue({} as never);
     const result = await rejectReview("review-1", "Looks fabricated");
     expect(result).toEqual({ ok: true });
@@ -62,6 +67,7 @@ describe("rejectReview", () => {
   });
 
   it("stores null for blank notes rather than an empty string", async () => {
+    prismaMock.review.findUnique.mockResolvedValue({ gemstone: { market: "intl" }, jewelry: null } as never);
     prismaMock.review.update.mockResolvedValue({} as never);
     await rejectReview("review-1", "   ");
     expect(prismaMock.review.update).toHaveBeenCalledWith({ where: { id: "review-1" }, data: { status: "REJECTED", adminNotes: null } });

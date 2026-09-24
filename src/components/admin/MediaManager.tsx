@@ -20,7 +20,7 @@ interface MediaItem {
   isPrimary: boolean;
 }
 
-export function MediaManager({ media, gemstoneId, jewelryId }: { media: MediaItem[]; gemstoneId?: string; jewelryId?: string }) {
+export function MediaManager({ media, gemstoneId, jewelryId, canDelete = true }: { media: MediaItem[]; gemstoneId?: string; jewelryId?: string; canDelete?: boolean }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +99,7 @@ export function MediaManager({ media, gemstoneId, jewelryId }: { media: MediaIte
               >
                 <Star size={14} fill={item.isPrimary ? "currentColor" : "none"} />
               </button>
+              {canDelete && (
               <button
                 type="button"
                 title="Delete"
@@ -107,6 +108,7 @@ export function MediaManager({ media, gemstoneId, jewelryId }: { media: MediaIte
               >
                 <Trash2 size={14} />
               </button>
+              )}
             </div>
           </div>
         ))}

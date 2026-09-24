@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/rbac";
+import { requireAdmin, requireStaffArea, requireMarketAccess } from "@/lib/rbac";
 import { slugify } from "@/lib/utils";
 import { saveCertificateFile, deleteUploadedFile } from "@/lib/media";
 import { gemstoneSchema, jewelrySchema, jewelryVariantSchema } from "@/lib/validation/catalog";
@@ -25,13 +25,51 @@ async function uniqueSlug(base: string, check: (slug: string) => Promise<boolean
   return slug;
 }
 
-export async function createGemstone(formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+// Everything below that a STAFF member with the "catalog" area may do goes
+// through requireStaffArea("catalog") plus a market check against the item's
+// own store. What STAFF may never do, on top of the ADMIN-only actions left
+// untouched (delete, feature on the homepage, remove media/certificate):
+//  - see or set a cost price;
+//  - change any price of an item that already exists (a new listing needs a
+//    price to be valid, so they may set one when creating it).
+type CatalogUser = { role: string; staffMarketScope: string | null };
+const isStaffUser = (user: CatalogUser) => user.role === "STAFF";
 
-  const parsed = gemstoneSchema.safeParse(formToObject(formData));
+// The listing's existing money/feature fields, as the strings a form would
+// have submitted, for overwriting whatever a STAFF request sent.
+function lockedFormFields(existing: {
+  price: number | null;
+  showPrice: boolean;
+  retailPrice: number | null;
+  costPrice: number | null;
+  lkrRetailPrice: number | null;
+  lkrPrice: number | null;
+  isFeatured: boolean;
+}): Record<string, string> {
+  const out: Record<string, string> = { showPrice: String(existing.showPrice), isFeatured: String(existing.isFeatured) };
+  for (const key of ["price", "retailPrice", "costPrice", "lkrRetailPrice", "lkrPrice"] as const) {
+    const value = existing[key];
+    if (value != null) out[key] = String(value);
+  }
+  return out;
+}
+
+const LOCKED_KEYS = ["price", "showPrice", "retailPrice", "costPrice", "lkrRetailPrice", "lkrPrice", "isFeatured"];
+
+export async function createGemstone(formData: FormData): Promise<ActionResult> {
+  const user = await requireStaffArea("catalog");
+  const staff = isStaffUser(user);
+
+  const input = formToObject(formData);
+  if (staff) {
+    delete input.costPrice;
+    input.isFeatured = "false";
+  }
+  const parsed = gemstoneSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid gemstone data." };
 
   const data = parsed.data;
+  await requireMarketAccess(user, data.market);
   const lk = data.market === "lk";
   const slug = await uniqueSlug(data.name, async (s) => !!(await prisma.gemstone.findUnique({ where: { slug: s } })));
 
@@ -82,13 +120,22 @@ export async function createGemstone(formData: FormData): Promise<ActionResult> 
 }
 
 export async function updateGemstone(id: string, formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("catalog");
 
-  const existing = await prisma.gemstone.findUnique({ where: { id }, select: { market: true } });
+  const existing = await prisma.gemstone.findUnique({
+    where: { id },
+    select: { market: true, price: true, showPrice: true, retailPrice: true, costPrice: true, lkrRetailPrice: true, lkrPrice: true, isFeatured: true },
+  });
   if (!existing) return { ok: false, error: "Gemstone not found." };
+  await requireMarketAccess(user, existing.market);
+  const input = formToObject(formData);
+  if (isStaffUser(user)) {
+    for (const key of LOCKED_KEYS) delete input[key];
+    Object.assign(input, lockedFormFields(existing));
+  }
   // The store is fixed when the listing is created, so it comes from the saved
   // row — never from the form (see StoreField).
-  const parsed = gemstoneSchema.safeParse({ ...formToObject(formData), market: existing.market });
+  const parsed = gemstoneSchema.safeParse({ ...input, market: existing.market });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid gemstone data." };
 
   const data = parsed.data;
@@ -186,13 +233,14 @@ export async function toggleGemstoneFeatured(id: string, featured: boolean): Pro
 }
 
 export async function uploadCertificateFile(gemstoneId: string, formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("catalog");
 
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) return { ok: false, error: "No file provided." };
 
-  const gem = await prisma.gemstone.findUnique({ where: { id: gemstoneId }, select: { certFileUrl: true } });
+  const gem = await prisma.gemstone.findUnique({ where: { id: gemstoneId }, select: { certFileUrl: true, market: true } });
   if (!gem) return { ok: false, error: "Gemstone not found." };
+  await requireMarketAccess(user, gem.market);
 
   try {
     const saved = await saveCertificateFile(file);
@@ -225,12 +273,19 @@ export async function removeCertificateFile(gemstoneId: string): Promise<ActionR
 }
 
 export async function createJewelry(formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("catalog");
+  const staff = isStaffUser(user);
 
-  const parsed = jewelrySchema.safeParse(formToObject(formData));
+  const input = formToObject(formData);
+  if (staff) {
+    delete input.costPrice;
+    input.isFeatured = "false";
+  }
+  const parsed = jewelrySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid jewelry data." };
 
   const data = parsed.data;
+  await requireMarketAccess(user, data.market);
   const lk = data.market === "lk";
   const slug = await uniqueSlug(data.name, async (s) => !!(await prisma.jewelryPiece.findUnique({ where: { slug: s } })));
 
@@ -268,11 +323,20 @@ export async function createJewelry(formData: FormData): Promise<ActionResult> {
 }
 
 export async function updateJewelry(id: string, formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("catalog");
 
-  const existing = await prisma.jewelryPiece.findUnique({ where: { id }, select: { market: true } });
+  const existing = await prisma.jewelryPiece.findUnique({
+    where: { id },
+    select: { market: true, price: true, showPrice: true, retailPrice: true, costPrice: true, lkrRetailPrice: true, lkrPrice: true, isFeatured: true },
+  });
   if (!existing) return { ok: false, error: "Jewelry piece not found." };
-  const parsed = jewelrySchema.safeParse({ ...formToObject(formData), market: existing.market });
+  await requireMarketAccess(user, existing.market);
+  const input = formToObject(formData);
+  if (isStaffUser(user)) {
+    for (const key of LOCKED_KEYS) delete input[key];
+    Object.assign(input, lockedFormFields(existing));
+  }
+  const parsed = jewelrySchema.safeParse({ ...input, market: existing.market });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid jewelry data." };
 
   const data = parsed.data;
@@ -343,8 +407,11 @@ export async function toggleJewelryFeatured(id: string, featured: boolean): Prom
 }
 
 export async function linkGemstoneToJewelry(jewelryId: string, gemstoneId: string | null, freeformDesc: string | null): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("catalog");
   if (!gemstoneId && !freeformDesc) return { ok: false, error: "Provide a gemstone or a description." };
+  const piece = await prisma.jewelryPiece.findUnique({ where: { id: jewelryId }, select: { market: true } });
+  if (!piece) return { ok: false, error: "Jewelry piece not found." };
+  await requireMarketAccess(user, piece.market);
 
   await prisma.jewelryGemstoneLink.create({
     data: { jewelryId, gemstoneId: gemstoneId || undefined, freeformDesc: freeformDesc || undefined },
@@ -355,7 +422,12 @@ export async function linkGemstoneToJewelry(jewelryId: string, gemstoneId: strin
 }
 
 export async function unlinkGemstoneFromJewelry(linkId: string, jewelryId: string): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("catalog");
+  // The piece is looked up through the link itself, not trusted from the
+  // jewelryId the client sent alongside it.
+  const link = await prisma.jewelryGemstoneLink.findUnique({ where: { id: linkId }, select: { jewelry: { select: { market: true } } } });
+  if (!link) return { ok: false, error: "Link not found." };
+  await requireMarketAccess(user, link.jewelry.market);
   await prisma.jewelryGemstoneLink.delete({ where: { id: linkId } });
   revalidatePath(`/admin/jewelry/${jewelryId}`);
   return { ok: true };
@@ -368,11 +440,19 @@ export async function unlinkGemstoneFromJewelry(linkId: string, jewelryId: strin
 // MediaManager/GemstoneLinkManager above.
 
 export async function createJewelryVariant(jewelryId: string, formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("catalog");
   const piece = await prisma.jewelryPiece.findUnique({ where: { id: jewelryId }, select: { market: true } });
   if (!piece) return { ok: false, error: "Jewelry piece not found." };
+  await requireMarketAccess(user, piece.market);
 
-  const parsed = jewelryVariantSchema.safeParse(formToObject(formData));
+  const input = formToObject(formData);
+  // STAFF never sets prices on a variant: it just inherits the piece's own.
+  if (isStaffUser(user)) {
+    delete input.retailPrice;
+    delete input.lkrRetailPrice;
+    delete input.costPrice;
+  }
+  const parsed = jewelryVariantSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid variant data." };
 
   const data = parsed.data;
@@ -397,9 +477,14 @@ export async function createJewelryVariant(jewelryId: string, formData: FormData
 }
 
 export async function updateJewelryVariant(variantId: string, jewelryId: string, formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
-  const piece = await prisma.jewelryPiece.findUnique({ where: { id: jewelryId }, select: { market: true } });
-  if (!piece) return { ok: false, error: "Jewelry piece not found." };
+  const user = await requireStaffArea("catalog");
+  // The piece is taken from the variant itself, not the client-sent
+  // jewelryId, so a variant can't be edited through a piece in a store the
+  // caller is allowed to touch.
+  const variant = await prisma.jewelryVariant.findUnique({ where: { id: variantId }, select: { jewelry: { select: { id: true, market: true } } } });
+  if (!variant) return { ok: false, error: "Variant not found." };
+  const piece = variant.jewelry;
+  await requireMarketAccess(user, piece.market);
 
   const parsed = jewelryVariantSchema.safeParse(formToObject(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid variant data." };
@@ -410,12 +495,18 @@ export async function updateJewelryVariant(variantId: string, jewelryId: string,
     where: { id: variantId },
     data: {
       label: data.label,
-      // Same "empty selection actually clears it" reasoning as
-      // updateGemstone's certLabId — a blank override here has to fall
-      // back to the piece's own price, not silently keep a stale one.
-      retailPrice: lk ? null : (data.retailPrice ?? null),
-      lkrRetailPrice: lk ? (data.lkrRetailPrice ?? null) : null,
-      costPrice: data.costPrice ?? null,
+      // STAFF can rename a variant and change its stock, never its prices
+      // (undefined leaves the saved value alone).
+      ...(isStaffUser(user)
+        ? {}
+        : {
+            // Same "empty selection actually clears it" reasoning as
+            // updateGemstone's certLabId — a blank override here has to fall
+            // back to the piece's own price, not silently keep a stale one.
+            retailPrice: lk ? null : (data.retailPrice ?? null),
+            lkrRetailPrice: lk ? (data.lkrRetailPrice ?? null) : null,
+            costPrice: data.costPrice ?? null,
+          }),
       stockStatus: data.stockStatus,
     },
   });
@@ -452,8 +543,15 @@ export type CatalogKind = "gemstone" | "jewelry";
  * respectively), this is purely about storefront visibility.
  */
 export async function bulkSetCatalogPublished(kind: CatalogKind, ids: string[], isPublished: boolean): Promise<ActionResult> {
-  await requireAdmin();
+  const user = await requireStaffArea("catalog");
   if (ids.length === 0) return { ok: false, error: "Nothing selected." };
+
+  // Every selected item must be in a store the caller may touch — checked
+  // per item, never assumed from the list they were looking at.
+  const rows = kind === "gemstone"
+    ? await prisma.gemstone.findMany({ where: { id: { in: ids } }, select: { market: true } })
+    : await prisma.jewelryPiece.findMany({ where: { id: { in: ids } }, select: { market: true } });
+  for (const row of rows) await requireMarketAccess(user, row.market);
 
   if (kind === "gemstone") {
     await prisma.gemstone.updateMany({ where: { id: { in: ids } }, data: { isPublished } });

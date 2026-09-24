@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { requireAdmin, requireStaffOrAdmin, requireOrderMarketAccess } from "@/lib/rbac";
+import { requireAdmin, requireStaffArea, requireMarketAccess } from "@/lib/rbac";
 import { finalizePaidOrder, cancelPendingOrder, markOrderShipped, markOrderDelivered, submitOrderShippingDetails, revertOrderToUnpaid } from "@/lib/orders";
 import { shipOrderSchema } from "@/lib/validation/orders";
 import { shippingSchema } from "@/lib/validation/checkout";
@@ -21,10 +21,10 @@ function revalidateOrders() {
 // Only a still-pending bank-transfer order qualifies: a card order is
 // settled by PayHere itself, never by hand.
 export async function markOrderPaid(orderId: string): Promise<ActionResult> {
-  const user = await requireStaffOrAdmin();
+  const user = await requireStaffArea("orders");
   const order = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true, paymentMethod: true, needsShippingDetails: true, market: true } });
   if (!order) return { ok: false, error: "Order not found." };
-  await requireOrderMarketAccess(user, order.market);
+  await requireMarketAccess(user, order.market);
   if (order.paymentMethod !== "WIRE_TRANSFER") return { ok: false, error: "Only bank-transfer orders can be marked paid by hand." };
   if (order.status !== "PENDING_PAYMENT") return { ok: false, error: "This order isn't awaiting payment." };
   if (order.needsShippingDetails) return { ok: false, error: "The customer hasn't added shipping details for this order yet." };
@@ -55,10 +55,10 @@ export async function cancelOrderAsAdmin(orderId: string): Promise<ActionResult>
 // own comment for the 17track registration and notification/email it
 // triggers).
 export async function markOrderShippedByAdmin(orderId: string, formData: FormData): Promise<ActionResult> {
-  const user = await requireStaffOrAdmin();
+  const user = await requireStaffArea("orders");
   const order = await prisma.order.findUnique({ where: { id: orderId }, select: { market: true } });
   if (!order) return { ok: false, error: "Order not found." };
-  await requireOrderMarketAccess(user, order.market);
+  await requireMarketAccess(user, order.market);
 
   const parsed = shipOrderSchema.safeParse({
     carrier: formData.get("carrier"),
@@ -81,10 +81,10 @@ export async function markOrderShippedByAdmin(orderId: string, formData: FormDat
 // revertOrderToUnpaid's own doc comment for what this does and, just as
 // importantly, doesn't automatically undo.
 export async function revertOrderToUnpaidAction(orderId: string, formData: FormData): Promise<ActionResult> {
-  const user = await requireStaffOrAdmin();
+  const user = await requireStaffArea("orders");
   const order = await prisma.order.findUnique({ where: { id: orderId }, select: { market: true } });
   if (!order) return { ok: false, error: "Order not found." };
-  await requireOrderMarketAccess(user, order.market);
+  await requireMarketAccess(user, order.market);
 
   const reason = String(formData.get("reason") ?? "").trim();
   if (!reason) return { ok: false, error: "A reason is required." };

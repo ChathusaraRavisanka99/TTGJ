@@ -22,7 +22,7 @@ const STOCK_LABELS: Record<string, string> = { AVAILABLE: "Available", RESERVED:
  * chain, ...) — each with its own stock and an optional price override.
  * Only reachable from an already-saved piece's edit page, same as
  * MediaManager/GemstoneLinkManager alongside it. */
-export function VariantManager({ jewelryId, variants, lk }: { jewelryId: string; variants: Variant[]; lk: boolean }) {
+export function VariantManager({ jewelryId, variants, lk, staff = false }: { jewelryId: string; variants: Variant[]; lk: boolean; staff?: boolean }) {
   const router = useRouter();
   const confirm = useConfirm();
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +84,7 @@ export function VariantManager({ jewelryId, variants, lk }: { jewelryId: string;
                   <Label htmlFor={`jv-label-${v.id}`}>Label</Label>
                   <Input id={`jv-label-${v.id}`} name="label" defaultValue={v.label} required />
                 </div>
+                {!staff && (
                 <div>
                   <Label htmlFor={`jv-price-${v.id}`}>Price override</Label>
                   <Input
@@ -96,10 +97,13 @@ export function VariantManager({ jewelryId, variants, lk }: { jewelryId: string;
                     placeholder="Same as piece"
                   />
                 </div>
+                )}
+                {!staff && (
                 <div>
                   <Label htmlFor={`jv-cost-${v.id}`}>Cost override</Label>
                   <Input id={`jv-cost-${v.id}`} name="costPrice" type="number" step="0.01" min="0" defaultValue={v.costPrice ?? ""} placeholder="Same as piece" />
                 </div>
+                )}
                 <div>
                   <Label htmlFor={`jv-stock-${v.id}`}>Stock</Label>
                   <Select id={`jv-stock-${v.id}`} name="stockStatus" defaultValue={v.stockStatus}>
@@ -118,11 +122,11 @@ export function VariantManager({ jewelryId, variants, lk }: { jewelryId: string;
             <li key={v.id} className="flex items-center justify-between rounded-lg border border-border-subtle bg-surface px-3 py-2 text-sm">
               <span>
                 {v.label} — {STOCK_LABELS[v.stockStatus] ?? v.stockStatus}
-                {(lk ? v.lkrRetailPrice : v.retailPrice) != null && ` · ${currencySymbol}${(lk ? v.lkrRetailPrice : v.retailPrice)!.toLocaleString()}`}
+                {!staff && (lk ? v.lkrRetailPrice : v.retailPrice) != null && ` · ${currencySymbol}${(lk ? v.lkrRetailPrice : v.retailPrice)!.toLocaleString()}`}
               </span>
               <span className="space-x-3">
                 <button type="button" className="text-xs text-gold underline" onClick={() => setEditingId(v.id)}>Edit</button>
-                <button type="button" className="text-xs text-red-700 underline" disabled={pending} onClick={() => handleDelete(v)}>Remove</button>
+                {!staff && <button type="button" className="text-xs text-red-700 underline" disabled={pending} onClick={() => handleDelete(v)}>Remove</button>}
               </span>
             </li>
           ),
@@ -134,14 +138,18 @@ export function VariantManager({ jewelryId, variants, lk }: { jewelryId: string;
           <Label htmlFor="jv-new-label">Label</Label>
           <Input id="jv-new-label" name="label" placeholder='e.g. "Size 7"' required />
         </div>
+        {!staff && (
         <div>
           <Label htmlFor="jv-new-price">Price override</Label>
           <Input id="jv-new-price" name={priceField} type="number" step="0.01" min="0" placeholder="Same as piece" />
         </div>
+        )}
+        {!staff && (
         <div>
           <Label htmlFor="jv-new-cost">Cost override</Label>
           <Input id="jv-new-cost" name="costPrice" type="number" step="0.01" min="0" placeholder="Same as piece" />
         </div>
+        )}
         <Button type="submit" size="sm" variant="outline" disabled={pending}>
           {pending ? "Adding..." : "Add Variant"}
         </Button>

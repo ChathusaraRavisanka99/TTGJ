@@ -8,13 +8,15 @@ interface LkPricingFieldsProps {
   };
   /** "gemstone" / "piece" — only used in the helper copy. */
   noun: string;
+  /** Leaves out the cost price (STAFF never sees or sets it). */
+  hideCost?: boolean;
 }
 
 // Pricing for a Sri Lanka listing: everything in rupees, entered by hand.
 // Replaces the dollar price fields, which a Sri Lanka listing doesn't use. The
 // retail price is mandatory — every Sri Lanka listing is buyable at a shown
 // price (the server enforces this too, see validation/catalog.ts).
-export function LkPricingFields({ initial, noun }: LkPricingFieldsProps) {
+export function LkPricingFields({ initial, noun, hideCost = false }: LkPricingFieldsProps) {
   return (
     <section className="space-y-5 rounded-xl border border-gold/40 bg-gold/5 p-5">
       <div>
@@ -43,6 +45,7 @@ export function LkPricingFields({ initial, noun }: LkPricingFieldsProps) {
           <Input id="lkrPrice" name="lkrPrice" type="number" step="1" min="0" defaultValue={initial?.lkrPrice ?? ""} placeholder="E.g. 1500000" />
           <p className="mt-1 text-xs text-charcoal/45">Internal quoting reference; not shown to customers.</p>
         </div>
+        {!hideCost && (
         <div>
           <Label htmlFor="costPrice">Cost Price (LKR) — optional</Label>
           <Input id="costPrice" name="costPrice" type="number" step="1" min="0" defaultValue={initial?.costPrice ?? ""} placeholder="E.g. 900000" />
@@ -51,6 +54,7 @@ export function LkPricingFields({ initial, noun }: LkPricingFieldsProps) {
             left blank, this {noun} never gets that discount.
           </p>
         </div>
+        )}
       </div>
     </section>
   );

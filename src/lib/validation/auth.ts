@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STAFF_AREAS } from "@/lib/staff-permissions";
 
 export const registerSchema = z
   .object({
@@ -70,4 +71,5 @@ export const createStaffAccountSchema = z.object({
   email: z.string().email("Enter a valid email address"),
   temporaryPassword: z.string().min(8, "Password must be at least 8 characters"),
   marketScope: z.enum(["intl", "lk", "both"]),
+  permissions: z.array(z.enum(STAFF_AREAS)).min(1, "Switch on at least one area"),
 });

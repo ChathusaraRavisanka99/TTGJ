@@ -2,8 +2,9 @@
 
 import type { ComponentType } from "react";
 import Link from "@/components/ui/MarketLink";
+import PlainLink from "next/link";
 import { useAppPathname } from "@/components/providers/MarketProvider";
-import { Building2, CreditCard, FileText, Gift, LayoutDashboard, LogOut, MessageCircle, Package, PenTool, Search, ShoppingBag } from "lucide-react";
+import { Building2, CreditCard, FileText, Gift, LayoutDashboard, LogOut, MessageCircle, Package, PenTool, Search, ShieldCheck, ShoppingBag } from "lucide-react";
 import { signOutAction } from "@/actions/auth";
 import { cn } from "@/lib/utils";
 import type { HubCounts } from "@/lib/account-hub";
@@ -53,7 +54,7 @@ const BUSINESS_ITEM: NavItem = { href: "/account/business", label: "Business", i
 // now, so the Messages item stays lit while you're on it.
 const ALIASES: Record<string, string> = { "/account/support": "/account/messages" };
 
-export function AccountSidebar({ user, counts, showBusiness }: { user: { name?: string | null; email?: string | null }; counts: HubCounts; showBusiness?: boolean }) {
+export function AccountSidebar({ user, counts, showBusiness, showAdminPortal }: { user: { name?: string | null; email?: string | null }; counts: HubCounts; showBusiness?: boolean; showAdminPortal?: boolean }) {
   const pathname = useAppPathname();
   const current = ALIASES[pathname] ?? pathname;
   const initial = (user.name?.trim()?.[0] ?? user.email?.[0] ?? "?").toUpperCase();
@@ -114,6 +115,14 @@ export function AccountSidebar({ user, counts, showBusiness }: { user: { name?: 
             </div>
           ))}
         </nav>
+        {showAdminPortal && (
+          // Admin isn't part of either storefront, so a plain (non-market-prefixed) link.
+          <div className="border-t border-border-subtle p-3">
+            <PlainLink href="/admin" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-charcoal transition-colors hover:bg-ivory-soft">
+              <ShieldCheck size={16} className="text-gold-deep" /> Admin Portal
+            </PlainLink>
+          </div>
+        )}
         <form action={signOutAction} className="border-t border-border-subtle p-3">
           <button type="submit" className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-charcoal/65 transition-colors hover:bg-ivory-soft hover:text-charcoal">
             <LogOut size={16} className="text-charcoal/50" /> Sign out
@@ -148,6 +157,12 @@ export function AccountSidebar({ user, counts, showBusiness }: { user: { name?: 
               </Link>
             );
           })}
+          {showAdminPortal && (
+            <PlainLink href="/admin" className="flex items-center gap-2 whitespace-nowrap rounded-full border border-gold/50 bg-gold/10 px-3.5 py-2 text-sm font-medium text-charcoal">
+              <ShieldCheck size={15} />
+              Admin Portal
+            </PlainLink>
+          )}
         </div>
       </nav>
     </aside>

@@ -2,14 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateStaffMarketScope, revokeStaffAccess } from "@/actions/staff";
+import { updateStaffMarketScope, updateStaffPermissions, revokeStaffAccess } from "@/actions/staff";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { STAFF_AREAS, STAFF_AREA_LABELS } from "@/lib/staff-permissions";
 
-export function StaffAccountRow({ userId, marketScope, name }: { userId: string; marketScope: string; name: string }) {
+export function StaffAccountRow({ userId, marketScope, permissions, name }: { userId: string; marketScope: string; permissions: string[]; name: string }) {
   const router = useRouter();
   const [scope, setScope] = useState(marketScope);
+  const [areas, setAreas] = useState<string[]>(permissions);
   const [pending, startTransition] = useTransition();
   const confirm = useConfirm();
 
@@ -17,6 +19,15 @@ export function StaffAccountRow({ userId, marketScope, name }: { userId: string;
     setScope(next);
     startTransition(async () => {
       await updateStaffMarketScope(userId, next as "intl" | "lk" | "both");
+      router.refresh();
+    });
+  }
+
+  function handleAreaToggle(area: string, on: boolean) {
+    const next = on ? [...areas, area] : areas.filter((a) => a !== area);
+    setAreas(next);
+    startTransition(async () => {
+      await updateStaffPermissions(userId, next);
       router.refresh();
     });
   }
@@ -30,15 +41,26 @@ export function StaffAccountRow({ userId, marketScope, name }: { userId: string;
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <Select value={scope} onChange={(e) => handleScopeChange(e.target.value)} disabled={pending} className="w-auto py-1.5 text-xs">
-        <option value="intl">International only</option>
-        <option value="lk">Sri Lanka only</option>
-        <option value="both">Both stores</option>
-      </Select>
-      <Button type="button" variant="outline" size="sm" disabled={pending} onClick={handleRevoke}>
-        Revoke Access
-      </Button>
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {STAFF_AREAS.map((area) => (
+          <label key={area} className="flex items-center gap-1.5 text-xs text-charcoal/80" title={STAFF_AREA_LABELS[area].description}>
+            <input type="checkbox" checked={areas.includes(area)} disabled={pending} onChange={(e) => handleAreaToggle(area, e.target.checked)} className="accent-gold" />
+            {STAFF_AREA_LABELS[area].label}
+          </label>
+        ))}
+      </div>
+      <div className="flex items-center gap-3">
+        <Select value={scope} onChange={(e) => handleScopeChange(e.target.value)} disabled={pending} className="w-auto py-1.5 text-xs">
+          <option value="intl">International only</option>
+          <option value="lk">Sri Lanka only</option>
+          <option value="both">Both stores</option>
+        </Select>
+        <Button type="button" variant="outline" size="sm" disabled={pending} onClick={handleRevoke}>
+          Revoke Access
+        </Button>
+      </div>
+      {areas.length === 0 && <p className="text-xs text-red-700">No areas switched on — this account can&apos;t open anything.</p>}
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { hasStaffArea, hasMarketAccess } from "@/lib/rbac";
 import { JewelryForm } from "@/components/admin/JewelryForm";
 import { MediaManager } from "@/components/admin/MediaManager";
 import { GemstoneLinkManager } from "@/components/admin/GemstoneLinkManager";
@@ -22,7 +24,14 @@ export default async function EditJewelryPage({ params }: PageProps<"/admin/jewe
     getActiveShippingWeightTiers(),
   ]);
 
-  if (!piece) notFound();
+  const user = (await auth())?.user;
+  if (!piece || !user || !hasStaffArea(user, "catalog") || !hasMarketAccess(user, piece.market)) notFound();
+  const staff = user.role === "STAFF";
+  // Cost prices (the piece's, its variants', and any linked gemstone's)
+  // never reach a STAFF member's browser, not even hidden.
+  const initial = staff ? { ...piece, costPrice: null } : piece;
+  const variants = staff ? piece.variants.map((v) => ({ ...v, costPrice: null })) : piece.variants;
+  const links = staff ? piece.gemstones.map((l) => ({ ...l, gemstone: l.gemstone && { ...l.gemstone, costPrice: null } })) : piece.gemstones;
 
   return (
     <div>
@@ -30,20 +39,20 @@ export default async function EditJewelryPage({ params }: PageProps<"/admin/jewe
       <h1 className="font-serif text-3xl text-charcoal">{piece.name}</h1>
 
       <div className="mt-6">
-        <JewelryForm initial={piece} shippingWeightTiers={shippingWeightTiers} />
+        <JewelryForm initial={initial} shippingWeightTiers={shippingWeightTiers} staff={staff} />
       </div>
 
       <div className="mt-10 max-w-2xl border-t border-border-subtle pt-8">
         <p className="font-serif text-xl text-charcoal">Media</p>
         <div className="mt-4">
-          <MediaManager media={piece.media} jewelryId={piece.id} />
+          <MediaManager media={piece.media} jewelryId={piece.id} canDelete={!staff} />
         </div>
       </div>
 
       <div className="mt-10 max-w-2xl border-t border-border-subtle pt-8">
         <p className="font-serif text-xl text-charcoal">Gemstones Set In This Piece</p>
         <div className="mt-4">
-          <GemstoneLinkManager jewelryId={piece.id} links={piece.gemstones} gemstones={gemstones} />
+          <GemstoneLinkManager jewelryId={piece.id} links={links} gemstones={gemstones} />
         </div>
       </div>
 
@@ -54,7 +63,7 @@ export default async function EditJewelryPage({ params }: PageProps<"/admin/jewe
           with its own stock. Leave empty and this piece keeps selling as a single item with the Stock Status above.
         </p>
         <div className="mt-4">
-          <VariantManager jewelryId={piece.id} variants={piece.variants} lk={piece.market === "lk"} />
+          <VariantManager jewelryId={piece.id} variants={variants} lk={piece.market === "lk"} staff={staff} />
         </div>
       </div>
     </div>

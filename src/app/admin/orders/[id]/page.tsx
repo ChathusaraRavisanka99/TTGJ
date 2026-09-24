@@ -55,7 +55,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
 
   // Same "not found" whether the id is wrong or just out of this staff
   // member's assigned market — never confirms an order exists but is out
-  // of scope. requireOrderMarketAccess (used by every staff-permitted
+  // of scope. requireMarketAccess (used by every staff-permitted
   // action on this page) makes the same check again server-side; this is
   // just what decides whether the page renders at all.
   const isStaff = session?.user?.role === "STAFF";

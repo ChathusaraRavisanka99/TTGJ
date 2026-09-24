@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { prismaMock } from "@/test/prisma-mock";
 import { updateQuoteRequest } from "@/actions/admin-requests";
-import { requireAdmin } from "@/lib/rbac";
+import { requireStaffArea } from "@/lib/rbac";
 import { ensureInvoiceForQuote } from "@/lib/invoicing";
 import { ensureOrderForQuote } from "@/lib/orders";
 import { createNotification } from "@/lib/notifications";
 
-vi.mock("@/lib/rbac", () => ({ requireAdmin: vi.fn() }));
+vi.mock("@/lib/rbac", () => ({ requireStaffArea: vi.fn() }));
 vi.mock("@/lib/invoicing", () => ({ ensureInvoiceForQuote: vi.fn() }));
 vi.mock("@/lib/orders", () => ({ ensureOrderForQuote: vi.fn(), ensureOrderForSourcing: vi.fn() }));
 vi.mock("@/lib/notifications", () => ({ createNotification: vi.fn() }));
@@ -16,7 +16,7 @@ const currentQuote = { quotedPrice: 5000, status: "QUOTED", userId: "user-1" };
 
 describe("updateQuoteRequest accepting a quote", () => {
   beforeEach(() => {
-    vi.mocked(requireAdmin).mockResolvedValue({ id: "admin-1", role: "ADMIN" } as never);
+    vi.mocked(requireStaffArea).mockResolvedValue({ id: "admin-1", role: "ADMIN" } as never);
     prismaMock.quoteRequest.findUnique.mockResolvedValue(currentQuote as never);
     prismaMock.quoteRequest.update.mockResolvedValue({} as never);
     vi.mocked(ensureInvoiceForQuote).mockResolvedValue(undefined as never);

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getMarket } from "@/lib/market";
+import { hasAdminPortalAccess } from "@/lib/admin-access";
 import { getHubCounts } from "@/lib/account-hub";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
 
@@ -25,6 +26,7 @@ export default async function AccountHubLayout({ children }: { children: React.R
         user={{ name: session.user.name, email: session.user.email }}
         counts={counts}
         showBusiness={user.businessRole != null}
+        showAdminPortal={hasAdminPortalAccess(session.user)}
       />
       <div className="mt-6 min-w-0 lg:mt-0">{children}</div>
     </div>

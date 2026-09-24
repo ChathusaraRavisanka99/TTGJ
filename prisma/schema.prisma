@@ -65,6 +65,13 @@ model User {
   // never just trusted from what the UI happened to show.
   staffMarketScope String?
 
+  // Meaningful only for STAFF accounts — which back-office areas an admin
+  // has switched on for them (see lib/staff-permissions.ts for the list:
+  // "orders", "catalog", "requests", "reviews"). An empty list means no
+  // access at all. Always combined with staffMarketScope above for
+  // anything that has a market.
+  staffPermissions String[] @default([])
+
   customerType    CustomerType     @default(RETAIL)
   // Null for RETAIL accounts (approval is a wholesale-only concept).
   // PENDING the moment a WHOLESALE registration is submitted — see

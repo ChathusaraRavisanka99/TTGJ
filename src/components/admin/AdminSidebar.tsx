@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { LogOut, Menu, X } from "lucide-react";
 import { signOutAction } from "@/actions/auth";
 import { cn } from "@/lib/utils";
+import { staffNavLinks } from "@/lib/staff-permissions";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", exact: true },
@@ -52,14 +53,13 @@ const REWARDS = [
   { href: "/admin/business-accounts", label: "Business Accounts" },
 ];
 
-// Every STAFF account's entire admin surface — see proxy.ts/admin/layout.tsx
-// for the matching server-side enforcement; this is just what they're shown,
-// not what actually protects those other pages.
-const STAFF_NAV = [{ href: "/admin/orders", label: "Orders" }];
+// A STAFF account only sees the areas an admin switched on for them (see
+// lib/staff-permissions.ts) — proxy.ts/admin/layout.tsx and every action do
+// the real enforcement; this is just what they're shown.
 
 // Shared by both the always-visible desktop sidebar and the mobile
 // full-screen drawer, so the two link lists can't drift apart.
-function NavLinks({ pathname, onNavigate, role }: { pathname: string; onNavigate?: () => void; role: string }) {
+function NavLinks({ pathname, onNavigate, role, staffPermissions }: { pathname: string; onNavigate?: () => void; role: string; staffPermissions: string[] }) {
   const isActive = (href: string, exact?: boolean) => (exact ? pathname === href : pathname.startsWith(href));
 
   function section(items: typeof NAV) {
@@ -81,7 +81,7 @@ function NavLinks({ pathname, onNavigate, role }: { pathname: string; onNavigate
   if (role === "STAFF") {
     return (
       <>
-        <div className="space-y-1">{section(STAFF_NAV)}</div>
+        <div className="space-y-1">{section(staffNavLinks(staffPermissions))}</div>
         <Link href="/" onClick={onNavigate} className="mt-8 block px-3 text-xs text-ivory/40 hover:text-ivory/70">
           ← Back to storefront
         </Link>
@@ -133,7 +133,7 @@ function Logo({ children }: { children: ReactNode }) {
   );
 }
 
-export function AdminSidebar({ role }: { role: string }) {
+export function AdminSidebar({ role, staffPermissions = [] }: { role: string; staffPermissions?: string[] }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -192,7 +192,7 @@ export function AdminSidebar({ role }: { role: string }) {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-8">
-            <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} role={role} />
+            <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} role={role} staffPermissions={staffPermissions} />
           </div>
         </div>
       )}
@@ -202,7 +202,7 @@ export function AdminSidebar({ role }: { role: string }) {
       <nav className="hidden w-60 shrink-0 border-r border-white/10 bg-charcoal px-4 py-8 text-ivory/80 print:hidden lg:block">
         <Logo>Ratnavue Admin</Logo>
         <div className="mt-8">
-          <NavLinks pathname={pathname} role={role} />
+          <NavLinks pathname={pathname} role={role} staffPermissions={staffPermissions} />
         </div>
       </nav>
     </>

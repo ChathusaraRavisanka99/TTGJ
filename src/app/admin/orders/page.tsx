@@ -40,7 +40,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
   let market = sp.market === "lk" ? "lk" : sp.market === "intl" ? "intl" : undefined;
   // A staff member never sees an order outside their own scope, regardless
   // of what the query string asks for — re-checked here, not just hidden
-  // in the UI (see requireOrderMarketAccess for the matching per-action
+  // in the UI (see requireMarketAccess for the matching per-action
   // check on every staff-permitted mutation).
   if (isStaff && staffScope !== "both") {
     market = (staffScope as "intl" | "lk" | undefined) ?? "intl";

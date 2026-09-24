@@ -66,9 +66,15 @@ interface GemstoneFormProps {
   };
   /** Which store a NEW gemstone starts on (from the list page's "Add Sri Lanka" button). */
   defaultMarket?: ListingMarket;
+  /** A STAFF member: no cost price, no featuring, no deleting, and an existing
+   * item's prices are read-only (the server enforces all of this too). */
+  staff?: boolean;
+  /** Fixes the store picker (a STAFF member scoped to one store). */
+  lockMarket?: boolean;
 }
 
-export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origins, certificationLabs, shippingWeightTiers, initial, defaultMarket }: GemstoneFormProps) {
+export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origins, certificationLabs, shippingWeightTiers, initial, defaultMarket, staff = false, lockMarket = false }: GemstoneFormProps) {
+  const lockPricing = staff && !!initial;
   const router = useRouter();
   const [market, setMarket] = useState<ListingMarket>((initial?.market as ListingMarket | undefined) ?? defaultMarket ?? "intl");
   const lk = market === "lk";
@@ -166,7 +172,7 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
       </div>
 
       <form action={handleSubmit} className="space-y-8">
-        <StoreField market={market} onChange={setMarket} locked={!!initial} noun="gemstone" />
+        <StoreField market={market} onChange={setMarket} locked={!!initial || lockMarket} noun="gemstone" />
 
         <section className="grid gap-5 sm:grid-cols-2">
           <div className="sm:col-span-2">
@@ -304,7 +310,7 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
           </div>
         </section>
 
-        {!lk && (
+        {!lk && !lockPricing && (
         <>
         <section className="grid gap-5 sm:grid-cols-2">
           <div>
@@ -331,6 +337,7 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
               independent of &ldquo;Show price publicly&rdquo; above.
             </p>
           </div>
+          {!staff && (
           <div>
             <Label htmlFor="costPrice">Cost Price (USD)</Label>
             <Input id="costPrice" name="costPrice" type="number" step="0.01" min="0" defaultValue={initial?.costPrice ?? ""} placeholder="E.g. 2600" />
@@ -339,12 +346,18 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
               discount (Retail Price − Cost Price) — left blank, this item simply never gets that discount.
             </p>
           </div>
+          )}
         </section>
 
         </>
         )}
 
-        {lk && <LkPricingFields initial={initial} noun="gemstone" />}
+        {lk && !lockPricing && <LkPricingFields initial={initial} noun="gemstone" hideCost={staff} />}
+        {lockPricing && (
+          <p className="rounded-lg border border-border-subtle bg-ivory-soft p-3 text-xs text-charcoal/60">
+            Prices can only be changed by an admin.
+          </p>
+        )}
 
         <label className="flex items-center gap-2 text-sm text-charcoal/75">
           <input type="hidden" name="isPublished" value="false" />
@@ -352,11 +365,13 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
           Published (visible in the public catalog)
         </label>
 
+        {!staff && (
         <label className="flex items-center gap-2 text-sm text-charcoal/75">
           <input type="hidden" name="isFeatured" value="false" />
           <input type="checkbox" name="isFeatured" value="true" defaultChecked={initial?.isFeatured ?? false} className="accent-gold" />
           Featured (shown in the {lk ? "Sri Lanka" : "international"} home page&apos;s Featured Gemstones section)
         </label>
+        )}
 
         <section className="rounded-xl border border-border-subtle bg-ivory-soft/50 p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Shipping (optional)</p>
@@ -402,7 +417,7 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
           <Button type="submit" variant="gold" disabled={pending}>
             {pending ? "Saving..." : initial ? "Save Changes" : "Create Gemstone"}
           </Button>
-          {initial && (
+          {initial && !staff && (
             <Button type="button" variant="outline" disabled={pending} onClick={handleDelete}>
               Delete
             </Button>

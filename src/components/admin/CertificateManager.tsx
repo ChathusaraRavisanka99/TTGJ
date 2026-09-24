@@ -8,7 +8,7 @@ import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { Button } from "@/components/ui/Button";
 import { FieldError } from "@/components/ui/Field";
 
-export function CertificateManager({ gemstoneId, certFileUrl }: { gemstoneId: string; certFileUrl: string | null }) {
+export function CertificateManager({ gemstoneId, certFileUrl, canRemove = true }: { gemstoneId: string; certFileUrl: string | null; canRemove?: boolean }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -45,9 +45,11 @@ export function CertificateManager({ gemstoneId, certFileUrl }: { gemstoneId: st
           <a href={certFileUrl} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-sm text-charcoal underline decoration-charcoal/30 underline-offset-2 hover:text-gold">
             View attached certificate
           </a>
+          {canRemove && (
           <button type="button" title="Remove" onClick={handleRemove} disabled={pending} className="shrink-0 rounded p-1.5 text-charcoal/50 hover:bg-charcoal/10 hover:text-red-700">
             <Trash2 size={16} />
           </button>
+          )}
         </div>
       ) : (
         <p className="text-sm text-charcoal/50">No certificate file attached yet.</p>

@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { hasStaffArea, hasMarketAccess } from "@/lib/rbac";
 import { getMasterData } from "@/lib/catalog";
 import { getActiveShippingWeightTiers } from "@/lib/shipping";
 import { GemstoneForm } from "@/components/admin/GemstoneForm";
@@ -15,7 +17,11 @@ export default async function EditGemstonePage({ params }: PageProps<"/admin/gem
     getActiveShippingWeightTiers(),
   ]);
 
-  if (!gem) notFound();
+  const user = (await auth())?.user;
+  if (!gem || !user || !hasStaffArea(user, "catalog") || !hasMarketAccess(user, gem.market)) notFound();
+  const staff = user.role === "STAFF";
+  // Cost price never reaches a STAFF member's browser, not even hidden.
+  const initial = staff ? { ...gem, costPrice: null } : gem;
 
   return (
     <div>
@@ -31,14 +37,15 @@ export default async function EditGemstonePage({ params }: PageProps<"/admin/gem
           origins={masterData.origins}
           certificationLabs={masterData.certificationLabs}
           shippingWeightTiers={shippingWeightTiers}
-          initial={gem}
+          initial={initial}
+          staff={staff}
         />
       </div>
 
       <div className="mt-10 border-t border-border-subtle pt-8">
         <p className="font-serif text-xl text-charcoal">Media</p>
         <div className="mt-4">
-          <MediaManager media={gem.media} gemstoneId={gem.id} />
+          <MediaManager media={gem.media} gemstoneId={gem.id} canDelete={!staff} />
         </div>
       </div>
 
@@ -48,7 +55,7 @@ export default async function EditGemstonePage({ params }: PageProps<"/admin/gem
           Attach a scan or photo of the lab report itself, separate from the online verification link above.
         </p>
         <div className="mt-4">
-          <CertificateManager gemstoneId={gem.id} certFileUrl={gem.certFileUrl} />
+          <CertificateManager gemstoneId={gem.id} certFileUrl={gem.certFileUrl} canRemove={!staff} />
         </div>
       </div>
     </div>

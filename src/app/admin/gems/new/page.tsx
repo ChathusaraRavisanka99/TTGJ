@@ -1,14 +1,20 @@
+import { notFound } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { hasStaffArea, marketFilterFor } from "@/lib/rbac";
 import { getMasterData } from "@/lib/catalog";
 import { getActiveShippingWeightTiers } from "@/lib/shipping";
 import { GemstoneForm } from "@/components/admin/GemstoneForm";
 import { BackLink } from "@/components/admin/BackLink";
 
 export default async function NewGemstonePage({ searchParams }: PageProps<"/admin/gems/new">) {
+  const user = (await auth())?.user;
+  if (!user || !hasStaffArea(user, "catalog")) notFound();
+  const scopedMarket = marketFilterFor(user);
   const [{ minerals, cuts, clarityGrades, treatments, origins, certificationLabs }, shippingWeightTiers] = await Promise.all([
     getMasterData(),
     getActiveShippingWeightTiers(),
   ]);
-  const defaultMarket = (await searchParams).market === "lk" ? "lk" : "intl";
+  const defaultMarket = scopedMarket ?? ((await searchParams).market === "lk" ? "lk" : "intl");
 
   return (
     <div>
@@ -24,6 +30,8 @@ export default async function NewGemstonePage({ searchParams }: PageProps<"/admi
           certificationLabs={certificationLabs}
           shippingWeightTiers={shippingWeightTiers}
           defaultMarket={defaultMarket}
+          staff={user.role === "STAFF"}
+          lockMarket={!!scopedMarket}
         />
       </div>
       <p className="mt-4 text-xs text-charcoal/50">

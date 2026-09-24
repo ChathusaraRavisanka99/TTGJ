@@ -3,14 +3,10 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { APP_PATH_HEADER } from "@/lib/market-shared";
+import { firstStaffPath, staffCanAccessPath } from "@/lib/staff-permissions";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 
 export const metadata: Metadata = { title: { default: "Admin", template: "%s · Ratnavue Admin" }, robots: { index: false } };
-
-// STAFF's one allowed area — kept in sync with proxy.ts's own copy of this
-// list (the edge-layer gate); this is the defense-in-depth re-check every
-// other server entry point in this app already does, not the only check.
-const STAFF_ALLOWED_PATHS = ["/admin/orders"];
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const session = await auth();
@@ -23,8 +19,15 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     redirect("/account/login?callbackUrl=/admin");
   }
   const pathname = (await headers()).get(APP_PATH_HEADER) ?? "";
-  const staffAllowed = session.user.role === "STAFF" && STAFF_ALLOWED_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
-  if (session.user.role !== "ADMIN" && !staffAllowed) {
+  // STAFF: the precise, fresh-from-the-database check of which areas an
+  // admin has switched on for them (the edge proxy only sees the sign-in
+  // copy). There is no dashboard for staff, so /admin itself just sends
+  // them to the first area they have.
+  if (session.user.role === "STAFF") {
+    const permissions = session.user.staffPermissions;
+    if (pathname === "/admin") redirect(firstStaffPath(permissions) ?? "/unauthorized");
+    if (!staffCanAccessPath(permissions, pathname)) redirect("/unauthorized");
+  } else if (session.user.role !== "ADMIN") {
     redirect("/unauthorized");
   }
 
@@ -43,7 +46,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     // the spinner squashed into a ~48px strip under the mobile top bar
     // instead of filling the screen.
     <div className="flex min-h-[calc(100vh-1px)] flex-col bg-ivory-soft print:block print:bg-white lg:flex-row">
-      <AdminSidebar role={session.user.role} />
+      <AdminSidebar role={session.user.role} staffPermissions={session.user.staffPermissions} />
       {/* relative: lets AdminPageLoader (the Suspense fallback — see
           admin/loading.tsx) cover this box exactly via `absolute inset-0`
           — see the matching comment on MainWrapper's <main> for why a

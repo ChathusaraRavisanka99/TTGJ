@@ -66,6 +66,46 @@ against the shared prod DB before shipping dependent code, then
 
 ## Orders & admin workflow
 
+- ~~**Per-area staff permissions + admin-portal link**~~ — done. Staff
+  accounts are no longer order-only: an admin switches on any of four areas
+  per account on `/admin/staff` — **Orders**, **Gems & Jewelry**,
+  **Messages/quotes/sourcing**, **Reviews** — on top of the existing
+  per-account market scope (International / Sri Lanka / both). Confirmed
+  with you first: which areas, one on/off switch per area (not view vs
+  edit), one market setting per person. Still a strict allow-list:
+  `requireStaffArea(area)` in `lib/rbac.ts` replaces the blanket staff
+  guard on exactly the actions staff may use, every other admin action
+  keeps `requireAdmin()`, and an item-level `requireMarketAccess` checks
+  the item's own store (looked up server-side, never the id/market the
+  client sent — e.g. a variant is checked through its real piece). What
+  staff can never do even inside an area they have: see or set a **cost
+  price**, change the **prices of an existing item** (they may price a
+  brand-new listing, which needs one to be valid; on edit the saved
+  prices/cost/featured flag are re-injected server-side whatever the
+  request says, and cost prices are stripped from what's sent to their
+  browser), **delete** anything, **feature** on the homepage, or remove
+  media/certificate files. Quotes/sourcing have no market, so that area is
+  all-or-nothing; `build-order`, manual sales, invoices, customers and
+  everything else stay admin-only. The edge proxy only gates "could this
+  be a staff page" from the sign-in token; the precise per-account check
+  is in `admin/layout.tsx` and every action, against fresh data. Also
+  fixed a gap in the first STAFF version: a staff token was only read from
+  the DB at sign-in, so revoking someone or changing their scope didn't
+  bite until their token expired — a STAFF token is now re-read on every
+  request, so changes and revocation apply immediately. Existing staff
+  were migrated to `["orders"]` (migration
+  `20260925100000_add_staff_permissions`, applied to the shared DB before
+  shipping). New **Admin Portal** link in the account dropdown and the
+  account sidebar (desktop + mobile strip) for admins and for staff with at
+  least one area on. 32 new tests (permission guard, path map, per-action
+  staff scoping incl. price/cost locking, chat, staff actions, portal-link
+  rule) — 642 total. Live-verified via Playwright against the real DB with
+  temporary `zz-` data (cleaned up): portal link shows, nav cut down to
+  the granted areas, seven other admin areas redirect to /unauthorized, the
+  list and direct URL for an out-of-scope-store gem are hidden/404, the
+  edit form has no cost/price/featured/delete, the page data carries
+  `costPrice: null`, and a staff edit saved the name while price 1000 /
+  retail 1200 / cost 700 stayed exactly as they were.
 - ~~**STAFF role for order management + communications**~~ — done. New
   `UserRole.STAFF`, deliberately built as a strict allow-list (never
   "ADMIN minus a few things") so a new admin capability can never

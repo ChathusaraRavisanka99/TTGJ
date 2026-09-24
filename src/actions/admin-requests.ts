@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/rbac";
+import { requireStaffArea } from "@/lib/rbac";
 import { ensureInvoiceForQuote } from "@/lib/invoicing";
 import { ensureOrderForQuote, ensureOrderForSourcing } from "@/lib/orders";
 import { createNotification } from "@/lib/notifications";
@@ -30,7 +30,7 @@ export async function updateQuoteRequest(
   quotedPrice?: number,
   quoteValidUntil?: string | null,
 ): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await requireStaffArea("requests");
   if (!QUOTE_STATUSES.includes(status)) return { ok: false, error: "Invalid status." };
 
   const current = await prisma.quoteRequest.findUnique({ where: { id }, select: { quotedPrice: true, status: true, userId: true } });
@@ -99,7 +99,7 @@ export async function updateSourcingRequest(
   quotedPrice?: number,
   quoteValidUntil?: string | null,
 ): Promise<ActionResult> {
-  const admin = await requireAdmin();
+  const admin = await requireStaffArea("requests");
   if (!QUOTE_STATUSES.includes(status)) return { ok: false, error: "Invalid status." };
 
   const current = await prisma.sourcingRequest.findUnique({ where: { id }, select: { quotedPrice: true, status: true, userId: true } });

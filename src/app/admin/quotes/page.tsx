@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Printer, Receipt, MessageCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { getUnreadCount } from "@/lib/chat";
+import { getUnreadCountsFor } from "@/lib/chat";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { cn, formatPrice } from "@/lib/utils";
@@ -47,7 +47,7 @@ export default async function AdminQuotesPage({ searchParams }: PageProps<"/admi
     prisma.quoteRequest.count({ where }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const unreadCounts = await Promise.all(quotes.map((q) => getUnreadCount("quote", q.id, "ADMIN")));
+  const unreadCounts = await getUnreadCountsFor(quotes.map((q) => ({ requestType: "quote" as const, requestId: q.id })), "ADMIN");
 
   return (
     <div>

@@ -3,7 +3,7 @@ import Link from "@/components/ui/MarketLink";
 import { MessageCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getUnreadCount } from "@/lib/chat";
+import { getUnreadCountsFor } from "@/lib/chat";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { formatPrice } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ export default async function AccountSourcingPage() {
     where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
   });
-  const unreadCounts = await Promise.all(requests.map((r) => getUnreadCount("sourcing", r.id, "CUSTOMER")));
+  const unreadCounts = await getUnreadCountsFor(requests.map((r) => ({ requestType: "sourcing" as const, requestId: r.id })), "CUSTOMER");
 
   return (
     <div className="w-full">

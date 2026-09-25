@@ -1,5 +1,6 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import { isUserDisabled } from "@/lib/user-status";
+import { getAccountStanding } from "@/lib/account-standing";
 import type { Provider } from "@auth/core/providers";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
@@ -101,10 +102,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // whenever the token happens to be reissued. Only STAFF pays this
         // lookup; the edge proxy still sees the sign-in copy, which is why
         // the layout and every action re-check.
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { role: true, staffMarketScope: true, staffPermissions: true, disabledAt: true, disabledUntil: true },
-        });
+        const dbUser = await getAccountStanding(token.id as string);
         // A disabled staff member loses every back-office right at once.
         const disabled = isUserDisabled(dbUser);
         token.role = disabled ? "CUSTOMER" : (dbUser?.role ?? "CUSTOMER");

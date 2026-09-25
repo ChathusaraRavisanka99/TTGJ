@@ -4,7 +4,7 @@ import Link from "@/components/ui/MarketLink";
 import { MessageCircle, PenTool } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getUnreadCount } from "@/lib/chat";
+import { getUnreadCountsFor } from "@/lib/chat";
 import { DESIGN_QUOTE_WHERE, designKind, designLabel } from "@/lib/account-hub";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { LinkButton } from "@/components/ui/Button";
@@ -25,7 +25,7 @@ export default async function AccountCustomDesignsPage() {
     where: { userId: session.user.id, ...DESIGN_QUOTE_WHERE },
     orderBy: { createdAt: "desc" },
   });
-  const unreadCounts = await Promise.all(designs.map((d) => getUnreadCount("quote", d.id, "CUSTOMER")));
+  const unreadCounts = await getUnreadCountsFor(designs.map((d) => ({ requestType: "quote" as const, requestId: d.id })), "CUSTOMER");
 
   return (
     <div>

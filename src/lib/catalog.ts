@@ -161,7 +161,9 @@ export async function getGemstones(filters: GemFilters) {
         clarityGrade: true,
         treatment: true,
         origin: true,
-        media: { orderBy: { sortOrder: "asc" } },
+        // Cards show one image: the primary if flagged, otherwise the first.
+        // Loading every photo of every listed item was pure waste.
+        media: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }], take: 1 },
       },
     }),
     prisma.gemstone.count({ where }),
@@ -279,7 +281,7 @@ export async function getJewelry(filters: JewelryFilters) {
       skip: (page - 1) * JEWELRY_PAGE_SIZE,
       take: JEWELRY_PAGE_SIZE,
       include: {
-        media: { orderBy: { sortOrder: "asc" } },
+        media: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }], take: 1 },
         gemstones: { include: { gemstone: true } },
       },
     }),
@@ -304,71 +306,69 @@ export interface CategoryTileData {
   image: string | null;
 }
 
-/** Newest still image among the pieces matching `where`, or null. */
-async function newestGemImage(where: Prisma.GemstoneWhereInput): Promise<string | null> {
-  const gem = await prisma.gemstone.findFirst({
-    where: { ...where, media: { some: { type: "IMAGE" } } },
-    orderBy: { createdAt: "desc" },
-    select: { media: { where: { type: "IMAGE" }, orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } } },
-  });
-  return gem?.media[0]?.url ?? null;
-}
+const FIRST_IMAGE = {
+  where: { type: "IMAGE" as const },
+  orderBy: [{ isPrimary: "desc" as const }, { sortOrder: "asc" as const }],
+  take: 1,
+  select: { url: true },
+};
 
-async function newestJewelryImage(where: Prisma.JewelryPieceWhereInput): Promise<string | null> {
-  const piece = await prisma.jewelryPiece.findFirst({
-    where: { ...where, media: { some: { type: "IMAGE" } } },
-    orderBy: { createdAt: "desc" },
-    select: { media: { where: { type: "IMAGE" }, orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } } },
-  });
-  return piece?.media[0]?.url ?? null;
-}
-
-/** One tile per mineral that has at least one published gem in this store. */
+/** One tile per mineral that has at least one published gem in this store.
+ * Three queries however many minerals there are: the counts, the mineral
+ * list, and the newest imaged gem per mineral (a DISTINCT, not a query per
+ * tile). */
 export async function getGemCategories(market: Market = "intl"): Promise<{ total: number; tiles: CategoryTileData[]; cover: string | null }> {
   const base: Prisma.GemstoneWhereInput = { isPublished: true, market };
-  const [counts, minerals, cover] = await Promise.all([
+  const [counts, minerals, covers] = await Promise.all([
     prisma.gemstone.groupBy({ by: ["mineralId"], where: base, _count: { _all: true } }),
     prisma.mineral.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
-    newestGemImage(base),
+    prisma.gemstone.findMany({
+      where: { ...base, media: { some: { type: "IMAGE" } } },
+      orderBy: { createdAt: "desc" },
+      distinct: ["mineralId"],
+      select: { mineralId: true, media: FIRST_IMAGE },
+    }),
   ]);
   const countById = new Map(counts.map((c) => [c.mineralId, c._count._all]));
-  const present = minerals.filter((m) => (countById.get(m.id) ?? 0) > 0);
-  const images = await Promise.all(present.map((m) => newestGemImage({ ...base, mineralId: m.id })));
-  const tiles = present.map((m, i) => ({ key: m.slug, label: m.name, href: `/gems?mineral=${m.slug}`, count: countById.get(m.id) ?? 0, image: images[i] }));
-  return { total: counts.reduce((n, c) => n + c._count._all, 0), tiles, cover };
+  const coverById = new Map(covers.map((c) => [c.mineralId, c.media[0]?.url ?? null]));
+  const tiles = minerals
+    .filter((m) => (countById.get(m.id) ?? 0) > 0)
+    .map((m) => ({ key: m.slug, label: m.name, href: `/gems?mineral=${m.slug}`, count: countById.get(m.id) ?? 0, image: coverById.get(m.id) ?? null }));
+  return { total: counts.reduce((n, c) => n + c._count._all, 0), tiles, cover: covers[0]?.media[0]?.url ?? null };
 }
 
 /** Counts of published jewelry per audience and per (audience, piece type),
- * with cover images, for the two jewelry landing levels. */
+ * with cover images, for the two jewelry landing levels. Two queries in all:
+ * one grouped count, and the newest imaged piece for each audience/type
+ * combination (a DISTINCT) — every tile's cover is then picked from those. */
 export async function getJewelryCategoryData(market: Market = "intl") {
   const base: Prisma.JewelryPieceWhereInput = { isPublished: true, market };
-  const groups = await prisma.jewelryPiece.groupBy({ by: ["audience", "pieceType"], where: base, _count: { _all: true } });
+  const [groups, covers] = await Promise.all([
+    prisma.jewelryPiece.groupBy({ by: ["audience", "pieceType"], where: base, _count: { _all: true } }),
+    prisma.jewelryPiece.findMany({
+      where: { ...base, media: { some: { type: "IMAGE" } } },
+      orderBy: { createdAt: "desc" },
+      distinct: ["audience", "pieceType"],
+      select: { audience: true, pieceType: true, createdAt: true, media: FIRST_IMAGE },
+    }),
+  ]);
 
-  const countFor = (slug: JewelryAudienceSlug | null, pieceType?: string) => {
-    const allowed = slug ? new Set<string>(audienceValuesFor(slug)) : null;
-    return groups
-      .filter((g) => (!allowed || allowed.has(g.audience)) && (!pieceType || g.pieceType === pieceType))
-      .reduce((n, g) => n + g._count._all, 0);
-  };
-  const whereFor = (slug: JewelryAudienceSlug | null, pieceType?: string): Prisma.JewelryPieceWhereInput => ({
-    ...base,
-    ...(slug ? { audience: { in: audienceValuesFor(slug) } } : {}),
-    ...(pieceType ? { pieceType: pieceType as never } : {}),
-  });
+  const matches = (audience: string, slug: JewelryAudienceSlug | null) => !slug || (audienceValuesFor(slug) as string[]).includes(audience);
+  const countFor = (slug: JewelryAudienceSlug | null, pieceType?: string) =>
+    groups.filter((g) => matches(g.audience, slug) && (!pieceType || g.pieceType === pieceType)).reduce((n, g) => n + g._count._all, 0);
+  // covers are already newest-first, so the first match is the newest overall
+  const coverFor = (slug: JewelryAudienceSlug | null, pieceType?: string) =>
+    covers.find((c) => matches(c.audience, slug) && (!pieceType || c.pieceType === pieceType))?.media[0]?.url ?? null;
 
-  const audienceTiles = JEWELRY_AUDIENCES.map((slug) => ({ slug, count: countFor(slug) })).filter((a) => a.count > 0);
-  const audienceImages = await Promise.all(audienceTiles.map((a) => newestJewelryImage(whereFor(a.slug))));
-  const cover = await newestJewelryImage(base);
+  const audiences = JEWELRY_AUDIENCES.map((slug) => ({ slug, count: countFor(slug), image: coverFor(slug) })).filter((a) => a.count > 0);
 
   return {
     total: countFor(null),
-    cover,
-    audiences: audienceTiles.map((a, i) => ({ slug: a.slug, count: a.count, image: audienceImages[i] })),
+    cover: coverFor(null),
+    audiences,
     /** Type tiles for one audience (or all jewelry when null). */
     async typesFor(slug: JewelryAudienceSlug | null) {
-      const types = PIECE_TYPE_ORDER.map((t) => ({ type: t, count: countFor(slug, t) })).filter((t) => t.count > 0);
-      const images = await Promise.all(types.map((t) => newestJewelryImage(whereFor(slug, t.type))));
-      return types.map((t, i) => ({ type: t.type, count: t.count, image: images[i] }));
+      return PIECE_TYPE_ORDER.map((type) => ({ type, count: countFor(slug, type), image: coverFor(slug, type) })).filter((t) => t.count > 0);
     },
     totalFor: countFor,
   };

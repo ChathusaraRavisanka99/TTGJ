@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { getUnreadCount } from "@/lib/chat";
+import { getUnreadCountsFor } from "@/lib/chat";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,7 @@ export default async function AdminSourcingPage({ searchParams }: PageProps<"/ad
     prisma.sourcingRequest.count({ where }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const unreadCounts = await Promise.all(requests.map((r) => getUnreadCount("sourcing", r.id, "ADMIN")));
+  const unreadCounts = await getUnreadCountsFor(requests.map((r) => ({ requestType: "sourcing" as const, requestId: r.id })), "ADMIN");
 
   return (
     <div>

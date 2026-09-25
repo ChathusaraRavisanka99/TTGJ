@@ -2,7 +2,7 @@ import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { getUnreadCount } from "@/lib/chat";
+import { getUnreadCountsFor } from "@/lib/chat";
 import { Pagination } from "@/components/ui/Pagination";
 import { BackLink } from "@/components/admin/BackLink";
 import { AdminMessagesInbox, type InboxRow } from "@/components/admin/AdminMessagesInbox";
@@ -111,7 +111,7 @@ export default async function AdminMessagesPage({ searchParams }: PageProps<"/ad
       })),
   ];
 
-  const unreadCounts = await Promise.all(rows.map((r) => getUnreadCount(r.requestType, r.requestId, "ADMIN")));
+  const unreadCounts = await getUnreadCountsFor(rows.map((r) => ({ requestType: r.requestType, requestId: r.requestId })), "ADMIN");
   rows = rows.map((r, i) => ({ ...r, unread: unreadCounts[i] }));
 
   if (q) {

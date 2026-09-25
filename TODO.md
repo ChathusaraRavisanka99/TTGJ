@@ -66,6 +66,42 @@ against the shared prod DB before shipping dependent code, then
 
 ## Orders & admin workflow
 
+- ~~**Performance pass + a hydration bug**~~ — done. Reviewed the layout,
+  catalog queries, indexes, images and the production bundle. **Found and
+  fixed:** (1) the root layout did two database reads on *every* page view
+  (page visibility, seasonal settings) for values that rarely change — now
+  cached for 60s (`lib/site-config-cache.ts`) and dropped immediately by the
+  three actions that write them (`setPageVisibility`,
+  `updateSeasonalThemeCopy`, `setActiveSeasonalTheme`); (2) unread-message
+  counts ran two queries per row in eight places (admin inbox, quote and
+  sourcing lists, the customer equivalents) — now two queries in total via
+  `getUnreadCountsFor`; (3) the STAFF session check and the disabled-account
+  check on every server action each read the account separately — now one
+  lookup per request (`lib/account-standing.ts`); (4) catalog lists loaded
+  every photo of every item though cards show one — now the primary image
+  only; (5) my own category landing pages ran a query per tile — now one
+  distinct query each; (6) the admin About-page builder shipped the whole Zod
+  library (a 313 KB chunk, admin-only) — schemas moved to
+  `about-blocks-schema.ts`; (7) added the missing
+  `ChatMessage(threadId, createdAt)` index (migration
+  `20260925150000_add_chat_message_thread_time_index`, applied to the shared
+  DB first). **Checked and fine:** image `priority`/`sizes`, `next/image`
+  use, the market/isPublished/status indexes, public pages don't load Zod,
+  total client JS ~1.8 MB across 83 files, mostly framework. **Hydration
+  error, pre-existing** (from the wishlist feature): for signed-out visitors
+  the heart on every catalog card was a link nested inside the card's own
+  link — invalid HTML, reported by React on the home, gems, jewelry and gem
+  pages; it is now a button that navigates to sign-in (checked on both
+  stores), and a browser sweep of home, catalog, detail and admin pages now
+  shows zero errors. A stale `.next` cache also broke one production build
+  with a Google-font error until cleared (`rm -rf .next`) — not a code issue.
+  **Honest caveats:** dev-mode timings on the slow shared database aren't
+  representative, so the gain was reasoned from the queries removed, not
+  benchmarked, and the production effect of the caching wasn't load-tested.
+  The whole site is server-rendered per request because the root layout reads
+  the session, so full CDN page caching isn't possible (even static-looking
+  pages like About/Terms are rendered on demand). Possible future work: cache
+  the catalog listing pages, and the per-request cart-count query.
 - ~~**Staff table matrix + "Dashboard & analytics" staff area**~~ — done.
   The staff list is now a proper matrix: one row per person with columns
   for Store, one tick box per area (each saves as you click), Status
@@ -132,7 +168,7 @@ against the shared prod DB before shipping dependent code, then
   contrast was measured, not eyeballed: body ~15.8:1, gold-deep accent
   ~5.0:1. 12 new tests (677 total); live-checked the whole flow with
   temporary jewelry pieces, and looked at desktop and phone screenshots
-  before and after.
+  before and after.S
 - ~~**Image-zoom lightbox Close button on phones + tab icon**~~ — done. On a
   phone held upright the lightbox's Close button couldn't be tapped, only
   after rotating: the full-screen image box (`max-w-4xl` only narrows it in

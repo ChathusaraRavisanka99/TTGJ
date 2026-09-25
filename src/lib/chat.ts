@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { cartTotal } from "@/lib/discount-codes";
 import type { ConfiguredSpec } from "@/lib/validation/quote";
@@ -109,6 +110,58 @@ export async function getUnreadCount(requestType: ChatRequestType, requestId: st
   });
 }
 
+/**
+ * Unread counts for many conversations at once, in the same order as `items`.
+ * Two queries in total (find the threads, then one grouped count) instead of
+ * two per conversation — the admin inbox and the customer/admin request lists
+ * used to run getUnreadCount once per row. Same rule as getUnreadCount:
+ * messages from the other side sent after this side last opened the thread.
+ */
+export async function getUnreadCountsFor(items: { requestType: ChatRequestType; requestId: string }[], forRole: "CUSTOMER" | "ADMIN"): Promise<number[]> {
+  if (items.length === 0) return [];
+  const idsOf = (type: ChatRequestType) => [...new Set(items.filter((i) => i.requestType === type).map((i) => i.requestId))];
+  const quoteIds = idsOf("quote");
+  const sourcingIds = idsOf("sourcing");
+  const orderIds = idsOf("order");
+  const userIds = idsOf("general");
+
+  const or: Prisma.ChatThreadWhereInput[] = [];
+  if (quoteIds.length) or.push({ quoteRequestId: { in: quoteIds } });
+  if (sourcingIds.length) or.push({ sourcingRequestId: { in: sourcingIds } });
+  if (orderIds.length) or.push({ orderId: { in: orderIds } });
+  if (userIds.length) or.push({ generalUserId: { in: userIds } });
+
+  const threads = await prisma.chatThread.findMany({
+    where: { OR: or },
+    select: { id: true, quoteRequestId: true, sourcingRequestId: true, orderId: true, generalUserId: true },
+  });
+  if (threads.length === 0) return items.map(() => 0);
+
+  const readColumn = forRole === "CUSTOMER" ? Prisma.raw('t."lastReadByCustomerAt"') : Prisma.raw('t."lastReadByAdminAt"');
+  const rows = await prisma.$queryRaw<{ threadId: string; unread: bigint | number }[]>(Prisma.sql`
+    SELECT m."threadId" AS "threadId", COUNT(*) AS unread
+    FROM "ChatMessage" m
+    JOIN "ChatThread" t ON t.id = m."threadId"
+    WHERE m."threadId" IN (${Prisma.join(threads.map((t) => t.id))})
+      AND m."senderRole"::text <> ${forRole}
+      AND (${readColumn} IS NULL OR m."createdAt" > ${readColumn})
+    GROUP BY m."threadId"
+  `);
+  const unreadByThread = new Map(rows.map((r) => [r.threadId, Number(r.unread)]));
+
+  const threadFor = new Map<string, string>();
+  for (const t of threads) {
+    if (t.quoteRequestId) threadFor.set(`quote:${t.quoteRequestId}`, t.id);
+    if (t.sourcingRequestId) threadFor.set(`sourcing:${t.sourcingRequestId}`, t.id);
+    if (t.orderId) threadFor.set(`order:${t.orderId}`, t.id);
+    if (t.generalUserId) threadFor.set(`general:${t.generalUserId}`, t.id);
+  }
+  return items.map((i) => {
+    const threadId = threadFor.get(`${i.requestType}:${i.requestId}`);
+    return threadId ? (unreadByThread.get(threadId) ?? 0) : 0;
+  });
+}
+
 export interface CustomerConversation {
   requestType: ChatRequestType;
   requestId: string;
@@ -168,7 +221,7 @@ export async function getConversationsForCustomer(userId: string): Promise<Custo
     })),
   ];
 
-  const unreadCounts = await Promise.all(rows.map((r) => getUnreadCount(r.requestType, r.requestId, "CUSTOMER")));
+  const unreadCounts = await getUnreadCountsFor(rows.map((r) => ({ requestType: r.requestType, requestId: r.requestId })), "CUSTOMER");
   rows.forEach((r, i) => {
     r.unreadCount = unreadCounts[i];
   });

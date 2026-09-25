@@ -1,12 +1,14 @@
 "use server";
 
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { SITE_CONFIG_TAG } from "@/lib/site-config-cache";
 import { requireAdmin, requireStaffArea, requireMarketAccess } from "@/lib/rbac";
 import { saveUploadedMedia } from "@/lib/media";
 import { savePageContent, getSeasonalContent, getHomeContent, LK_PAYMENTS_KEY } from "@/lib/page-content";
 import { marketKey, type Market } from "@/lib/market-shared";
-import { aboutRowsSchema, type AboutRow } from "@/lib/about-blocks";
+import type { AboutRow } from "@/lib/about-blocks";
+import { aboutRowsSchema } from "@/lib/about-blocks-schema";
 import { SEASONAL_THEME_KEYS, type SeasonalThemeKey } from "@/lib/seasonal-themes";
 import type { ActionResult } from "./auth";
 
@@ -226,6 +228,8 @@ export async function updateSeasonalThemeCopy(theme: SeasonalThemeKey, formData:
 
   const current = await getSeasonalContent(market);
   await savePageContent(marketKey("seasonal", market), { ...current, themes: { ...current.themes, [theme]: parsed.data } });
+  // The root layout caches the seasonal settings (see lib/site-config-cache.ts).
+  revalidateTag(SITE_CONFIG_TAG, { expire: 0 });
   revalidatePath(market === "lk" ? "/lk/promotions" : "/promotions");
   revalidatePath("/admin/promotions");
   return { ok: true };
@@ -240,6 +244,8 @@ export async function setActiveSeasonalTheme(theme: SeasonalThemeKey, market: Ma
 
   const current = await getSeasonalContent(market);
   await savePageContent(marketKey("seasonal", market), { ...current, activeTheme: theme });
+  // The root layout caches the seasonal settings (see lib/site-config-cache.ts).
+  revalidateTag(SITE_CONFIG_TAG, { expire: 0 });
   revalidatePath(market === "lk" ? "/lk/promotions" : "/promotions");
   revalidatePath("/admin/promotions");
   return { ok: true };

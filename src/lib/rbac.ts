@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getAccountStanding } from "@/lib/account-standing";
 import { isUserDisabled } from "@/lib/user-status";
 import type { StaffArea } from "@/lib/staff-permissions";
 
@@ -10,7 +10,7 @@ export async function requireUser() {
   }
   // The session token can outlive an admin disabling the account, so every
   // server action that goes through here re-checks the account itself.
-  const status = await prisma.user.findUnique({ where: { id: session.user.id }, select: { disabledAt: true, disabledUntil: true } });
+  const status = await getAccountStanding(session.user.id);
   if (isUserDisabled(status)) {
     throw new Error("ACCOUNT_DISABLED");
   }

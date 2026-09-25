@@ -874,6 +874,8 @@ model ChatMessage {
   createdAt DateTime @default(now())
 
   @@index([threadId])
+  // Unread counts and a thread's message list filter/sort by thread then time.
+  @@index([threadId, createdAt])
   @@index([senderId])
 }
 

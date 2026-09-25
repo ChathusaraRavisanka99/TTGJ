@@ -3,7 +3,7 @@ import Link from "@/components/ui/MarketLink";
 import { MessageCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getUnreadCount } from "@/lib/chat";
+import { getUnreadCountsFor } from "@/lib/chat";
 import { CATALOG_QUOTE_WHERE } from "@/lib/account-hub";
 import { QuoteStatusBadge } from "@/components/ui/Badge";
 import { formatPrice } from "@/lib/utils";
@@ -22,7 +22,7 @@ export default async function AccountQuotesPage() {
     orderBy: { createdAt: "desc" },
     include: { gemstone: true, jewelry: true },
   });
-  const unreadCounts = await Promise.all(quotes.map((q) => getUnreadCount("quote", q.id, "CUSTOMER")));
+  const unreadCounts = await getUnreadCountsFor(quotes.map((q) => ({ requestType: "quote" as const, requestId: q.id })), "CUSTOMER");
 
   return (
     <div className="w-full">

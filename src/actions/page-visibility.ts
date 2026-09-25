@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { SITE_CONFIG_TAG } from "@/lib/site-config-cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/rbac";
 import { PAGE_VISIBILITY_KEYS, type PageVisibilityKey, type PageVisibilityState } from "@/lib/page-visibility";
@@ -20,6 +21,8 @@ export async function setPageVisibility(key: PageVisibilityKey, state: PageVisib
     update: { state },
     create: { key, state },
   });
+  // The root layout caches page visibilities (see lib/site-config-cache.ts).
+  revalidateTag(SITE_CONFIG_TAG, { expire: 0 });
 
   // Every route this could plausibly affect — cheap to over-revalidate a
   // handful of paths versus wiring a key-to-path map for so few entries.

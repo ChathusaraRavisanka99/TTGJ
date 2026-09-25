@@ -6,8 +6,8 @@ import { getLocale } from "next-intl/server";
 import "./globals.css";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getPageVisibilities, marketVisibilityKey } from "@/lib/page-visibility";
-import { getSeasonalContent } from "@/lib/page-content";
+import { marketVisibilityKey } from "@/lib/page-visibility";
+import { getCachedPageVisibilities, getCachedSeasonalContent } from "@/lib/site-config-cache";
 import { SEASONAL_THEMES } from "@/lib/seasonal-themes";
 import { SiteChrome } from "@/components/layout/SiteChrome";
 import { MainWrapper } from "@/components/layout/MainWrapper";
@@ -80,8 +80,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const auctionKey = marketVisibilityKey("auction", market);
   const [session, visibilities, seasonalContent, locale] = await Promise.all([
     auth(),
-    getPageVisibilities([seasonalKey, auctionKey]),
-    getSeasonalContent(market),
+    getCachedPageVisibilities([seasonalKey, auctionKey]),
+    getCachedSeasonalContent(market),
     getLocale(),
   ]);
   // Navbar's transparent-over-hero treatment on /promotions is only safe

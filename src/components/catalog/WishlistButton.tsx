@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
-import Link from "@/components/ui/MarketLink";
+import { useMarket } from "@/components/providers/MarketProvider";
+import { withMarket } from "@/lib/market-shared";
 import { toggleWishlistAction } from "@/actions/wishlist";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ export function WishlistButton({ gemstoneId, jewelryId, initialSaved, isAuthenti
   const [saved, setSaved] = useState(initialSaved);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const market = useMarket();
 
   const baseClass = cn(
     "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/90 text-charcoal/60 shadow-sm backdrop-blur-sm transition-colors hover:text-red-500",
@@ -31,14 +33,22 @@ export function WishlistButton({ gemstoneId, jewelryId, initialSaved, isAuthenti
 
   if (!isAuthenticated) {
     return (
-      <Link
-        href="/account/login"
-        onClick={(e) => e.stopPropagation()}
+      // A button, not a link: this sits inside the card's own <a>, and an
+      // <a> inside an <a> is invalid HTML (React reports it as a hydration
+      // error). Navigating from the click handler behaves the same for a
+      // visitor and keeps the markup valid.
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          router.push(withMarket("/account/login", market));
+        }}
         className={baseClass}
         aria-label="Sign in to save to your wishlist"
       >
         <Heart size={16} />
-      </Link>
+      </button>
     );
   }
 

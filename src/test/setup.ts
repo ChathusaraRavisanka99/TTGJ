@@ -12,7 +12,8 @@ vi.mock("@/lib/prisma", () => ({ prisma: prismaMock }));
 // missing") that doesn't exist in a unit test — server actions call these
 // as a side effect, not something under test, so they're no-ops here.
 // Global (not per-test-file) since any src/actions/*.test.ts will hit this.
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
+// unstable_cache just runs the function: there is no Next cache in unit tests.
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn(), unstable_cache: <T extends (...args: never[]) => unknown>(fn: T) => fn }));
 
 beforeEach(() => {
   resetPrismaMock();

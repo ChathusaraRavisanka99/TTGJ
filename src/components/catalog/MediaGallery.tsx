@@ -120,9 +120,13 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="absolute right-4 top-4 rounded-full bg-charcoal/60 p-2 text-ivory transition-colors hover:bg-charcoal/80"
+        // z-10: the image box below is full-screen in portrait (max-w-4xl
+        // only narrows it in landscape), so without this it sits on top of
+        // the button and swallows the tap. Offsets respect the phone's
+        // notch/status bar, and the larger padding is a proper touch target.
+        className="absolute right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] z-10 rounded-full bg-charcoal/70 p-3 text-ivory transition-colors hover:bg-charcoal/90"
       >
-        <X size={20} />
+        <X size={22} />
       </button>
       <div className="relative h-full w-full max-w-4xl">
         <Image src={src} alt={alt} fill className="object-contain" sizes="100vw" onClick={(e) => e.stopPropagation()} />

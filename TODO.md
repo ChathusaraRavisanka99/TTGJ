@@ -66,6 +66,18 @@ against the shared prod DB before shipping dependent code, then
 
 ## Orders & admin workflow
 
+- ~~**Image-zoom lightbox Close button on phones + tab icon**~~ — done. On a
+  phone held upright the lightbox's Close button couldn't be tapped, only
+  after rotating: the full-screen image box (`max-w-4xl` only narrows it in
+  landscape) sat on top of the button and swallowed the tap. Fixed in
+  `MediaGallery.tsx` with `z-10`, notch/status-bar-safe offsets and a bigger
+  touch target; live-checked in an iPhone-sized portrait viewport (the
+  button is the top element at its own centre and a tap closes the
+  lightbox). The browser tab was still showing the default Next.js
+  favicon; added a brand gem icon in the site's charcoal and gold
+  (`app/icon.svg`, `apple-icon.png`, rebuilt `favicon.ico`). Tab titles were
+  already set on every public page (home uses "Ratnavue — Ceylon Gemstones &
+  Jewelry", others "<page> · Ratnavue"), so nothing to change there.
 - ~~**Existing-user staff access, account disabling, Home & About area**~~ —
   done. Follow-up to the per-area permissions below. On `/admin/staff`:
   **Add Existing User** (search customer accounts by email/name, pick store

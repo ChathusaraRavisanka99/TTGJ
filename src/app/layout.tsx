@@ -15,6 +15,7 @@ import { getFooterMessages, getTrustBarMessages } from "@/lib/i18n-messages";
 import { getMarket } from "@/lib/market";
 import { hasAdminPortalAccess } from "@/lib/admin-access";
 import { APP_PATH_HEADER, withMarket } from "@/lib/market-shared";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { MarketProvider } from "@/components/providers/MarketProvider";
 import { ConfirmProvider } from "@/components/providers/ConfirmProvider";
 import type { AppLocale } from "@/i18n/request";
@@ -130,6 +131,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           </ConfirmProvider>
         </NextIntlClientProvider>
         </MarketProvider>
+        {/* Real-visitor page speed (Core Web Vitals) for the Vercel dashboard's
+            Speed Insights tab; reports nothing outside a Vercel deployment. */}
+        <SpeedInsights />
       </body>
     </html>
   );

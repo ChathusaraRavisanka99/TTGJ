@@ -12,7 +12,7 @@ import { Modal } from "@/components/ui/Modal";
  * null while the account is active, otherwise what to show about it. A plain
  * onClick flow throughout — see RevertToUnpaidForm for why confirm() must not
  * be awaited inside a <form action>. */
-export function DisableUserControl({ userId, name, status }: { userId: string; name: string; status: { label: string; reason: string | null } | null }) {
+export function DisableUserControl({ userId, name, status, showBadge = true }: { userId: string; name: string; status: { label: string; reason: string | null } | null; showBadge?: boolean }) {
   const router = useRouter();
   const confirm = useConfirm();
   const [open, setOpen] = useState(false);
@@ -66,9 +66,11 @@ export function DisableUserControl({ userId, name, status }: { userId: string; n
     <>
       {status ? (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs text-red-700" title={status.reason ?? undefined}>
-            {status.label}
-          </span>
+          {showBadge && (
+            <span className="rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs text-red-700" title={status.reason ?? undefined}>
+              {status.label}
+            </span>
+          )}
           <Button type="button" variant="outline" size="sm" disabled={pending} onClick={handleEnable}>Enable</Button>
           {error && <span className="text-xs text-red-700">{error}</span>}
         </div>

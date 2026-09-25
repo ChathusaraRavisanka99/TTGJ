@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requireStaffArea, requireMarketAccess } from "@/lib/rbac";
 import { deleteUploadedFile, createDirectUpload, inspectDirectUpload } from "@/lib/media";
+import { applyMediaOrder, normalizeMediaOrder, isCompleteOrder } from "@/lib/media-gallery";
 import type { ActionResult } from "./auth";
 
 // Step 1 of a product photo/video upload: hands back a short-lived signed
@@ -78,6 +79,9 @@ export async function deleteProductMedia(mediaId: string): Promise<ActionResult>
   if (!media) return { ok: false, error: "Media not found." };
 
   await prisma.mediaAsset.delete({ where: { id: mediaId } });
+  // Closes the gap, and if it was the first image the next one takes over.
+  const owner = media.gemstoneId ? { gemstoneId: media.gemstoneId } : media.jewelryId ? { jewelryId: media.jewelryId } : null;
+  if (owner) await normalizeMediaOrder(owner);
 
   // Best-effort: some MediaAsset rows point at seeded /images/... static
   // assets rather than an uploaded file, so there's nothing to remove from
@@ -88,26 +92,57 @@ export async function deleteProductMedia(mediaId: string): Promise<ActionResult>
   return { ok: true };
 }
 
+// Which product a media asset belongs to, and the store that product is in —
+// the caller's market scope is checked against the product, never a client value.
+async function loadOwner(user: { role: string; staffMarketScope: string | null }, owner: { gemstoneId?: string; jewelryId?: string }) {
+  if (!owner.gemstoneId === !owner.jewelryId) return { ok: false as const, error: "Missing product reference." };
+  const product = owner.gemstoneId
+    ? await prisma.gemstone.findUnique({ where: { id: owner.gemstoneId }, select: { market: true } })
+    : await prisma.jewelryPiece.findUnique({ where: { id: owner.jewelryId! }, select: { market: true } });
+  if (!product) return { ok: false as const, error: "Product not found." };
+  await requireMarketAccess(user, product.market);
+  return { ok: true as const, where: owner.gemstoneId ? { gemstoneId: owner.gemstoneId } : { jewelryId: owner.jewelryId! } };
+}
+
+function revalidateGallery(owner: { gemstoneId?: string; jewelryId?: string }) {
+  revalidatePath("/admin/media");
+  if (owner.gemstoneId) revalidatePath(`/admin/gems/${owner.gemstoneId}`);
+  if (owner.jewelryId) revalidatePath(`/admin/jewelry/${owner.jewelryId}`);
+  revalidatePath("/gems", "layout");
+  revalidatePath("/jewelry", "layout");
+  revalidatePath("/");
+  revalidatePath("/lk");
+}
+
+/** Sets the whole gallery order. `orderedIds` must be exactly the product's
+ * current media (a permutation) — the first becomes the primary image. */
+export async function reorderProductMedia(input: { gemstoneId?: string; jewelryId?: string; orderedIds: string[] }): Promise<ActionResult> {
+  const user = await requireStaffArea("catalog");
+  const found = await loadOwner(user, input);
+  if (!found.ok) return found;
+
+  const existing = await prisma.mediaAsset.findMany({ where: found.where, select: { id: true } });
+  if (!isCompleteOrder(input.orderedIds, existing.map((m) => m.id))) {
+    return { ok: false, error: "The gallery changed while you were arranging it — reload and try again." };
+  }
+
+  await applyMediaOrder(input.orderedIds);
+  revalidateGallery(input);
+  return { ok: true };
+}
+
+/** Makes one image the first (primary) one, keeping the rest in their order. */
 export async function setPrimaryMedia(mediaId: string): Promise<ActionResult> {
   const user = await requireStaffArea("catalog");
 
-  const media = await prisma.mediaAsset.findUnique({
-    where: { id: mediaId },
-    include: { gemstone: { select: { market: true } }, jewelry: { select: { market: true } } },
-  });
+  const media = await prisma.mediaAsset.findUnique({ where: { id: mediaId }, select: { gemstoneId: true, jewelryId: true } });
   if (!media) return { ok: false, error: "Media not found." };
-  const market = media.gemstone?.market ?? media.jewelry?.market;
-  if (!market) return { ok: false, error: "Media not found." };
-  await requireMarketAccess(user, market);
+  const found = await loadOwner(user, { gemstoneId: media.gemstoneId ?? undefined, jewelryId: media.jewelryId ?? undefined });
+  if (!found.ok) return found;
 
-  await prisma.$transaction([
-    prisma.mediaAsset.updateMany({
-      where: media.gemstoneId ? { gemstoneId: media.gemstoneId } : { jewelryId: media.jewelryId },
-      data: { isPrimary: false },
-    }),
-    prisma.mediaAsset.update({ where: { id: mediaId }, data: { isPrimary: true } }),
-  ]);
+  const siblings = await prisma.mediaAsset.findMany({ where: found.where, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true } });
+  await applyMediaOrder([mediaId, ...siblings.map((m) => m.id).filter((id) => id !== mediaId)]);
 
-  revalidatePath("/admin/media");
+  revalidateGallery({ gemstoneId: media.gemstoneId ?? undefined, jewelryId: media.jewelryId ?? undefined });
   return { ok: true };
 }

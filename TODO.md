@@ -66,6 +66,38 @@ against the shared prod DB before shipping dependent code, then
 
 ## Orders & admin workflow
 
+- ~~**Staff table matrix + "Dashboard & analytics" staff area**~~ — done.
+  The staff list is now a proper matrix: one row per person with columns
+  for Store, one tick box per area (each saves as you click), Status
+  (Active / Disabled until…), and Actions. New sixth area **Dashboard &
+  analytics**: the bare `/admin` dashboard plus `/admin/analytics`, limited
+  to the staff member's store(s) (one or both). Staff never see profit or
+  cost figures, points, referrals, business accounts, customers or auctions;
+  the quote/sourcing cards and lists only show if they also have the
+  Messages/requests area; a single-store member sees only that store's
+  revenue, orders and catalog counts (no cross-store split). New "Orders
+  awaiting payment" card for everyone. The admin layout no longer bounces
+  staff off `/admin` when they have the dashboard area. No migration —
+  permissions are stored as strings. Live-verified for a Sri Lanka-only and
+  a both-stores member (found and fixed while testing my own test script,
+  not the product: CSS uppercase and page streaming made text checks flaky).
+- ~~**Photos & videos when adding an item, arrange them, pick the first**~~ —
+  done. The gem and jewelry **create** forms now take photos and videos: each
+  goes straight to storage as soon as it's chosen, and they're attached in
+  the arranged order when the item is saved (a hidden `mediaKeys` field). On
+  create and on the edit page alike you can drag tiles (or use the arrows,
+  for touch) to reorder and use the star to make any one the **first
+  image**. "First image" is position 0 and is always the `isPrimary` one —
+  the storefront cards read the flag and the product page reads the order,
+  so every write (`reorderProductMedia`, `setPrimaryMedia`, delete) keeps the
+  two in step; deleting closes the gap and promotes the next image. The
+  reorder action requires the exact current set of images (no drops or
+  injections) and is market-scoped for staff. Unfinished uploads from an
+  abandoned draft stay in storage (small, harmless; not yet garbage
+  collected). Live-verified with real uploads: three images on the create
+  form, third made first, saved order/primary/sort order checked in the
+  database, then rearranged on the edit page; test uploads and pieces
+  deleted afterwards.
 - ~~**Catalog categories, breadcrumbs, loading states, warmer palette**~~ —
   done. **Gems** now open on a "shop by material" grid (one tile per mineral
   that has published stones in the visitor's store, with a cover photo and

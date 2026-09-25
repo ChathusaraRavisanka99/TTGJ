@@ -15,9 +15,16 @@ describe("staffAreaForPath", () => {
   });
 
   it("never maps an admin-only page", () => {
-    for (const p of ["/admin", "/admin/customers", "/admin/discount-codes", "/admin/staff", "/admin/analytics", "/admin/media", "/admin/commerce-settings", "/admin/promotions", "/admin/alt-collections", "/admin/loyalty-settings"]) {
+    for (const p of ["/admin/customers", "/admin/discount-codes", "/admin/staff", "/admin/media", "/admin/commerce-settings", "/admin/promotions", "/admin/alt-collections", "/admin/loyalty-settings"]) {
       expect(staffAreaForPath(p)).toBeNull();
     }
+  });
+
+  it("maps the dashboard (bare /admin, exactly) and analytics to the dashboard area, without swallowing other admin pages", () => {
+    expect(staffAreaForPath("/admin")).toBe("dashboard");
+    expect(staffAreaForPath("/admin/analytics")).toBe("dashboard");
+    expect(staffAreaForPath("/admin/administrators")).toBeNull();
+    expect(staffAreaForPath("/admin/staff")).toBeNull();
   });
 
   it("keeps the manual-sale and build-order sub-pages admin-only", () => {
@@ -36,6 +43,14 @@ describe("staffCanAccessPath / firstStaffPath / nav", () => {
     expect(staffCanAccessPath(["catalog"], "/admin/gems")).toBe(true);
     expect(staffCanAccessPath(["catalog"], "/admin/orders")).toBe(false);
     expect(staffCanAccessPath([], "/admin/orders")).toBe(false);
+  });
+
+  it("lands a dashboard member on /admin and lists Dashboard + Analytics first", () => {
+    expect(firstStaffPath(["orders", "dashboard"])).toBe("/admin");
+    expect(staffCanAccessPath(["dashboard"], "/admin")).toBe(true);
+    expect(staffCanAccessPath(["orders"], "/admin")).toBe(false);
+    expect(staffNavLinks(["dashboard", "orders"]).map((l) => l.href)).toEqual(["/admin", "/admin/analytics", "/admin/orders"]);
+    expect(staffNavLinks(["dashboard"])[0].exact).toBe(true);
   });
 
   it("picks the first enabled area's landing page", () => {

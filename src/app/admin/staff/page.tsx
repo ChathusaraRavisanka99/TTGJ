@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { CreateStaffAccountForm } from "@/components/admin/CreateStaffAccountForm";
 import { GrantStaffAccessForm } from "@/components/admin/GrantStaffAccessForm";
 import { describeDisabled } from "@/lib/user-status";
+import { STAFF_AREAS, STAFF_AREA_LABELS } from "@/lib/staff-permissions";
 import { StaffAccountRow } from "@/components/admin/StaffAccountRow";
 import { BackLink } from "@/components/admin/BackLink";
 
@@ -32,28 +33,38 @@ export default async function AdminStaffPage() {
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[72rem] text-sm">
           <thead>
-            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Created</th>
-              <th className="px-4 py-3">Access</th>
+            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/65">
+              <th className="px-4 py-3 font-medium">Staff member</th>
+              <th className="px-3 py-3 font-medium">Store</th>
+              {STAFF_AREAS.map((area) => (
+                <th key={area} className="w-24 px-2 py-3 text-center font-medium leading-tight" title={STAFF_AREA_LABELS[area].description}>
+                  {STAFF_AREA_LABELS[area].short}
+                </th>
+              ))}
+              <th className="px-3 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {staff.map((s) => (
-              <tr key={s.id} className="border-b border-border-subtle last:border-0">
-                <td className="px-4 py-3 text-charcoal">{s.name ?? "—"}</td>
-                <td className="px-4 py-3 text-charcoal/70">{s.email}</td>
-                <td className="px-4 py-3 text-charcoal/70">{s.createdAt.toLocaleDateString()}</td>
-                <td className="px-4 py-3">
-                  <StaffAccountRow userId={s.id} marketScope={s.staffMarketScope ?? "intl"} permissions={s.staffPermissions} name={s.name ?? s.email} disabled={describeDisabled(s) ? { label: describeDisabled(s)!, reason: s.disabledReason } : null} />
-                </td>
-              </tr>
-            ))}
+            {staff.map((s) => {
+              const disabled = describeDisabled(s);
+              return (
+                <StaffAccountRow
+                  key={s.id}
+                  userId={s.id}
+                  name={s.name ?? s.email}
+                  email={s.email}
+                  added={s.createdAt.toLocaleDateString()}
+                  marketScope={s.staffMarketScope ?? "intl"}
+                  permissions={s.staffPermissions}
+                  disabled={disabled ? { label: disabled, reason: s.disabledReason } : null}
+                />
+              );
+            })}
             {staff.length === 0 && (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-charcoal/50">No staff accounts yet.</td></tr>
+              <tr><td colSpan={4 + STAFF_AREAS.length} className="px-4 py-8 text-center text-charcoal/65">No staff accounts yet.</td></tr>
             )}
           </tbody>
         </table>

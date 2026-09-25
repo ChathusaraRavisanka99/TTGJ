@@ -8,6 +8,7 @@ import { slugify } from "@/lib/utils";
 import { saveCertificateFile, deleteUploadedFile } from "@/lib/media";
 import { gemstoneSchema, jewelrySchema, jewelryVariantSchema } from "@/lib/validation/catalog";
 import { recomputeJewelryAvailability } from "@/lib/orders";
+import { parseDraftMedia, attachDraftMedia } from "@/lib/media-gallery";
 import type { ActionResult } from "./auth";
 
 function formToObject(formData: FormData) {
@@ -114,6 +115,10 @@ export async function createGemstone(formData: FormData): Promise<ActionResult> 
       quoteShipping: data.quoteShipping,
     },
   });
+
+  // Photos and videos added on the create form were uploaded straight to
+  // storage first; attach them now, in the order the admin arranged them.
+  await attachDraftMedia({ gemstoneId: gem.id }, parseDraftMedia(formData.get("mediaKeys")), data.name);
 
   revalidatePath("/admin/gems");
   redirect(`/admin/gems/${gem.id}`);
@@ -318,6 +323,8 @@ export async function createJewelry(formData: FormData): Promise<ActionResult> {
       quoteShipping: data.quoteShipping,
     },
   });
+
+  await attachDraftMedia({ jewelryId: piece.id }, parseDraftMedia(formData.get("mediaKeys")), data.name);
 
   revalidatePath("/admin/jewelry");
   redirect(`/admin/jewelry/${piece.id}`);

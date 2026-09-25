@@ -35,7 +35,7 @@ export default async function NewGemstonePage({ searchParams }: PageProps<"/admi
         />
       </div>
       <p className="mt-4 text-xs text-charcoal/50">
-        Save the gemstone first, then attach a certificate file and photos from its edit page.
+        Photos and videos can be added above. Save the gemstone first, then attach a certificate file from its edit page.
       </p>
     </div>
   );

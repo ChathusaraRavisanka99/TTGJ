@@ -13,7 +13,7 @@ import {
   createJewelryVariant,
   bulkSetCatalogPublished,
 } from "@/actions/catalog-admin";
-import { setPrimaryMedia, deleteProductMedia, registerProductMedia } from "@/actions/media";
+import { setPrimaryMedia, deleteProductMedia, registerProductMedia, reorderProductMedia } from "@/actions/media";
 import { auth } from "@/lib/auth";
 
 // The real rbac module on purpose: these tests are about what a STAFF
@@ -99,8 +99,10 @@ describe("STAFF with the catalog area — market scope", () => {
 
   it("can't change the primary photo of another store's item", async () => {
     staff("intl");
-    prismaMock.mediaAsset.findUnique.mockResolvedValue({ id: "media-1", gemstone: null, jewelry: { market: "lk" } } as never);
+    prismaMock.mediaAsset.findUnique.mockResolvedValue({ gemstoneId: null, jewelryId: "jew-lk" } as never);
+    prismaMock.jewelryPiece.findUnique.mockResolvedValue({ market: "lk" } as never);
     await expect(setPrimaryMedia("media-1")).rejects.toThrow("FORBIDDEN");
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it("can't edit a variant through a piece in their own store when the variant is in another", async () => {
@@ -109,6 +111,47 @@ describe("STAFF with the catalog area — market scope", () => {
     // jewelryId sent by the client says "my own piece" — the variant's real piece wins.
     await expect(updateJewelryVariant("variant-1", "jew-intl", formData({ label: "Size 7", stockStatus: "AVAILABLE" }))).rejects.toThrow("FORBIDDEN");
     expect(prismaMock.jewelryVariant.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("STAFF with the catalog area — arranging a gallery", () => {
+  it("can't reorder another store's gallery", async () => {
+    staff("intl");
+    prismaMock.gemstone.findUnique.mockResolvedValue({ market: "lk" } as never);
+    await expect(reorderProductMedia({ gemstoneId: "gem-lk", orderedIds: ["a", "b"] })).rejects.toThrow("FORBIDDEN");
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("can reorder their own store's gallery: index becomes the order and the first is primary", async () => {
+    staff("intl");
+    prismaMock.gemstone.findUnique.mockResolvedValue({ market: "intl" } as never);
+    prismaMock.mediaAsset.findMany.mockResolvedValue([{ id: "a" }, { id: "b" }, { id: "c" }] as never);
+    prismaMock.mediaAsset.update.mockResolvedValue({} as never);
+    prismaMock.$transaction.mockResolvedValue([] as never);
+
+    const result = await reorderProductMedia({ gemstoneId: "gem-1", orderedIds: ["c", "a", "b"] });
+
+    expect(result).toEqual({ ok: true });
+    expect(prismaMock.mediaAsset.update).toHaveBeenCalledWith({ where: { id: "c" }, data: { sortOrder: 0, isPrimary: true } });
+    expect(prismaMock.mediaAsset.update).toHaveBeenCalledWith({ where: { id: "a" }, data: { sortOrder: 1, isPrimary: false } });
+    expect(prismaMock.mediaAsset.update).toHaveBeenCalledWith({ where: { id: "b" }, data: { sortOrder: 2, isPrimary: false } });
+  });
+
+  it("rejects an order that drops, repeats or invents an image", async () => {
+    staff("intl");
+    prismaMock.gemstone.findUnique.mockResolvedValue({ market: "intl" } as never);
+    prismaMock.mediaAsset.findMany.mockResolvedValue([{ id: "a" }, { id: "b" }] as never);
+    for (const orderedIds of [["a"], ["a", "a"], ["a", "x"], ["a", "b", "c"]]) {
+      const result = await reorderProductMedia({ gemstoneId: "gem-1", orderedIds });
+      expect(result.ok).toBe(false);
+    }
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("needs exactly one of gemstoneId / jewelryId", async () => {
+    staff("both");
+    expect((await reorderProductMedia({ orderedIds: [] })).ok).toBe(false);
+    expect((await reorderProductMedia({ gemstoneId: "g", jewelryId: "j", orderedIds: [] })).ok).toBe(false);
   });
 });
 

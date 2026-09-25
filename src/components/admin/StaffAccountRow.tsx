@@ -9,7 +9,26 @@ import { Button } from "@/components/ui/Button";
 import { DisableUserControl } from "@/components/admin/DisableUserControl";
 import { STAFF_AREAS, STAFF_AREA_LABELS } from "@/lib/staff-permissions";
 
-export function StaffAccountRow({ userId, marketScope, permissions, name, disabled }: { userId: string; marketScope: string; permissions: string[]; name: string; disabled: { label: string; reason: string | null } | null }) {
+/** One staff member as a table row: who they are, which store(s), a tick box
+ * per area (the columns line up with the page's header), whether the account
+ * is active, and the row actions. Every change saves as soon as it's made. */
+export function StaffAccountRow({
+  userId,
+  name,
+  email,
+  added,
+  marketScope,
+  permissions,
+  disabled,
+}: {
+  userId: string;
+  name: string;
+  email: string;
+  added: string;
+  marketScope: string;
+  permissions: string[];
+  disabled: { label: string; reason: string | null } | null;
+}) {
   const router = useRouter();
   const [scope, setScope] = useState(marketScope);
   const [areas, setAreas] = useState<string[]>(permissions);
@@ -42,27 +61,49 @@ export function StaffAccountRow({ userId, marketScope, permissions, name, disabl
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        {STAFF_AREAS.map((area) => (
-          <label key={area} className="flex items-center gap-1.5 text-xs text-charcoal/80" title={STAFF_AREA_LABELS[area].description}>
-            <input type="checkbox" checked={areas.includes(area)} disabled={pending} onChange={(e) => handleAreaToggle(area, e.target.checked)} className="accent-gold" />
-            {STAFF_AREA_LABELS[area].label}
-          </label>
-        ))}
-      </div>
-      <div className="flex items-center gap-3">
-        <Select value={scope} onChange={(e) => handleScopeChange(e.target.value)} disabled={pending} className="w-auto py-1.5 text-xs">
-          <option value="intl">International only</option>
-          <option value="lk">Sri Lanka only</option>
+    <tr className="border-b border-border-subtle align-middle last:border-0">
+      <td className="px-4 py-4">
+        <p className="font-medium text-charcoal">{name}</p>
+        <p className="text-xs text-charcoal/65">{email}</p>
+        <p className="mt-0.5 text-[11px] text-charcoal/55">Added {added}</p>
+        {areas.length === 0 && <p className="mt-1 text-xs text-red-700">No areas on — can&apos;t open anything.</p>}
+      </td>
+      <td className="px-3 py-4">
+        <Select value={scope} onChange={(e) => handleScopeChange(e.target.value)} disabled={pending} className="w-auto min-w-36 py-1.5 text-xs">
+          <option value="intl">International</option>
+          <option value="lk">Sri Lanka</option>
           <option value="both">Both stores</option>
         </Select>
-        <Button type="button" variant="outline" size="sm" disabled={pending} onClick={handleRevoke}>
-          Revoke Access
-        </Button>
-      </div>
-      <DisableUserControl userId={userId} name={name} status={disabled} />
-      {areas.length === 0 && <p className="text-xs text-red-700">No areas switched on — this account can&apos;t open anything.</p>}
-    </div>
+      </td>
+      {STAFF_AREAS.map((area) => (
+        <td key={area} className="px-2 py-4 text-center">
+          <input
+            type="checkbox"
+            checked={areas.includes(area)}
+            disabled={pending}
+            onChange={(e) => handleAreaToggle(area, e.target.checked)}
+            aria-label={`${STAFF_AREA_LABELS[area].label} for ${name}`}
+            className="h-4 w-4 cursor-pointer accent-gold"
+          />
+        </td>
+      ))}
+      <td className="px-3 py-4">
+        {disabled ? (
+          <span className="inline-block rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs text-red-700" title={disabled.reason ?? undefined}>
+            {disabled.label}
+          </span>
+        ) : (
+          <span className="inline-block rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs text-emerald-800">Active</span>
+        )}
+      </td>
+      <td className="whitespace-nowrap px-4 py-4">
+        <div className="flex items-center gap-2">
+          <DisableUserControl userId={userId} name={name} status={disabled} showBadge={false} />
+          <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={handleRevoke} className="text-red-700 hover:bg-red-50">
+            Revoke access
+          </Button>
+        </div>
+      </td>
+    </tr>
   );
 }

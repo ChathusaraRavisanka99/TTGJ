@@ -21,11 +21,11 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const pathname = (await headers()).get(APP_PATH_HEADER) ?? "";
   // STAFF: the precise, fresh-from-the-database check of which areas an
   // admin has switched on for them (the edge proxy only sees the sign-in
-  // copy). There is no dashboard for staff, so /admin itself just sends
-  // them to the first area they have.
+  // copy).
   if (session.user.role === "STAFF") {
     const permissions = session.user.staffPermissions;
-    if (pathname === "/admin") redirect(firstStaffPath(permissions) ?? "/unauthorized");
+    // No dashboard area: /admin just sends them to the first area they have.
+    if (pathname === "/admin" && !permissions.includes("dashboard")) redirect(firstStaffPath(permissions) ?? "/unauthorized");
     if (!staffCanAccessPath(permissions, pathname)) redirect("/unauthorized");
   } else if (session.user.role !== "ADMIN") {
     redirect("/unauthorized");

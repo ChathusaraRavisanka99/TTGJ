@@ -1,4 +1,7 @@
+import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { hasStaffArea, marketFilterFor } from "@/lib/rbac";
 import { BarChart } from "@/components/admin/charts/BarChart";
 import { computeProfit, parseDateParam, toDateInputValue } from "@/lib/analytics";
 import { formatPrice } from "@/lib/utils";
@@ -15,7 +18,20 @@ function monthLabel(d: Date): string {
 }
 
 export default async function AdminAnalyticsPage({ searchParams }: PageProps<"/admin/analytics">) {
-  const sp = await searchParams;
+  const [sp, session] = await Promise.all([searchParams, auth()]);
+  const user = session?.user;
+  if (!user || !hasStaffArea(user, "dashboard")) notFound();
+
+  // A STAFF member sees revenue and order figures for their own store(s) only.
+  // Everything that isn't a per-store order figure — profit (it's built from
+  // cost prices), points, referrals, business accounts — stays admin-only, and
+  // new-customer counts (not tied to a store) need both stores.
+  const isAdmin = user.role === "ADMIN";
+  const scoped = marketFilterFor(user);
+  const inMarket = scoped ? { market: scoped } : {};
+  const showIntl = !scoped || scoped === "intl";
+  const showLk = !scoped || scoped === "lk";
+  const showCustomers = isAdmin || !scoped;
   const startOfMonth = monthsAgo(0);
   const sixMonthsAgo = monthsAgo(5);
 
@@ -44,28 +60,30 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps<"/a
     soldItemsInRange,
   ] = await Promise.all([
     prisma.order.findMany({
-      where: { status: "PAID", paidAt: { gte: ordersQueryFrom } },
+      where: { status: "PAID", paidAt: { gte: ordersQueryFrom }, ...inMarket },
       select: { paidAt: true, total: true, currency: true, market: true },
     }),
-    prisma.order.groupBy({ by: ["status"], where: { createdAt: { gte: rangeFrom, lte: rangeTo } }, _count: { _all: true } }),
-    prisma.user.count({ where: { role: "CUSTOMER", createdAt: { gte: rangeFrom, lte: rangeTo } } }),
-    prisma.pointsTransaction.aggregate({ where: { amount: { gt: 0 } }, _sum: { amount: true } }),
-    prisma.pointsTransaction.aggregate({ where: { reason: "REDEEMED_CHECKOUT" }, _sum: { amount: true } }),
-    prisma.referral.count({ where: { status: "REWARDED" } }),
-    prisma.businessAccount.count(),
+    prisma.order.groupBy({ by: ["status"], where: { createdAt: { gte: rangeFrom, lte: rangeTo }, ...inMarket }, _count: { _all: true } }),
+    showCustomers ? prisma.user.count({ where: { role: "CUSTOMER", createdAt: { gte: rangeFrom, lte: rangeTo } } }) : Promise.resolve(0),
+    isAdmin ? prisma.pointsTransaction.aggregate({ where: { amount: { gt: 0 } }, _sum: { amount: true } }) : Promise.resolve({ _sum: { amount: 0 } }),
+    isAdmin ? prisma.pointsTransaction.aggregate({ where: { reason: "REDEEMED_CHECKOUT" }, _sum: { amount: true } }) : Promise.resolve({ _sum: { amount: 0 } }),
+    isAdmin ? prisma.referral.count({ where: { status: "REWARDED" } }) : Promise.resolve(0),
+    isAdmin ? prisma.businessAccount.count() : Promise.resolve(0),
     // Profit is only ever computed from what actually sold (a PAID
     // order's line items), never from raw catalog inventory — an unsold
     // item's cost/retail spread isn't profit, it's just a listed margin.
-    prisma.orderItem.findMany({
-      where: { order: { status: "PAID", paidAt: { gte: rangeFrom, lte: rangeTo } } },
-      select: {
-        quantity: true,
-        lineTotal: true,
-        order: { select: { market: true } },
-        gemstone: { select: { costPrice: true } },
-        jewelry: { select: { costPrice: true } },
-      },
-    }),
+    isAdmin
+      ? prisma.orderItem.findMany({
+          where: { order: { status: "PAID", paidAt: { gte: rangeFrom, lte: rangeTo } } },
+          select: {
+            quantity: true,
+            lineTotal: true,
+            order: { select: { market: true } },
+            gemstone: { select: { costPrice: true } },
+            jewelry: { select: { costPrice: true } },
+          },
+        })
+      : Promise.resolve([]),
   ]);
 
   // Revenue is currency-specific (the international site charges USD, the
@@ -125,24 +143,29 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps<"/a
       </form>
 
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="International Revenue" value={formatPrice(sum(intlInRange), "USD")} />
-        <StatCard label="Sri Lanka Revenue" value={formatPrice(sum(lkInRange), "LKR")} />
-        <StatCard label="Avg. Order Value (Intl)" value={intlInRange.length ? formatPrice(sum(intlInRange) / intlInRange.length, "USD") : "—"} />
-        <StatCard label="New Customers" value={String(newCustomersInRange)} />
-        <StatCard label="Points Issued (all time)" value={(pointsIssued._sum.amount ?? 0).toLocaleString()} />
-        <StatCard label="Points Redeemed (all time)" value={Math.abs(pointsRedeemed._sum.amount ?? 0).toLocaleString()} />
-        <StatCard label="Referrals Converted" value={String(referralsConverted)} />
-        <StatCard label="Active Business Accounts" value={String(activeBusinessAccounts)} />
-        <StatCard
-          label="International Profit"
-          value={formatPrice(intlProfit.profit, "USD")}
-          note={intlProfit.uncostedCount > 0 ? `${intlProfit.uncostedCount} sold item(s) have no cost price set` : undefined}
-        />
-        <StatCard
-          label="Sri Lanka Profit"
-          value={formatPrice(lkProfit.profit, "LKR")}
-          note={lkProfit.uncostedCount > 0 ? `${lkProfit.uncostedCount} sold item(s) have no cost price set` : undefined}
-        />
+        {showIntl && <StatCard label="International Revenue" value={formatPrice(sum(intlInRange), "USD")} />}
+        {showLk && <StatCard label="Sri Lanka Revenue" value={formatPrice(sum(lkInRange), "LKR")} />}
+        {showIntl && <StatCard label="Avg. Order Value (Intl)" value={intlInRange.length ? formatPrice(sum(intlInRange) / intlInRange.length, "USD") : "—"} />}
+        {showLk && !showIntl && <StatCard label="Avg. Order Value (Sri Lanka)" value={lkInRange.length ? formatPrice(sum(lkInRange) / lkInRange.length, "LKR") : "—"} />}
+        {showCustomers && <StatCard label="New Customers" value={String(newCustomersInRange)} />}
+        {isAdmin && <StatCard label="Points Issued (all time)" value={(pointsIssued._sum.amount ?? 0).toLocaleString()} />}
+        {isAdmin && <StatCard label="Points Redeemed (all time)" value={Math.abs(pointsRedeemed._sum.amount ?? 0).toLocaleString()} />}
+        {isAdmin && <StatCard label="Referrals Converted" value={String(referralsConverted)} />}
+        {isAdmin && <StatCard label="Active Business Accounts" value={String(activeBusinessAccounts)} />}
+        {isAdmin && (
+          <StatCard
+            label="International Profit"
+            value={formatPrice(intlProfit.profit, "USD")}
+            note={intlProfit.uncostedCount > 0 ? `${intlProfit.uncostedCount} sold item(s) have no cost price set` : undefined}
+          />
+        )}
+        {isAdmin && (
+          <StatCard
+            label="Sri Lanka Profit"
+            value={formatPrice(lkProfit.profit, "LKR")}
+            note={lkProfit.uncostedCount > 0 ? `${lkProfit.uncostedCount} sold item(s) have no cost price set` : undefined}
+          />
+        )}
       </div>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-3">
@@ -150,11 +173,13 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps<"/a
           <p className="font-serif text-lg text-charcoal">Paid Orders — Last 6 Months</p>
           <div className="mt-4"><BarChart data={ordersByMonth} /></div>
         </div>
-        <div className="rounded-xl border border-border-subtle bg-surface p-5">
-          <p className="font-serif text-lg text-charcoal">Market Split (selected range)</p>
-          <div className="mt-4"><BarChart data={marketChart} /></div>
-        </div>
-        <div className="rounded-xl border border-border-subtle bg-surface p-5 lg:col-span-3">
+        {!scoped && (
+          <div className="rounded-xl border border-border-subtle bg-surface p-5">
+            <p className="font-serif text-lg text-charcoal">Market Split (selected range)</p>
+            <div className="mt-4"><BarChart data={marketChart} /></div>
+          </div>
+        )}
+        <div className={`rounded-xl border border-border-subtle bg-surface p-5 ${scoped ? "lg:col-span-1" : "lg:col-span-3"}`}>
           <p className="font-serif text-lg text-charcoal">Orders by Status (selected range)</p>
           <div className="mt-4"><BarChart data={statusChart} /></div>
         </div>

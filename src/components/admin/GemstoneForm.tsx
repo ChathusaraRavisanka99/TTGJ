@@ -10,6 +10,7 @@ import { Input, Textarea, Select, Label, FieldError } from "@/components/ui/Fiel
 import { Button } from "@/components/ui/Button";
 import { StoreField, type ListingMarket } from "@/components/admin/StoreField";
 import { LkPricingFields } from "@/components/admin/LkPricingFields";
+import { DraftMediaPicker } from "@/components/admin/DraftMediaPicker";
 
 interface Option {
   id: string;
@@ -410,6 +411,15 @@ export function GemstoneForm({ minerals, cuts, clarityGrades, treatments, origin
             Quote Shipping (no fixed shipping cost — arranged with the customer after purchase)
           </label>
         </section>
+
+        {!initial && (
+          <section className="rounded-xl border border-border-subtle bg-ivory-soft/50 p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Photos &amp; videos</p>
+            <div className="mt-3">
+              <DraftMediaPicker />
+            </div>
+          </section>
+        )}
 
         <FieldError>{error ?? undefined}</FieldError>
 

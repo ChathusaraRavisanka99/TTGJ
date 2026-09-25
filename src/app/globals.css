@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+/* Warm ivory rather than pure white: a stark #fff page against the near-black
+   text and the dark hero read clinical, not luxurious. The page is now a soft
+   parchment, cards ("surface") a shade lighter so they lift off it gently, and
+   the borders a warm sand. Contrast was re-checked on these: body text is
+   ~15.8:1, charcoal at 65% (the lightest text used for real copy) 5.1:1, and
+   the gold-deep accent text 5.0:1 on the page (4.6:1 on ivory-soft) — all
+   above WCAG AA. */
 :root {
-  --color-ivory: #ffffff;
-  --color-ivory-soft: #f6f4ef;
+  --color-ivory: #fbf8f2;
+  --color-ivory-soft: #f3ede1;
   --color-charcoal: #211d1a;
   --color-charcoal-soft: #3a332d;
   --color-gold: #b3915a;
@@ -14,8 +21,8 @@
 
   --background: var(--color-ivory);
   --foreground: var(--color-charcoal);
-  --surface: #ffffff;
-  --border-subtle: #e5ddce;
+  --surface: #fffdf9;
+  --border-subtle: #e7dece;
 }
 
 /* The Sri Lanka store (/lk) — RootLayout sets <html data-market="lk">. The
@@ -26,6 +33,7 @@
    was checked against the tokens they sit on: gold-deep on white/soft cream
    is ~6:1, charcoal on gold (buttons) ~5.5:1. */
 html[data-market="lk"] {
+  --color-ivory: #fdf9f0;
   --color-ivory-soft: #f8efdd;
   --color-gold: #cc8a2b;
   --color-gold-soft: #f0cf8c;

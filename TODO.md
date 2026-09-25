@@ -66,6 +66,41 @@ against the shared prod DB before shipping dependent code, then
 
 ## Orders & admin workflow
 
+- ~~**Catalog categories, breadcrumbs, loading states, warmer palette**~~ —
+  done. **Gems** now open on a "shop by material" grid (one tile per mineral
+  that has published stones in the visitor's store, with a cover photo and
+  count, plus a **View all gemstones** tile); a tile goes to the existing
+  filtered list (`/gems?mineral=…`), and `/gems?view=all` is the full list.
+  **Jewelry** is two levels: who it's for (**Women / Men / Couple /
+  Unisex**, plus View all) then the piece type (Rings, Pendants, Earrings,
+  Necklaces, Bracelets, **Anklets, Jewelry Sets, Cufflinks**, Brooches,
+  Other), then the list; Men and Women also include Unisex pieces, Couple
+  and Unisex are exact. The landing is chosen purely from the URL (no
+  listing params = grid), so every old `/gems?…` and `/jewelry?…` link and
+  the filter forms keep working. New `JewelryAudience` enum +
+  `JewelryPiece.audience` and three new `PieceType` values (migration
+  `20260925130000_add_jewelry_audience_and_types`, applied to the shared DB
+  first); every piece that existed before defaults to **Unisex**, so an admin
+  needs to set the real audience on each piece ("Designed for" on the
+  admin jewelry form). **Breadcrumbs** on the gems and jewelry landings,
+  lists and detail pages (jewelry detail is now Home > Jewelry > audience >
+  type > piece), auctions, configurator, search, size guide, terms, and every
+  signed-in account page (derived from the URL in one component); the
+  full-bleed hero-style pages (home, about, promotions, collections,
+  sourcing) deliberately have none. **Loading**: catalog results are behind a
+  Suspense boundary keyed on the query string, so a filter, sort or page
+  change shows a card skeleton instead of leaving stale results, and the
+  account area has its own content-column loading state (the sidebar stays
+  put; the site-wide loader already covered route changes). **Palette**:
+  the page was pure white against near-black text and a dark hero, which
+  read stark; the base is now a warm ivory (`#fbf8f2`, Sri Lanka store
+  `#fdf9f0`) with a slightly warmer card surface and sand borders, the top
+  bar matches, and the 31 faint text tones (charcoal at 40-55%, below
+  readable contrast) on the public site were raised to 65% (5.1:1). Text
+  contrast was measured, not eyeballed: body ~15.8:1, gold-deep accent
+  ~5.0:1. 12 new tests (677 total); live-checked the whole flow with
+  temporary jewelry pieces, and looked at desktop and phone screenshots
+  before and after.
 - ~~**Image-zoom lightbox Close button on phones + tab icon**~~ — done. On a
   phone held upright the lightbox's Close button couldn't be tapped, only
   after rotating: the full-screen image box (`max-w-4xl` only narrows it in

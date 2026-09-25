@@ -53,7 +53,7 @@ export function CompleteTheLookPanel({ bundle, currency, isAuthenticated }: { bu
       </div>
 
       <div className="mt-3 flex flex-wrap items-baseline gap-2 text-sm">
-        <span className="text-charcoal/50 line-through">{formatPrice(individualTotal, currency)}</span>
+        <span className="text-charcoal/65 line-through">{formatPrice(individualTotal, currency)}</span>
         <span className="font-serif text-lg text-gold-deep">{formatPrice(bundle.price, currency)}</span>
         {savings > 0 && <span className="text-xs text-charcoal/60">Save {formatPrice(savings, currency)}</span>}
       </div>

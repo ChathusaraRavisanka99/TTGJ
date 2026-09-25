@@ -40,7 +40,7 @@ export function JewelryVariantPicker({ jewelryId, variants, basePrice }: { jewel
               onClick={() => setSelectedId(v.id)}
               className={cn(
                 "rounded-lg border px-3 py-2 text-left text-sm transition-colors",
-                !available && "cursor-not-allowed border-border-subtle bg-charcoal/[0.03] text-charcoal/40 line-through",
+                !available && "cursor-not-allowed border-border-subtle bg-charcoal/[0.03] text-charcoal/65 line-through",
                 available && selected && "border-gold bg-gold/10 text-charcoal",
                 available && !selected && "border-border-subtle text-charcoal/80 hover:border-gold",
               )}

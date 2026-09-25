@@ -113,7 +113,7 @@ export default async function AccountOverviewPage() {
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-charcoal">{r.mineralDescription}</span>
-                  <span className="text-xs text-charcoal/55">{r.createdAt.toLocaleDateString()}</span>
+                  <span className="text-xs text-charcoal/65">{r.createdAt.toLocaleDateString()}</span>
                 </span>
                 <QuoteStatusBadge status={r.status} />
               </Link>
@@ -135,7 +135,7 @@ export default async function AccountOverviewPage() {
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-charcoal">{designLabel(d)}</span>
-                  <span className="text-xs text-charcoal/55">{designKind(d)} · {d.createdAt.toLocaleDateString()}</span>
+                  <span className="text-xs text-charcoal/65">{designKind(d)} · {d.createdAt.toLocaleDateString()}</span>
                 </span>
                 <QuoteStatusBadge status={d.status} />
               </Link>

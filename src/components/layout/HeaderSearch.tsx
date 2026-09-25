@@ -104,23 +104,23 @@ export function HeaderSearch({ transparent }: { transparent: boolean }) {
 
       <Modal open={open} onClose={close} title="Search" className="max-w-lg">
         <form onSubmit={submit} className="flex items-center gap-2 border-b border-border-subtle pb-3">
-          <Search size={16} className="shrink-0 text-charcoal/45" />
+          <Search size={16} className="shrink-0 text-charcoal/65" />
           <input
             ref={inputRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="Search gems, jewelry..."
-            className="w-full bg-transparent text-sm text-charcoal outline-none placeholder:text-charcoal/40"
+            className="w-full bg-transparent text-sm text-charcoal outline-none placeholder:text-charcoal/65"
           />
         </form>
 
         <div className="mt-3 max-h-96 overflow-y-auto">
-          {!hasQuery && <p className="px-1 py-6 text-center text-sm text-charcoal/55">Try a mineral, a piece type, or a style — &ldquo;sapphire,&rdquo; &ldquo;ring,&rdquo; &ldquo;pear cut.&rdquo;</p>}
+          {!hasQuery && <p className="px-1 py-6 text-center text-sm text-charcoal/65">Try a mineral, a piece type, or a style — &ldquo;sapphire,&rdquo; &ldquo;ring,&rdquo; &ldquo;pear cut.&rdquo;</p>}
 
-          {hasQuery && loading && <p className="px-1 py-6 text-center text-sm text-charcoal/55">Searching...</p>}
+          {hasQuery && loading && <p className="px-1 py-6 text-center text-sm text-charcoal/65">Searching...</p>}
 
           {hasQuery && !loading && !hasResults && (
-            <p className="px-1 py-6 text-center text-sm text-charcoal/55">No matches for &ldquo;{trimmedValue}&rdquo; yet.</p>
+            <p className="px-1 py-6 text-center text-sm text-charcoal/65">No matches for &ldquo;{trimmedValue}&rdquo; yet.</p>
           )}
 
           {hasQuery && hasResults && (
@@ -160,7 +160,7 @@ function SuggestionGroup({
 }) {
   return (
     <div>
-      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/50">{title}</p>
+      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-charcoal/65">{title}</p>
       <div className="space-y-1">
         {items.map((item) => (
           <Link

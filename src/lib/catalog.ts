@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
 import type { Market } from "@/lib/market-shared";
 import { priceColumns, priceForMarket, pricesForMarket } from "@/lib/market-pricing";
+import { audienceValuesFor, isAudienceSlug, JEWELRY_AUDIENCES, PIECE_TYPE_ORDER, type JewelryAudienceSlug } from "@/lib/jewelry-categories";
 
 const GEMS_PAGE_SIZE = 24;
 const JEWELRY_PAGE_SIZE = 24;
@@ -212,6 +213,9 @@ export async function getRelatedGemstones(gem: { id: string; mineralId: string }
 
 export interface JewelryFilters {
   q?: string;
+  /** Audience slugs ("women" | "men" | "couple" | "unisex"). Men and Women
+   * also include Unisex pieces — see audienceValuesFor. */
+  audience?: string[];
   pieceType?: string[];
   metalType?: string[];
   minPrice?: number;
@@ -240,6 +244,10 @@ export async function getJewelry(filters: JewelryFilters) {
         { description: { contains: filters.q, mode: "insensitive" } },
       ],
     });
+  }
+  if (filters.audience?.length) {
+    const values = [...new Set(filters.audience.filter(isAudienceSlug).flatMap(audienceValuesFor))];
+    if (values.length) where.audience = { in: values };
   }
   if (filters.pieceType?.length) where.pieceType = { in: filters.pieceType as never[] };
   if (filters.metalType?.length) where.metalType = { in: filters.metalType as never[] };
@@ -279,6 +287,91 @@ export async function getJewelry(filters: JewelryFilters) {
   ]);
 
   return { items: pricesForMarket(items, market), page, pageSize: JEWELRY_PAGE_SIZE, total, totalPages: Math.max(1, Math.ceil(total / JEWELRY_PAGE_SIZE)) };
+}
+
+// ---------- Category landing pages ----------
+//
+// The gems page opens on a "browse by material" grid and the jewelry page on
+// "who is it for" then "what is it" grids, before the full filterable list.
+// These build those tiles: a name, how many published pieces are in it, and a
+// cover photo taken from the newest piece that has one.
+
+export interface CategoryTileData {
+  key: string;
+  label: string;
+  href: string;
+  count: number;
+  image: string | null;
+}
+
+/** Newest still image among the pieces matching `where`, or null. */
+async function newestGemImage(where: Prisma.GemstoneWhereInput): Promise<string | null> {
+  const gem = await prisma.gemstone.findFirst({
+    where: { ...where, media: { some: { type: "IMAGE" } } },
+    orderBy: { createdAt: "desc" },
+    select: { media: { where: { type: "IMAGE" }, orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } } },
+  });
+  return gem?.media[0]?.url ?? null;
+}
+
+async function newestJewelryImage(where: Prisma.JewelryPieceWhereInput): Promise<string | null> {
+  const piece = await prisma.jewelryPiece.findFirst({
+    where: { ...where, media: { some: { type: "IMAGE" } } },
+    orderBy: { createdAt: "desc" },
+    select: { media: { where: { type: "IMAGE" }, orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } } },
+  });
+  return piece?.media[0]?.url ?? null;
+}
+
+/** One tile per mineral that has at least one published gem in this store. */
+export async function getGemCategories(market: Market = "intl"): Promise<{ total: number; tiles: CategoryTileData[]; cover: string | null }> {
+  const base: Prisma.GemstoneWhereInput = { isPublished: true, market };
+  const [counts, minerals, cover] = await Promise.all([
+    prisma.gemstone.groupBy({ by: ["mineralId"], where: base, _count: { _all: true } }),
+    prisma.mineral.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+    newestGemImage(base),
+  ]);
+  const countById = new Map(counts.map((c) => [c.mineralId, c._count._all]));
+  const present = minerals.filter((m) => (countById.get(m.id) ?? 0) > 0);
+  const images = await Promise.all(present.map((m) => newestGemImage({ ...base, mineralId: m.id })));
+  const tiles = present.map((m, i) => ({ key: m.slug, label: m.name, href: `/gems?mineral=${m.slug}`, count: countById.get(m.id) ?? 0, image: images[i] }));
+  return { total: counts.reduce((n, c) => n + c._count._all, 0), tiles, cover };
+}
+
+/** Counts of published jewelry per audience and per (audience, piece type),
+ * with cover images, for the two jewelry landing levels. */
+export async function getJewelryCategoryData(market: Market = "intl") {
+  const base: Prisma.JewelryPieceWhereInput = { isPublished: true, market };
+  const groups = await prisma.jewelryPiece.groupBy({ by: ["audience", "pieceType"], where: base, _count: { _all: true } });
+
+  const countFor = (slug: JewelryAudienceSlug | null, pieceType?: string) => {
+    const allowed = slug ? new Set<string>(audienceValuesFor(slug)) : null;
+    return groups
+      .filter((g) => (!allowed || allowed.has(g.audience)) && (!pieceType || g.pieceType === pieceType))
+      .reduce((n, g) => n + g._count._all, 0);
+  };
+  const whereFor = (slug: JewelryAudienceSlug | null, pieceType?: string): Prisma.JewelryPieceWhereInput => ({
+    ...base,
+    ...(slug ? { audience: { in: audienceValuesFor(slug) } } : {}),
+    ...(pieceType ? { pieceType: pieceType as never } : {}),
+  });
+
+  const audienceTiles = JEWELRY_AUDIENCES.map((slug) => ({ slug, count: countFor(slug) })).filter((a) => a.count > 0);
+  const audienceImages = await Promise.all(audienceTiles.map((a) => newestJewelryImage(whereFor(a.slug))));
+  const cover = await newestJewelryImage(base);
+
+  return {
+    total: countFor(null),
+    cover,
+    audiences: audienceTiles.map((a, i) => ({ slug: a.slug, count: a.count, image: audienceImages[i] })),
+    /** Type tiles for one audience (or all jewelry when null). */
+    async typesFor(slug: JewelryAudienceSlug | null) {
+      const types = PIECE_TYPE_ORDER.map((t) => ({ type: t, count: countFor(slug, t) })).filter((t) => t.count > 0);
+      const images = await Promise.all(types.map((t) => newestJewelryImage(whereFor(slug, t.type))));
+      return types.map((t, i) => ({ type: t.type, count: t.count, image: images[i] }));
+    },
+    totalFor: countFor,
+  };
 }
 
 export async function getJewelryBySlug(slug: string, market: Market = "intl") {

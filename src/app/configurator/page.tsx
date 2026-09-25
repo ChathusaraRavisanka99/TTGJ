@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getMasterData } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
 import { GemConfiguratorClient } from "@/components/configurator/GemConfiguratorClient";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export const metadata: Metadata = {
   title: "Design Your Gem",
@@ -13,6 +14,7 @@ export default async function ConfiguratorPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Design Your Gem" }]} />
       <div className="mb-10 max-w-2xl">
         <p className="text-xs uppercase tracking-widest text-gold-deep">Design Your Gem</p>
         <h1 className="mt-2 font-serif text-4xl text-charcoal">Configure your own Ceylon gemstone</h1>

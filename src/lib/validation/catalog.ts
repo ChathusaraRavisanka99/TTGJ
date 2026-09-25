@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PIECE_TYPES } from "@/lib/gem-constants";
 
 // Coerces the "true"/"false" STRING an HTML checkbox form submits (via
 // the hidden-false + checkbox-true pattern every boolean toggle on these
@@ -79,7 +80,8 @@ export type GemstoneInput = z.infer<typeof gemstoneSchema>;
 export const jewelrySchema = z.object({
   name: z.string().min(2).max(150),
   description: z.string().max(4000).optional().or(z.literal("")),
-  pieceType: z.enum(["RING", "NECKLACE", "EARRINGS", "BRACELET", "PENDANT", "BROOCH", "OTHER"]),
+  pieceType: z.enum(PIECE_TYPES),
+  audience: z.enum(["WOMEN", "MEN", "COUPLE", "UNISEX"]).default("UNISEX"),
   metalType: z.enum(["GOLD", "WHITE_GOLD", "ROSE_GOLD", "PLATINUM", "SILVER"]),
   metalPurity: z.string().max(30).optional().or(z.literal("")),
   metalWeightG: z.coerce.number().min(0).max(2000).optional(),

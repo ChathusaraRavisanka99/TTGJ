@@ -43,7 +43,7 @@ export default async function DigForGemPage({ params }: PageProps<"/account/orde
           <div className="rounded-2xl border border-border-subtle bg-surface px-6 py-10 text-center">
             <p className="font-serif text-2xl text-gold-deep">+{(order.gemDigPointsAwarded ?? 0).toLocaleString()} points</p>
             <p className="mt-2 text-sm text-charcoal/65">You already dug on this order — added to your rewards balance.</p>
-            <p className="mt-6 max-w-sm text-xs text-charcoal/45">
+            <p className="mt-6 max-w-sm text-xs text-charcoal/65">
               This was a one-time bonus for this order. Ratnavue may change or remove the rewards program at any time.
             </p>
           </div>

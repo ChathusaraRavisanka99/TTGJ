@@ -68,7 +68,7 @@ export function DigForGemAnimation({ orderId, min, max }: { orderId: string; min
           <>
             <p className="font-serif text-xl text-charcoal">Dig for a bonus gem</p>
             <p className="mt-2 text-sm text-charcoal/65">{punchline}</p>
-            <p className="mt-1 text-xs text-charcoal/50">You&apos;ll turn up somewhere between {min.toLocaleString()} and {max.toLocaleString()} points.</p>
+            <p className="mt-1 text-xs text-charcoal/65">You&apos;ll turn up somewhere between {min.toLocaleString()} and {max.toLocaleString()} points.</p>
           </>
         )}
         {phase === "digging" && <p className="font-serif text-xl text-charcoal">Digging...</p>}
@@ -88,7 +88,7 @@ export function DigForGemAnimation({ orderId, min, max }: { orderId: string; min
       )}
 
       {phase === "revealed" && (
-        <p className="mt-6 max-w-sm text-xs text-charcoal/45">
+        <p className="mt-6 max-w-sm text-xs text-charcoal/65">
           This is a one-time bonus for this order. Ratnavue may change or remove the rewards program at any time.
         </p>
       )}

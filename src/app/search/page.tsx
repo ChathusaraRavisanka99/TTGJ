@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { getMarket } from "@/lib/market";
 import { GemResults } from "@/components/catalog/GemResults";
 import { JewelryResults } from "@/components/catalog/JewelryResults";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export const metadata: Metadata = { title: "Search" };
 
@@ -41,6 +42,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
 
   return (
     <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Search" }]} />
       <div className="mb-10">
         <p className="text-xs uppercase tracking-widest text-gold-deep">Search Results</p>
         <h1 className="mt-2 font-serif text-4xl text-charcoal">&ldquo;{q}&rdquo;</h1>

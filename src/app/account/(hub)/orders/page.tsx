@@ -69,7 +69,7 @@ export default async function AccountOrdersPage({ searchParams }: PageProps<"/ac
                 )}
               >
                 {label}
-                <span className="ml-1.5 text-xs text-charcoal/50">{count}</span>
+                <span className="ml-1.5 text-xs text-charcoal/65">{count}</span>
               </Link>
             );
           })}

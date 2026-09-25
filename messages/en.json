@@ -172,14 +172,44 @@
       "inStockOnly": "In stock only",
       "onPromotion": "On promotion",
       "filter": "Filter",
-      "clear": "Clear Filters"
+      "clear": "Clear Filters",
+      "audience": "Designed for"
     },
     "stock": {
       "AVAILABLE": "Available",
       "RESERVED": "Reserved",
       "SOLD": "Sold"
     },
-    "requestQuote": "Request a Quote →"
+    "requestQuote": "Request a Quote →",
+    "landing": {
+      "pieces": "{count, plural, one {# piece} other {# pieces}}",
+      "browse": "Browse",
+      "gems": {
+        "kicker": "Shop by material",
+        "title": "Ceylon Gemstones",
+        "intro": "Choose a stone to explore, or browse every gemstone at once with the full filters.",
+        "viewAll": "View all gemstones",
+        "allTitle": "All gemstones",
+        "allDescription": "Every stone, with the full filters"
+      },
+      "jewelry": {
+        "kicker": "Shop by who it's for",
+        "title": "Fine Jewelry",
+        "intro": "Start with who it's for, then choose the kind of piece — or browse everything at once.",
+        "viewAll": "View all jewelry",
+        "allTitle": "All jewelry",
+        "allDescription": "Every piece, with the full filters",
+        "typeKicker": "Choose a piece",
+        "typeIntro": "Pick the kind of jewelry you're looking for, or see everything in this collection.",
+        "viewAllFor": "View all {audience} jewelry",
+        "audience": {
+          "women": "Rings, pendants, earrings and more, designed for her.",
+          "men": "Signet rings, bracelets, cufflinks and pendants for him.",
+          "couple": "Matching pairs and sets, made to be shared.",
+          "unisex": "Timeless pieces that suit anyone."
+        }
+      }
+    }
   },
   "product": {
     "home": "Home",
@@ -300,5 +330,22 @@
     "kicker": "Checkout",
     "title": "Shipping & Payment",
     "estimateNote": "Final tax, EMS shipping, and handling fee are calculated after you enter your shipping address below."
+  },
+  "breadcrumb": {
+    "home": "Home",
+    "gems": "Gemstones",
+    "jewelry": "Jewelry",
+    "allGems": "All gemstones",
+    "allJewelry": "All jewelry",
+    "about": "Our Story",
+    "auctions": "Auctions",
+    "promotions": "Promotions",
+    "sourcing": "Gem Sourcing",
+    "configurator": "Design Your Gem",
+    "sizeGuide": "Size Guide",
+    "terms": "Terms",
+    "search": "Search",
+    "account": "My Account",
+    "results": "Results"
   }
 }

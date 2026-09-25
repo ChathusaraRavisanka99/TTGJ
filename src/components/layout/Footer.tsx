@@ -71,8 +71,8 @@ export function Footer({
               <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">{t("paymentsTitle")}</p>
               <ul className="mt-3 space-y-2 text-sm text-charcoal/70">
                 <li>{t("bankTransfer")}</li>
-                <li className="text-charcoal/55">{t("card")} · {t("comingSoon")}</li>
-                <li className="text-charcoal/55">{t("cod")} · {t("comingSoon")}</li>
+                <li className="text-charcoal/65">{t("card")} · {t("comingSoon")}</li>
+                <li className="text-charcoal/65">{t("cod")} · {t("comingSoon")}</li>
               </ul>
             </div>
             <div>

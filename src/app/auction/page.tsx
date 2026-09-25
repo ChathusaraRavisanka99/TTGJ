@@ -8,6 +8,7 @@ import { getMarket } from "@/lib/market";
 import { getAuctionDisplayState, auctionItemLabel, highestBid } from "@/lib/auctions";
 import { AuctionCard } from "@/components/auction/AuctionCard";
 import { Reveal } from "@/components/layout/Reveal";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export async function generateMetadata(): Promise<Metadata> {
   const visibility = await getPageVisibility(marketVisibilityKey("auction", await getMarket()));
@@ -55,6 +56,7 @@ export default async function AuctionListPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Auctions" }]} />
       <Reveal y={16}>
         <p className="text-xs uppercase tracking-[0.35em] text-charcoal/65">Live Auctions</p>
         <h1 className="mt-3 font-serif text-4xl text-charcoal sm:text-5xl">Bid on Exceptional Pieces</h1>

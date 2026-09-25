@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/layout/Reveal";
 import { TrustBar } from "@/components/layout/TrustBar";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { AUDIENCE_LABELS, pieceTypeLabel as pieceTypeText, type JewelryAudienceSlug } from "@/lib/jewelry-categories";
 import { CardSlider } from "@/components/ui/CardSlider";
 import { HeritageSideArt } from "@/components/catalog/HeritageSideArt";
 import { StickyBuyBar } from "@/components/catalog/StickyBuyBar";
@@ -63,7 +64,8 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
     getApprovedReviewsForItem({ jewelryId: piece.id }),
   ]);
 
-  const pieceTypeLabel = piece.pieceType.charAt(0) + piece.pieceType.slice(1).toLowerCase();
+  const pieceTypeLabel = pieceTypeText(piece.pieceType);
+  const audienceSlug = piece.audience.toLowerCase() as JewelryAudienceSlug;
   // Same price precedence CardPrice/ProductPrice use for display — see
   // StickyBuyBar's own comment for why this is a plain label.
   const displayPrice = promotion?.promoPrice ?? piece.retailPrice ?? (piece.showPrice ? piece.price : null);
@@ -78,7 +80,8 @@ export default async function JewelryDetailPage({ params }: PageProps<"/jewelry/
         items={[
           { label: t("home"), href: "/" },
           { label: t("jewelry"), href: "/jewelry" },
-          { label: pieceTypeLabel, href: `/jewelry?pieceType=${piece.pieceType}` },
+          { label: AUDIENCE_LABELS[audienceSlug], href: `/jewelry?audience=${audienceSlug}` },
+          { label: pieceTypeLabel, href: `/jewelry?audience=${audienceSlug}&pieceType=${piece.pieceType}` },
           { label: piece.name },
         ]}
       />

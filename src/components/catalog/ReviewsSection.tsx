@@ -39,10 +39,10 @@ export function ReviewsSection({ summary }: { summary: ReviewSummary }) {
           <div key={review.id} className="py-3 first:pt-0 last:pb-0">
             <div className="flex items-center justify-between gap-3">
               <StarRow rating={review.rating} />
-              <span className="text-xs text-charcoal/50">{review.createdAt.toLocaleDateString()}</span>
+              <span className="text-xs text-charcoal/65">{review.createdAt.toLocaleDateString()}</span>
             </div>
             {review.body && <p className="mt-1.5 text-sm leading-relaxed text-charcoal/80">{review.body}</p>}
-            <p className="mt-1.5 text-xs text-charcoal/50">{review.reviewerName} · Verified Purchase</p>
+            <p className="mt-1.5 text-xs text-charcoal/65">{review.reviewerName} · Verified Purchase</p>
           </div>
         ))}
       </div>

@@ -454,7 +454,20 @@ enum PieceType {
   BRACELET
   PENDANT
   BROOCH
+  ANKLET
+  JEWELRY_SET
+  CUFFLINKS
   OTHER
+}
+
+// Who a piece is designed for — the top level of the jewelry catalog
+// (Men / Women / Couple / Unisex), above the piece type. See
+// lib/jewelry-categories.ts for how Men and Women also include Unisex pieces.
+enum JewelryAudience {
+  WOMEN
+  MEN
+  COUPLE
+  UNISEX
 }
 
 enum MetalType {
@@ -472,6 +485,9 @@ model JewelryPiece {
   description String? @db.Text
 
   pieceType    PieceType
+  // Defaults to UNISEX so every piece that existed before this field shows up
+  // somewhere sensible; an admin sets the real audience on each piece.
+  audience     JewelryAudience @default(UNISEX)
   metalType    MetalType
   metalPurity  String?
   metalWeightG Float?
@@ -530,6 +546,7 @@ model JewelryPiece {
   updatedAt DateTime @updatedAt
 
   @@index([pieceType])
+  @@index([audience])
   @@index([stockStatus])
   @@index([isFeatured])
   @@index([isFeaturedLk])

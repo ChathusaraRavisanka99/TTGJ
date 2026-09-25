@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 
 export const metadata: Metadata = { title: "Terms & Conditions" };
 
@@ -14,6 +15,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function TermsPage() {
   return (
     <div className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Terms & Conditions" }]} />
       <p className="text-xs uppercase tracking-widest text-gold-deep">Legal</p>
       <h1 className="mt-2 font-serif text-4xl text-charcoal">Terms &amp; Conditions</h1>
       <p className="mt-4 text-sm text-charcoal/60">

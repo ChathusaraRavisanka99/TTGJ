@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { StoreField, type ListingMarket } from "@/components/admin/StoreField";
 import { LkPricingFields } from "@/components/admin/LkPricingFields";
 import { PIECE_TYPES, METAL_TYPES } from "@/lib/gem-constants";
+import { JEWELRY_AUDIENCES, AUDIENCE_LABELS, pieceTypeLabel } from "@/lib/jewelry-categories";
 
 interface JewelryFormProps {
   shippingWeightTiers: { id: string; label: string }[];
@@ -17,6 +18,7 @@ interface JewelryFormProps {
     name: string;
     description: string | null;
     pieceType: string;
+    audience?: string;
     metalType: string;
     metalPurity: string | null;
     metalWeightG: number | null;
@@ -110,8 +112,17 @@ export function JewelryForm({ shippingWeightTiers, initial, defaultMarket, staff
         <div>
           <Label htmlFor="pieceType">Piece Type</Label>
           <Select id="pieceType" name="pieceType" defaultValue={initial?.pieceType ?? "RING"}>
-            {PIECE_TYPES.map((p) => <option key={p} value={p}>{p.charAt(0) + p.slice(1).toLowerCase()}</option>)}
+            {PIECE_TYPES.map((p) => <option key={p} value={p}>{pieceTypeLabel(p)}</option>)}
           </Select>
+        </div>
+        <div>
+          <Label htmlFor="audience">Designed for</Label>
+          <Select id="audience" name="audience" defaultValue={initial?.audience ?? "UNISEX"}>
+            {JEWELRY_AUDIENCES.map((a) => <option key={a} value={a.toUpperCase()}>{AUDIENCE_LABELS[a]}</option>)}
+          </Select>
+          <p className="mt-1 text-xs text-charcoal/45">
+            The top level of the jewelry catalog. Men and Women also show Unisex pieces; Couple is for matching pairs.
+          </p>
         </div>
         <div>
           <Label htmlFor="metalType">Metal Type</Label>

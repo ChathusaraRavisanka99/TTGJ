@@ -163,7 +163,7 @@ export function Navbar({
     <motion.header
       initial={false}
       animate={{
-        backgroundColor: transparent ? "rgba(33,29,26,0)" : "rgba(255,255,255,0.97)",
+        backgroundColor: transparent ? "rgba(33,29,26,0)" : "rgba(251,248,242,0.96)",
         boxShadow: transparent ? "0 1px 0 rgba(255,255,255,0)" : "0 1px 0 rgba(33,29,26,0.08)",
       }}
       transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
@@ -326,7 +326,7 @@ export function Navbar({
             <input
               name="q"
               placeholder="Search gems, jewelry..."
-              className="w-full bg-transparent text-sm text-charcoal outline-none placeholder:text-charcoal/40"
+              className="w-full bg-transparent text-sm text-charcoal outline-none placeholder:text-charcoal/65"
             />
           </form>
           {navLinks.map((link) => (

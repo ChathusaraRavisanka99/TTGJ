@@ -11,6 +11,7 @@ import { MediaGallery } from "@/components/catalog/MediaGallery";
 import { BidForm } from "@/components/auction/BidForm";
 import { AuctionCountdown } from "@/components/auction/AuctionCountdown";
 import { Reveal } from "@/components/layout/Reveal";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { formatPrice } from "@/lib/utils";
 
 async function loadAuction(id: string) {
@@ -65,6 +66,7 @@ export default async function AuctionDetailPage({ params }: PageProps<"/auction/
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
+      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Auctions", href: "/auction" }, { label }]} />
       <div className="grid gap-12 lg:grid-cols-2">
         <Reveal y={16}>
           <MediaGallery media={media} fallbackLabel={label} />

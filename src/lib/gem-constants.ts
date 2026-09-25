@@ -221,7 +221,7 @@ export const CERTIFICATION_LABS = [
   { name: "IGI", slug: "igi", verifyUrlTemplate: null as string | null },
 ];
 
-export const PIECE_TYPES = ["RING", "NECKLACE", "EARRINGS", "BRACELET", "PENDANT", "BROOCH", "OTHER"] as const;
+export const PIECE_TYPES = ["RING", "PENDANT", "EARRINGS", "NECKLACE", "BRACELET", "ANKLET", "JEWELRY_SET", "BROOCH", "CUFFLINKS", "OTHER"] as const;
 
 export const METAL_TYPES = [
   { value: "GOLD", label: "Gold" },

@@ -2,6 +2,7 @@ import { Input, Label } from "@/components/ui/Field";
 import { Button, HardLinkButton } from "@/components/ui/Button";
 import { FilterCollapse } from "@/components/catalog/FilterCollapse";
 import { PIECE_TYPES, METAL_TYPES } from "@/lib/gem-constants";
+import { JEWELRY_AUDIENCES, AUDIENCE_LABELS, pieceTypeLabel } from "@/lib/jewelry-categories";
 import { cn } from "@/lib/utils";
 import { CurrencySymbol } from "@/components/ui/CurrencySymbol";
 import { getTranslations } from "next-intl/server";
@@ -78,10 +79,16 @@ export async function JewelryFilterBar({ current }: JewelryFilterBarProps) {
       <FilterCollapse activeCount={activeCount}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CheckboxGroup
+          label={t("audience")}
+          name="audience"
+          active={toSet(current.audience)}
+          options={JEWELRY_AUDIENCES.map((a) => ({ value: a, label: AUDIENCE_LABELS[a] }))}
+        />
+        <CheckboxGroup
           label={t("pieceType")}
           name="pieceType"
           active={toSet(current.pieceType)}
-          options={PIECE_TYPES.map((p) => ({ value: p, label: p.charAt(0) + p.slice(1).toLowerCase() }))}
+          options={PIECE_TYPES.map((p) => ({ value: p, label: pieceTypeLabel(p, "plural") }))}
         />
         <CheckboxGroup label={t("metal")} name="metalType" active={toSet(current.metalType)} options={METAL_TYPES.map((m) => ({ value: m.value, label: m.label }))} />
 

@@ -82,7 +82,7 @@ export function AccountSidebar({ user, counts, showBusiness, showAdminPortal }: 
         <nav className="p-3" aria-label="Account">
           {groups.map((group) => (
             <div key={group.title} className="mb-3 last:mb-0">
-              <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-charcoal/50">{group.title}</p>
+              <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-charcoal/65">{group.title}</p>
               {group.items.map((item) => {
                 const active = isActive(item);
                 const badge = item.badge?.(counts) ?? 0;
@@ -97,7 +97,7 @@ export function AccountSidebar({ user, counts, showBusiness, showAdminPortal }: 
                       active ? "bg-gold/15 font-medium text-charcoal" : "text-charcoal/75 hover:bg-ivory-soft hover:text-charcoal",
                     )}
                   >
-                    <Icon size={16} className={active ? "text-gold-deep" : "text-charcoal/50"} />
+                    <Icon size={16} className={active ? "text-gold-deep" : "text-charcoal/65"} />
                     <span className="flex-1">{item.label}</span>
                     {badge > 0 && (
                       <span
@@ -125,7 +125,7 @@ export function AccountSidebar({ user, counts, showBusiness, showAdminPortal }: 
         )}
         <form action={signOutAction} className="border-t border-border-subtle p-3">
           <button type="submit" className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-charcoal/65 transition-colors hover:bg-ivory-soft hover:text-charcoal">
-            <LogOut size={16} className="text-charcoal/50" /> Sign out
+            <LogOut size={16} className="text-charcoal/65" /> Sign out
           </button>
         </form>
       </div>

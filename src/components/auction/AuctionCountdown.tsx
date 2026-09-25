@@ -83,20 +83,20 @@ export function AuctionCountdown({ targetDate }: { targetDate: string }) {
       {days > 0 && (
         <span className="flex items-baseline gap-1">
           <Digit value={days} />
-          <span className="text-xs font-sans uppercase tracking-wide text-charcoal/50">d</span>
+          <span className="text-xs font-sans uppercase tracking-wide text-charcoal/65">d</span>
         </span>
       )}
       <span className="flex items-baseline gap-1">
         <Digit value={hours} />
-        <span className="text-xs font-sans uppercase tracking-wide text-charcoal/50">h</span>
+        <span className="text-xs font-sans uppercase tracking-wide text-charcoal/65">h</span>
       </span>
       <span className="flex items-baseline gap-1">
         <Digit value={minutes} />
-        <span className="text-xs font-sans uppercase tracking-wide text-charcoal/50">m</span>
+        <span className="text-xs font-sans uppercase tracking-wide text-charcoal/65">m</span>
       </span>
       <span className="flex items-baseline gap-1">
         <Digit value={seconds} />
-        <span className="text-xs font-sans uppercase tracking-wide text-charcoal/50">s</span>
+        <span className="text-xs font-sans uppercase tracking-wide text-charcoal/65">s</span>
       </span>
     </div>
   );

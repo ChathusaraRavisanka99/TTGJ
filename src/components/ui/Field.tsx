@@ -2,7 +2,7 @@ import { type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLA
 import { cn } from "@/lib/utils";
 
 const fieldBase =
-  "w-full rounded-md border border-border-subtle bg-surface px-3.5 py-2.5 text-sm text-charcoal placeholder:text-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors";
+  "w-full rounded-md border border-border-subtle bg-surface px-3.5 py-2.5 text-sm text-charcoal placeholder:text-charcoal/65 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors";
 
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
   return <label className={cn("block text-xs font-medium tracking-wide text-charcoal/70 mb-1.5 uppercase", className)} {...props} />;

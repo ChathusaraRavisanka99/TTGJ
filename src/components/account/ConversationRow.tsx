@@ -30,7 +30,7 @@ export function ConversationRow({ item, active }: { item: ConversationRowData; a
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline justify-between gap-2">
           <span className={cn("truncate text-sm text-charcoal", item.unread > 0 ? "font-semibold" : "font-medium")}>{item.title}</span>
-          {item.when && <span className="shrink-0 text-[11px] text-charcoal/50">{formatWhen(item.when)}</span>}
+          {item.when && <span className="shrink-0 text-[11px] text-charcoal/65">{formatWhen(item.when)}</span>}
         </span>
         <span className="mt-0.5 flex items-center justify-between gap-2">
           <span className="truncate text-xs text-charcoal/60">{item.preview ?? `${label} · no messages yet`}</span>
@@ -40,7 +40,7 @@ export function ConversationRow({ item, active }: { item: ConversationRowData; a
             </span>
           )}
         </span>
-        <span className="mt-1 inline-block rounded-full bg-charcoal/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-charcoal/55">{label}</span>
+        <span className="mt-1 inline-block rounded-full bg-charcoal/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-charcoal/65">{label}</span>
       </span>
     </Link>
   );

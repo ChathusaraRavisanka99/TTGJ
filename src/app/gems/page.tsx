@@ -1,66 +1,101 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
-import { getGemstones, getMasterData, type GemColorFamily } from "@/lib/catalog";
+import { getGemstones, getGemCategories, getMasterData, type GemColorFamily } from "@/lib/catalog";
 import { getActivePromotionMaps } from "@/lib/promotion-items";
 import { getWishlistedIds } from "@/lib/wishlist";
 import { auth } from "@/lib/auth";
 import { getMarket } from "@/lib/market";
+import type { Market } from "@/lib/market-shared";
 import { getTranslations } from "next-intl/server";
 import { GemFilterBar } from "@/components/catalog/GemFilterBar";
 import { GemResults } from "@/components/catalog/GemResults";
+import { CategoryTile, CategoryGrid } from "@/components/catalog/CategoryTile";
+import { ProductGridSkeleton } from "@/components/catalog/ProductGridSkeleton";
+import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { Pagination } from "@/components/ui/Pagination";
 
 export const metadata: Metadata = { title: "Shop Gemstones" };
 
+type SearchParams = Record<string, string | string[] | undefined>;
+
+// Any of these in the URL means "show me a list", not the category grid. A
+// bare /gems (the nav link, the home page buttons) opens on the grid first.
+const LISTING_PARAMS = ["q", "mineral", "cut", "clarity", "treatment", "origin", "color", "minCarat", "maxCarat", "minPrice", "maxPrice", "inStockOnly", "promotional", "sort", "page", "view"];
+
+function pick(sp: SearchParams, key: string): string | undefined {
+  const v = sp[key];
+  return typeof v === "string" ? v : undefined;
+}
+
+function pickAll(sp: SearchParams, key: string): string[] {
+  const v = sp[key];
+  if (v === undefined) return [];
+  return Array.isArray(v) ? v : [v];
+}
+
 export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
-  const [sp, market, t] = await Promise.all([searchParams, getMarket(), getTranslations("catalog.gems")]);
-  const get = (key: string) => (typeof sp[key] === "string" ? (sp[key] as string) : undefined);
-  // Checkbox filter groups repeat the same query-string key once per
-  // checked box (mineral=a&mineral=b) — Next.js already hands that back
-  // as a string[] in searchParams, same shape Pagination already expects.
-  const getAll = (key: string): string[] => {
-    const v = sp[key];
-    if (v === undefined) return [];
-    return Array.isArray(v) ? v : [v];
-  };
+  const [sp, market] = await Promise.all([searchParams, getMarket()]);
+  const isLanding = !LISTING_PARAMS.some((key) => sp[key] !== undefined);
+  return isLanding ? <GemsLanding market={market} /> : <GemsListing sp={sp} market={market} />;
+}
 
-  const filters = {
-    q: get("q"),
-    mineral: getAll("mineral"),
-    cut: getAll("cut"),
-    clarity: getAll("clarity"),
-    treatment: getAll("treatment"),
-    origin: getAll("origin"),
-    color: getAll("color") as GemColorFamily[],
-    minCarat: get("minCarat") ? Number(get("minCarat")) : undefined,
-    maxCarat: get("maxCarat") ? Number(get("maxCarat")) : undefined,
-    minPrice: get("minPrice") ? Number(get("minPrice")) : undefined,
-    maxPrice: get("maxPrice") ? Number(get("maxPrice")) : undefined,
-    inStockOnly: get("inStockOnly") === "1",
-    promotionalOnly: get("promotional") === "1",
-    sort: (get("sort") as "newest" | "carat" | "az" | "price-low" | "price-high" | undefined) ?? "newest",
-    page: get("page") ? Number(get("page")) : undefined,
-    market,
-  };
-
-  const session = await auth();
-  const [{ items: gems, page, totalPages }, masterData, promotions, wishlistedIds] = await Promise.all([
-    getGemstones(filters),
-    getMasterData(),
-    // Fetched regardless of the filter above — every card needs to know
-    // whether *it* is on promotion to show its badge/discounted price,
-    // not just the subset a customer happens to have filtered down to.
-    getActivePromotionMaps(market),
-    getWishlistedIds(session?.user?.id),
+async function GemsLanding({ market }: { market: Market }) {
+  const [t, tl, tb, categories] = await Promise.all([
+    getTranslations("catalog.gems"),
+    getTranslations("catalog.landing"),
+    getTranslations("breadcrumb"),
+    getGemCategories(market),
   ]);
 
   return (
-    <div className="mx-auto max-w-[120rem] px-5 py-12 sm:px-8 lg:px-12 xl:px-16">
+    <div className="mx-auto max-w-[120rem] px-5 py-10 sm:px-8 lg:px-12 xl:px-16">
+      <Breadcrumbs items={[{ label: tb("home"), href: "/" }, { label: tb("gems") }]} />
+      <div className="mb-10">
+        <p className="text-xs uppercase tracking-widest text-gold-deep">{tl("gems.kicker")}</p>
+        <h1 className="mt-2 font-serif text-4xl text-charcoal">{tl("gems.title")}</h1>
+        <p className="mt-3 max-w-2xl text-charcoal/70">{tl("gems.intro")}</p>
+      </div>
+
+      {categories.tiles.length === 0 ? (
+        <p className="py-20 text-center text-charcoal/65">{t("empty")}</p>
+      ) : (
+        <CategoryGrid>
+          <CategoryTile
+            href="/gems?view=all"
+            label={tl("gems.viewAll")}
+            countLabel={tl("pieces", { count: categories.total })}
+            description={tl("gems.allDescription")}
+            image={categories.cover}
+            emphasis
+          />
+          {categories.tiles.map((tile) => (
+            <CategoryTile key={tile.key} href={tile.href} label={tile.label} countLabel={tl("pieces", { count: tile.count })} image={tile.image} />
+          ))}
+        </CategoryGrid>
+      )}
+    </div>
+  );
+}
+
+async function GemsListing({ sp, market }: { sp: SearchParams; market: Market }) {
+  const [t, tb, masterData] = await Promise.all([getTranslations("catalog.gems"), getTranslations("breadcrumb"), getMasterData()]);
+
+  const mineralSlugs = pickAll(sp, "mineral");
+  const mineral = mineralSlugs.length === 1 ? masterData.minerals.find((m) => m.slug === mineralSlugs[0]) : undefined;
+
+  return (
+    <div className="mx-auto max-w-[120rem] px-5 py-10 sm:px-8 lg:px-12 xl:px-16">
+      <Breadcrumbs
+        items={[
+          { label: tb("home"), href: "/" },
+          { label: tb("gems"), href: "/gems" },
+          { label: mineral?.name ?? tb("allGems") },
+        ]}
+      />
       <div className="mb-10">
         <p className="text-xs uppercase tracking-widest text-gold-deep">{t("kicker")}</p>
-        <h1 className="mt-2 font-serif text-4xl text-charcoal">{t("title")}</h1>
-        <p className="mt-3 max-w-2xl text-charcoal/65">
-          {t("intro")}
-        </p>
+        <h1 className="mt-2 font-serif text-4xl text-charcoal">{mineral ? mineral.name : t("title")}</h1>
+        <p className="mt-3 max-w-2xl text-charcoal/70">{t("intro")}</p>
       </div>
 
       <div className="mb-10">
@@ -74,6 +109,48 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
         />
       </div>
 
+      {/* Keyed on the whole query string so a filter, sort or page change
+          shows the skeleton instead of leaving the old results in place. */}
+      <Suspense key={JSON.stringify(sp)} fallback={<ProductGridSkeleton />}>
+        <GemResultsSection sp={sp} market={market} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function GemResultsSection({ sp, market }: { sp: SearchParams; market: Market }) {
+  const t = await getTranslations("catalog.gems");
+  const filters = {
+    q: pick(sp, "q"),
+    mineral: pickAll(sp, "mineral"),
+    cut: pickAll(sp, "cut"),
+    clarity: pickAll(sp, "clarity"),
+    treatment: pickAll(sp, "treatment"),
+    origin: pickAll(sp, "origin"),
+    color: pickAll(sp, "color") as GemColorFamily[],
+    minCarat: pick(sp, "minCarat") ? Number(pick(sp, "minCarat")) : undefined,
+    maxCarat: pick(sp, "maxCarat") ? Number(pick(sp, "maxCarat")) : undefined,
+    minPrice: pick(sp, "minPrice") ? Number(pick(sp, "minPrice")) : undefined,
+    maxPrice: pick(sp, "maxPrice") ? Number(pick(sp, "maxPrice")) : undefined,
+    inStockOnly: pick(sp, "inStockOnly") === "1",
+    promotionalOnly: pick(sp, "promotional") === "1",
+    sort: (pick(sp, "sort") as "newest" | "carat" | "az" | "price-low" | "price-high" | undefined) ?? "newest",
+    page: pick(sp, "page") ? Number(pick(sp, "page")) : undefined,
+    market,
+  };
+
+  const session = await auth();
+  const [{ items: gems, page, totalPages }, promotions, wishlistedIds] = await Promise.all([
+    getGemstones(filters),
+    // Fetched regardless of the filter above — every card needs to know
+    // whether *it* is on promotion to show its badge/discounted price,
+    // not just the subset a customer happens to have filtered down to.
+    getActivePromotionMaps(market),
+    getWishlistedIds(session?.user?.id),
+  ]);
+
+  return (
+    <>
       {gems.length === 0 ? (
         <p className="py-20 text-center text-charcoal/65">{t("empty")}</p>
       ) : (
@@ -83,8 +160,7 @@ export default async function GemsPage({ searchParams }: PageProps<"/gems">) {
           isAuthenticated={!!session?.user}
         />
       )}
-
       <Pagination currentPage={page} totalPages={totalPages} searchParams={sp} />
-    </div>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "@/components/ui/MarketLink";
+import { pieceTypeLabel } from "@/lib/jewelry-categories";
 import Image from "next/image";
 import { Gem, ChevronRight } from "lucide-react";
 import { StorefrontStockBadge as StockBadge } from "@/components/catalog/StorefrontStockBadge";
@@ -101,7 +102,7 @@ function JewelryCardList(props: JewelryCardProps) {
       <div className="min-w-0 flex-1">
         <p className="truncate font-serif text-lg text-charcoal sm:text-xl">{props.name}</p>
         <p className="mt-1 text-xs uppercase tracking-wide text-charcoal/65">
-          {props.pieceType.charAt(0) + props.pieceType.slice(1).toLowerCase()} · {METAL_LABELS[props.metalType]}
+          {pieceTypeLabel(props.pieceType)} · {METAL_LABELS[props.metalType]}
         </p>
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
           {props.promoPrice != null && <PromotionBadge />}
@@ -167,7 +168,7 @@ function JewelryCardGrid(props: JewelryCardProps) {
             start at the same y in every card of a row — see GemCard. */}
         <p className="line-clamp-2 min-h-[3.1rem] font-serif text-lg leading-snug text-charcoal">{props.name}</p>
         <p className="mt-1 line-clamp-2 min-h-8 text-xs uppercase leading-4 tracking-wide text-charcoal/65">
-          {props.pieceType.charAt(0) + props.pieceType.slice(1).toLowerCase()} · {METAL_LABELS[props.metalType]}
+          {pieceTypeLabel(props.pieceType)} · {METAL_LABELS[props.metalType]}
         </p>
         {/* mt-auto pins price/CTA to the card's bottom edge regardless of how
             many lines the name above wrapped to — combined with the root

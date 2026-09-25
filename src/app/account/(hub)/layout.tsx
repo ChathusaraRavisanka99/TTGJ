@@ -6,6 +6,7 @@ import { isUserDisabled } from "@/lib/user-status";
 import { hasAdminPortalAccess } from "@/lib/admin-access";
 import { getHubCounts } from "@/lib/account-hub";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
+import { AccountBreadcrumbs } from "@/components/account/AccountBreadcrumbs";
 
 // The signed-in account area: a left rail (a tab strip on phones) shared by
 // every page in it — overview, orders, messages, requests, cart. Sign-in and
@@ -34,7 +35,10 @@ export default async function AccountHubLayout({ children }: { children: React.R
         showBusiness={user.businessRole != null}
         showAdminPortal={hasAdminPortalAccess(session.user)}
       />
-      <div className="mt-6 min-w-0 lg:mt-0">{children}</div>
+      <div className="mt-6 min-w-0 lg:mt-0">
+        <AccountBreadcrumbs />
+        {children}
+      </div>
     </div>
   );
 }

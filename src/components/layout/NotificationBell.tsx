@@ -171,7 +171,7 @@ export function NotificationBell({ transparent, size = 19 }: { transparent: bool
                     Mark all read
                   </button>
                 )}
-                <button type="button" onClick={handleClearAll} className="text-charcoal/50 hover:text-charcoal hover:underline">
+                <button type="button" onClick={handleClearAll} className="text-charcoal/65 hover:text-charcoal hover:underline">
                   Clear all
                 </button>
               </div>
@@ -189,7 +189,7 @@ export function NotificationBell({ transparent, size = 19 }: { transparent: bool
                   type="button"
                   aria-label="Dismiss notification"
                   onClick={() => handleDismiss(n.id)}
-                  className="mr-1 mt-1.5 shrink-0 rounded p-1 text-charcoal/40 transition-colors hover:bg-charcoal/10 hover:text-charcoal"
+                  className="mr-1 mt-1.5 shrink-0 rounded p-1 text-charcoal/65 transition-colors hover:bg-charcoal/10 hover:text-charcoal"
                 >
                   <X size={13} />
                 </button>

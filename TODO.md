@@ -761,3 +761,12 @@ unless noted.*
   rather than guessing — the `sm:min-h-[720px]` hero comment already shows
   this exact tension was considered once for mobile; it may need the same
   treatment extended to short desktop windows.
+
+- **Admin tables on phones** — Orders, Staff, Discount Codes and Wholesale
+  Applications now turn into stacked cards below the `lg` breakpoint
+  (`src/components/admin/responsive-table.ts`), so status and action
+  buttons are reachable without sideways scrolling. The remaining admin
+  lists (gems, jewelry, customers, quotes, sourcing, auctions, carts,
+  invoices, referrals, business accounts, shipping zones, master data)
+  still scroll horizontally inside their card — convert them with the same
+  helper when they're reported.

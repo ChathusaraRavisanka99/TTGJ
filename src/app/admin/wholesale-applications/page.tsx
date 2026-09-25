@@ -7,6 +7,7 @@ import { WholesaleApplicationActions } from "@/components/admin/WholesaleApplica
 import { CreateWholesaleAccountForm } from "@/components/admin/CreateWholesaleAccountForm";
 import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { cn } from "@/lib/utils";
+import { CARD_TABLE, CARD_THEAD, CARD_TBODY, CARD_TR, CARD_TD, CARD_FIRST, CARD_SECOND, CARD_TD_ACTIONS } from "@/components/admin/responsive-table";
 
 const STATUSES = ["PENDING", "APPROVED", "REJECTED"];
 const PAGE_SIZE = 20;
@@ -68,9 +69,9 @@ export default async function AdminWholesaleApplicationsPage({ searchParams }: P
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
+        <table className={CARD_TABLE}>
+          <thead className={CARD_THEAD}>
+            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/65">
               <th className="px-4 py-3">Business</th>
               <th className="px-4 py-3">Contact</th>
               <th className="px-4 py-3">Reg. #</th>
@@ -79,28 +80,28 @@ export default async function AdminWholesaleApplicationsPage({ searchParams }: P
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className={CARD_TBODY}>
             {applications.map((a) => (
-              <tr key={a.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
-                <td className="px-4 py-3">
+              <tr key={a.id} className={CARD_TR}>
+                <td className={`${CARD_FIRST}`}>
                   <Link href={`/admin/customers/${a.id}`} className="text-charcoal hover:text-gold hover:underline">
                     {a.businessName ?? "—"}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-charcoal/70">
+                <td data-label="Contact" className={`${CARD_TD} text-charcoal/70`}>
                   {a.name} · {a.email}
                   {a.phone && <span> · {a.phone}</span>}
                 </td>
-                <td className="px-4 py-3 text-charcoal/70">{a.businessRegNo ?? "—"}</td>
-                <td className="px-4 py-3 text-charcoal/70">{a.createdAt.toLocaleDateString()}</td>
-                <td className="px-4 py-3"><WholesaleStatusBadge status={a.wholesaleStatus ?? "PENDING"} /></td>
-                <td className="px-4 py-3">
+                <td data-label="Reg. #" className={`${CARD_TD} text-charcoal/70`}>{a.businessRegNo ?? "—"}</td>
+                <td data-label="Applied" className={`${CARD_TD} text-charcoal/70`}>{a.createdAt.toLocaleDateString()}</td>
+                <td data-label="Status" className={`${CARD_SECOND}`}><WholesaleStatusBadge status={a.wholesaleStatus ?? "PENDING"} /></td>
+                <td className={`${CARD_TD_ACTIONS}`}>
                   {a.wholesaleStatus === "PENDING" && <WholesaleApplicationActions userId={a.id} />}
                 </td>
               </tr>
             ))}
             {applications.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-charcoal/50">No wholesale applications found.</td></tr>
+              <tr className="max-lg:block"><td colSpan={6} className="px-4 py-8 text-center text-charcoal/65 max-lg:block">No wholesale applications found.</td></tr>
             )}
           </tbody>
         </table>

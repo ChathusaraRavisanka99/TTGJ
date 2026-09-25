@@ -7,6 +7,7 @@ import { GenerateDiscountCodeForm } from "@/components/admin/GenerateDiscountCod
 import { DeleteDiscountCodeButton } from "@/components/admin/DeleteDiscountCodeButton";
 import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { formatPrice } from "@/lib/utils";
+import { CARD_TABLE, CARD_THEAD, CARD_TBODY, CARD_TR, CARD_TD, CARD_FIRST, CARD_SECOND, CARD_TD_ACTIONS } from "@/components/admin/responsive-table";
 
 const PAGE_SIZE = 30;
 
@@ -45,7 +46,7 @@ export default async function AdminDiscountCodesPage({ searchParams }: PageProps
       <BackLink href="/admin" label="Back to Dashboard" />
       <h1 className="font-serif text-3xl text-charcoal">Discount Codes</h1>
       <p className="mt-1 text-sm text-charcoal/60">
-        Fixed-amount codes a customer can apply to their cart â€” site-wide or tied to one customer, with an optional
+        Fixed-amount codes a customer can apply to their cart — site-wide or tied to one customer, with an optional
         use limit and expiry date.
       </p>
 
@@ -58,9 +59,9 @@ export default async function AdminDiscountCodesPage({ searchParams }: PageProps
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
+        <table className={CARD_TABLE}>
+          <thead className={CARD_THEAD}>
+            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/65">
               <th className="px-4 py-3">Code</th>
               <th className="px-4 py-3">Amount Off</th>
               <th className="px-4 py-3">Amount Off (LKR)</th>
@@ -72,13 +73,13 @@ export default async function AdminDiscountCodesPage({ searchParams }: PageProps
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className={CARD_TBODY}>
             {codes.map((c) => (
-              <tr key={c.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
-                <td className="px-4 py-3 font-mono text-charcoal">{c.code}</td>
-                <td className="px-4 py-3 text-charcoal/70">{formatPrice(c.amountOff)}</td>
-                <td className="px-4 py-3 text-charcoal/70">{c.amountOffLkr != null ? formatPrice(c.amountOffLkr, "LKR") : "â€”"}</td>
-                <td className="px-4 py-3 text-charcoal/70">
+              <tr key={c.id} className={CARD_TR}>
+                <td className={`${CARD_FIRST} font-mono text-charcoal`}>{c.code}</td>
+                <td data-label="Amount off" className={`${CARD_TD} text-charcoal/70`}>{formatPrice(c.amountOff)}</td>
+                <td data-label="Amount off (LKR)" className={`${CARD_TD} text-charcoal/70`}>{c.amountOffLkr != null ? formatPrice(c.amountOffLkr, "LKR") : "—"}</td>
+                <td data-label="Scope" className={`${CARD_TD} text-charcoal/70`}>
                   {c.assignedUser ? (
                     <Link href={`/admin/customers/${c.assignedUser.id}`} className="hover:text-gold hover:underline">
                       {c.assignedUser.email}
@@ -87,19 +88,19 @@ export default async function AdminDiscountCodesPage({ searchParams }: PageProps
                     "Anyone"
                   )}
                 </td>
-                <td className="px-4 py-3 text-charcoal/70">
+                <td data-label="Uses" className={`${CARD_TD} text-charcoal/70`}>
                   {c.usesCount} / {c.maxUses ?? "âˆž"}
                 </td>
-                <td className="px-4 py-3 text-charcoal/70">{c.expiresAt ? c.expiresAt.toLocaleDateString() : "â€”"}</td>
-                <td className="px-4 py-3">{statusBadge(c)}</td>
-                <td className="px-4 py-3 text-charcoal/70">{c.createdAt.toLocaleDateString()}</td>
-                <td className="px-4 py-3">
+                <td data-label="Expires" className={`${CARD_TD} text-charcoal/70`}>{c.expiresAt ? c.expiresAt.toLocaleDateString() : "—"}</td>
+                <td data-label="Status" className={`${CARD_SECOND}`}>{statusBadge(c)}</td>
+                <td data-label="Created" className={`${CARD_TD} text-charcoal/70`}>{c.createdAt.toLocaleDateString()}</td>
+                <td className={`${CARD_TD_ACTIONS}`}>
                   {c.usesCount === 0 && <DeleteDiscountCodeButton id={c.id} code={c.code} />}
                 </td>
               </tr>
             ))}
             {codes.length === 0 && (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-charcoal/50">No discount codes yet.</td></tr>
+              <tr className="max-lg:block"><td colSpan={9} className="px-4 py-8 text-center text-charcoal/65 max-lg:block">No discount codes yet.</td></tr>
             )}
           </tbody>
         </table>

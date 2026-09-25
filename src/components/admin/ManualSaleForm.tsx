@@ -151,7 +151,7 @@ export function ManualSaleForm() {
             }}
             placeholder="customer@example.com"
           />
-          <Button type="button" variant="outline" size="sm" disabled={!customerEmail || lookingUp} onClick={handleLookupCustomer}>
+          <Button type="button" variant="outline" size="sm" className="shrink-0 whitespace-nowrap" disabled={!customerEmail || lookingUp} onClick={handleLookupCustomer}>
             {lookingUp ? "Looking up..." : "Look up"}
           </Button>
         </div>

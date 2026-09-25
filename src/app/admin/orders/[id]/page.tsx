@@ -146,7 +146,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps<"/admin
           )}
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 max-lg:order-first">
           <div className="rounded-xl border border-border-subtle bg-surface p-5">
             <p className="text-xs font-medium uppercase tracking-wide text-charcoal/65">Total</p>
             <p className="mt-2 font-serif text-xl text-charcoal">{formatPrice(order.total, currency)}</p>

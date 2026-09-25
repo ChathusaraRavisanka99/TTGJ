@@ -12,6 +12,7 @@ import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { Button } from "@/components/ui/Button";
 import { getPageContent, DEFAULT_LK_PAYMENTS_CONTENT, LK_PAYMENTS_KEY } from "@/lib/page-content";
 import { formatPrice } from "@/lib/utils";
+import { CARD_TABLE, CARD_THEAD, CARD_TBODY, CARD_TR, CARD_TD, CARD_FIRST, CARD_SECOND, CARD_TD_ACTIONS } from "@/components/admin/responsive-table";
 import { cn } from "@/lib/utils";
 
 const STATUSES = ["PENDING_PAYMENT", "PAID", "SHIPPED", "DELIVERED", "PAYMENT_FAILED", "CANCELLED", "PAYMENT_REVERSED"];
@@ -67,7 +68,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
   return (
     <div>
       {!isStaff && <BackLink href="/admin" label="Back to Dashboard" />}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-serif text-3xl text-charcoal">{isStaff ? "Orders" : "Retail Orders"}</h1>
           <p className="mt-1 text-sm text-charcoal/60">
@@ -126,9 +127,9 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-border-subtle bg-surface">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/50">
+        <table className={CARD_TABLE}>
+          <thead className={CARD_THEAD}>
+            <tr className="border-b border-border-subtle text-left text-xs uppercase tracking-wide text-charcoal/65">
               <th className="px-4 py-3">Order #</th>
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Store</th>
@@ -140,11 +141,11 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
               <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className={CARD_TBODY}>
             {orders.map((o) => (
-              <tr key={o.id} className="border-b border-border-subtle last:border-0 hover:bg-ivory-soft">
-                <td className="px-4 py-3 font-mono text-charcoal">
-                  <Link href={`/admin/orders/${o.id}`} className="hover:text-gold-deep hover:underline">{o.orderNumber}</Link>
+              <tr key={o.id} className={CARD_TR}>
+                <td className={`${CARD_FIRST} font-mono text-charcoal`}>
+                  <Link href={`/admin/orders/${o.id}`} className="whitespace-nowrap hover:text-gold-deep hover:underline">{o.orderNumber}</Link>
                   {(o.quoteRequestId || o.sourcingRequestId) && (
                     <span className="ml-2 rounded-full border border-border-subtle px-2 py-0.5 font-sans text-[10px] uppercase tracking-wide text-charcoal/55">
                       {o.quoteRequestId ? "Quote" : "Sourcing"}
@@ -166,14 +167,14 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-charcoal/70">{o.user.email}</td>
-                <td className="px-4 py-3 text-charcoal/70">{o.market === "lk" ? "Sri Lanka" : "International"}</td>
-                <td className="px-4 py-3 text-charcoal/70">{METHOD_LABELS[o.paymentMethod] ?? o.paymentMethod}</td>
-                <td className="px-4 py-3 text-charcoal/70">{formatPrice(o.total, o.currency === "LKR" ? "LKR" : "USD")}{o.currency === "LKR" ? "" : ` ${o.currency}`}</td>
-                <td className="px-4 py-3 text-charcoal/70">{o.needsShippingDetails ? "—" : `${o.shipCity}, ${o.shipCountry}`}</td>
-                <td className="px-4 py-3 text-charcoal/70">{o.createdAt.toLocaleDateString()}</td>
-                <td className="px-4 py-3"><Badge className={STATUS_STYLES[o.status] ?? ""}>{o.status.replaceAll("_", " ")}</Badge></td>
-                <td className="px-4 py-3">
+                <td data-label="Customer" className={`${CARD_TD} text-charcoal/70 max-lg:flex-col max-lg:items-start max-lg:gap-0 max-lg:text-left max-lg:[overflow-wrap:anywhere]`}>{o.user.email}</td>
+                <td data-label="Store" className={`${CARD_TD} text-charcoal/70`}>{o.market === "lk" ? "Sri Lanka" : "International"}</td>
+                <td data-label="Payment" className={`${CARD_TD} text-charcoal/70`}>{METHOD_LABELS[o.paymentMethod] ?? o.paymentMethod}</td>
+                <td data-label="Total" className={`${CARD_TD} text-charcoal/70`}>{formatPrice(o.total, o.currency === "LKR" ? "LKR" : "USD")}{o.currency === "LKR" ? "" : ` ${o.currency}`}</td>
+                <td data-label="Shipping to" className={`${CARD_TD} text-charcoal/70`}>{o.needsShippingDetails ? "—" : `${o.shipCity}, ${o.shipCountry}`}</td>
+                <td data-label="Placed" className={`${CARD_TD} text-charcoal/70`}>{o.createdAt.toLocaleDateString()}</td>
+                <td data-label="Status" className={CARD_SECOND}><Badge className={STATUS_STYLES[o.status] ?? ""}>{o.status.replaceAll("_", " ")}</Badge></td>
+                <td className={CARD_TD_ACTIONS}>
                   {o.needsShippingDetails && <p className="text-xs text-charcoal/60">Awaiting customer&apos;s shipping details</p>}
                   {o.status === "PENDING_PAYMENT" && o.paymentMethod === "WIRE_TRANSFER" && (!o.needsShippingDetails || !isStaff) && <OrderActions orderId={o.id} orderNumber={o.orderNumber} canCancel={!isStaff} canMarkPaid={!o.needsShippingDetails} />}
                   {!o.needsShippingDetails && o.status === "PAID" && <ShipOrderForm orderId={o.id} orderNumber={o.orderNumber} />}
@@ -198,7 +199,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
               </tr>
             ))}
             {orders.length === 0 && (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-charcoal/50">No orders found.</td></tr>
+              <tr className="max-lg:block"><td colSpan={9} className="px-4 py-8 text-center text-charcoal/65 max-lg:block">No orders found.</td></tr>
             )}
           </tbody>
         </table>

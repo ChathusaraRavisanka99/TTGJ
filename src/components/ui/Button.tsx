@@ -7,7 +7,10 @@ import { useMarket } from "@/components/providers/MarketProvider";
 import { withMarket } from "@/lib/market-shared";
 
 const VARIANTS = {
-  primary: "bg-charcoal text-ivory hover:bg-charcoal-soft",
+  // Warm espresso rather than near-black: the darkest, most contrasty thing on
+  // a cream page was the primary button; this keeps it clearly the main action
+  // (11.9:1 with ivory text) without the hard edge.
+  primary: "bg-charcoal-soft text-ivory hover:bg-charcoal",
   gold: "bg-gold text-charcoal hover:bg-gold-soft",
   outline: "border border-charcoal/30 text-charcoal hover:border-charcoal bg-transparent",
   "outline-light": "border border-ivory/40 text-ivory hover:border-ivory hover:bg-ivory/10 bg-transparent",
